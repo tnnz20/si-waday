@@ -5,6 +5,7 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
+  useNavigation,
 } from 'react-router';
 
 import { requestLogger } from '@/middleware/logger.server';
@@ -46,7 +47,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== 'idle';
+
+  return (
+    <>
+      {isNavigating ? (
+        <div
+          aria-hidden="true"
+          className="bg-primary fixed top-0 right-0 left-0 z-50 h-1 animate-pulse"
+        />
+      ) : null}
+      <Outlet />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
