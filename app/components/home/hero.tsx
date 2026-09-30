@@ -55,8 +55,8 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
 
             {/* Subtitle description */}
             <p className="mx-auto max-w-xl text-base leading-relaxed font-normal text-slate-600 sm:text-lg lg:mx-0">
-              SuaraWarga menghubungkan gagasan, keluhan infrastruktur, dan apresiasi pelayanan
-              publik secara langsung dengan pihak berwenang secara transparan.
+              Si Waday menghubungkan gagasan, keluhan infrastruktur, dan apresiasi pelayanan publik
+              secara langsung dengan pihak berwenang secara transparan.
             </p>
 
             {/* CTAs */}
@@ -136,7 +136,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               {/* Central Core Node */}
               <div className="bg-accent-500 shadow-accent-500/40 relative z-10 flex h-24 w-24 flex-col items-center justify-center rounded-full p-2 text-center text-xs font-extrabold text-white shadow-2xl">
                 <Megaphone className="mb-1 h-7 w-7" aria-hidden="true" />
-                <span>SuaraWarga</span>
+                <span>Si Waday</span>
               </div>
 
               {/* Orbiting Satellite Node 1: Citizen Complaint */}

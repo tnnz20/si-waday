@@ -50,7 +50,7 @@ export function Features() {
               </div>
               <h3 className="mb-2 text-lg font-bold">Tanpa Biaya Tambahan</h3>
               <p className="text-xs leading-relaxed text-white/90">
-                Seluruh fasilitas portal SuaraWarga dapat diakses 100% gratis oleh seluruh lapisan
+                Seluruh fasilitas portal Si Waday dapat diakses 100% gratis oleh seluruh lapisan
                 masyarakat kapan saja.
               </p>
             </div>

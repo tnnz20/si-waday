@@ -27,8 +27,9 @@ export function Navbar() {
               <Megaphone className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <span className="text-darknavy-900 flex items-center gap-1 text-xl font-extrabold tracking-tight">
-                Suara<span className="text-accent-500">Warga</span>
+              <span className="text-darknavy-900 flex items-center gap-1.5 text-xl font-extrabold tracking-tight">
+                <span>Si</span>
+                <span className="text-accent-500">Waday</span>
               </span>
             </div>
           </Link>

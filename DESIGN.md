@@ -1,6 +1,6 @@
-# Design System: SuaraWarga (Modern Citizen Aspiration & Grievance Platform)
+# Design System: Si Waday (Wadah Aspirasi & Aduan Warga)
 
-This document is the **Single Source of Truth (SSOT)** for visual design architecture, styling tokens, interface components, and motion interactions for the **SuaraWarga** (`si-waday`) platform. It is structured and maintained based on the implementation across [app/layouts/home-layout.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), route modules under `app/routes/`, domain components in `app/components/home/`, layout chrome in `app/components/layout/`, shadcn/ui primitives in `app/components/ui/`, Tailwind CSS v4 styling in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), and design directives from **Google Stitch (`stitch-design-taste`)**, **Tailwind CSS v4**, and **React Router v8 (Framework Mode)**.
+This document is the **Single Source of Truth (SSOT)** for visual design architecture, styling tokens, interface components, and motion interactions for the **Si Waday** (`si-waday`) platform. It is structured and maintained based on the implementation across [app/layouts/home-layout.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), route modules under `app/routes/`, domain components in `app/components/home/`, layout chrome in `app/components/layout/`, shadcn/ui primitives in `app/components/ui/`, Tailwind CSS v4 styling in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), and design directives from **Google Stitch (`stitch-design-taste`)**, **Tailwind CSS v4**, and **React Router v8 (Framework Mode)**.
 
 ---
 
@@ -8,7 +8,7 @@ This document is the **Single Source of Truth (SSOT)** for visual design archite
 
 ### 1.1 Mood & Visual Character
 
-SuaraWarga embodies the visual identity of **Civic Warmth & High-Agency Transparency**. Rejecting the rigid, cold, and bureaucratic aesthetics of conventional public sector portals, this platform fuses social warmth with operational decisiveness:
+Si Waday embodies the visual identity of **Civic Warmth & High-Agency Transparency**. Rejecting the rigid, cold, and bureaucratic aesthetics of conventional public sector portals, this platform fuses social warmth with operational decisiveness:
 
 - **Warm & Welcoming Canvas**: A soothing _Warm Sand / Cream_ background (`#faf5f0` & `#fdfbf7`) that is gentle on the eyes, creating an approachable, safe, and humane environment for citizens of all generations.
 - **Authoritative Contrast**: Navigation bars, modal headers, dark summary cards, primary text, and ticket tracking containers utilize _Obsidian Dark Navy_ (`#191b24`), establishing visual gravitas, institutional credibility, and firm structure.
@@ -42,7 +42,7 @@ The color token system integrates natively into **Tailwind CSS v4** via the `@th
 
 ### 2.1 Color Tokens Specification
 
-#### SuaraWarga Brand & Palette Tokens (@theme)
+#### Si Waday Brand & Palette Tokens (@theme)
 
 | CSS / Tailwind Token                       | Hex / RGBA Value | Functional Role & Application                                                                                      |
 | :----------------------------------------- | :--------------- | :----------------------------------------------------------------------------------------------------------------- |
@@ -62,7 +62,7 @@ The color token system integrates natively into **Tailwind CSS v4** via the `@th
 
 #### shadcn/ui Semantic Token Mapping (:root)
 
-All shadcn primitives consume CSS custom properties configured in `:root` within [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), seamlessly harmonized with the SuaraWarga brand:
+All shadcn primitives consume CSS custom properties configured in `:root` within [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), seamlessly harmonized with the Si Waday brand:
 
 | shadcn Token       | CSS Variable Value    | Mapped Utility Classes                      | Role in UI                                               |
 | :----------------- | :-------------------- | :------------------------------------------ | :------------------------------------------------------- |
@@ -170,7 +170,7 @@ The Hero features an asymmetric split-screen layout (`grid-cols-1 lg:grid-cols-1
   - Overlapping social proof avatar stack (`-space-x-2`) with community counter: _"14,800+ citizens participating"_.
 - **Right Column (Orbital Cluster)**:
   - Background Dashed Orbits: Concentric dashed circular tracks spinning slowly (`spin-slow`, subtle 40-second full rotation).
-  - Central Core Hub: Focal center circle `SuaraWarga` (`bg-accent-500 shadow-2xl shadow-accent-500/40`) with megaphone icon.
+  - Central Core Hub: Focal center circle `Si Waday` (`bg-accent-500 shadow-2xl shadow-accent-500/40`) with megaphone icon.
   - Satellite Cards:
     - Citizen Node: Avatar + "Road Repair" grievance tag with gentle bouncing motion (`animate-bounce`).
     - Verification Status Node: Avatar + "Verified" status chip.
@@ -249,7 +249,7 @@ A centered, focused container (`max-w-3xl`) built upon **shadcn/ui Accordion** p
 
 - **GlobalNav (`app/components/layout/navbar.tsx`)**:
   - Sticky glassmorphic bar (`sticky top-0 z-40 border-b border-warm-300/60 bg-warm-100/90 backdrop-blur-md`).
-  - SuaraWarga brand identity with rounded coral megaphone icon container.
+  - Si Waday brand identity with rounded coral megaphone icon container.
   - Desktop navigation items with gentle coral hover accents.
   - **Quick Action Links**:
     - **"Lacak Tiket"**: Links smoothly to the in-page anchor `/#lacak-tiket` via `<Link to="/#lacak-tiket">`.
@@ -388,7 +388,7 @@ a:active {
 
 ### 6.3 Accessibility & Motion Performance
 
-In strict compliance with WCAG 2.1 accessibility guidelines, motion design in SuaraWarga is engineered for smooth, performant rendering:
+In strict compliance with WCAG 2.1 accessibility guidelines, motion design in Si Waday is engineered for smooth, performant rendering:
 
 - Animations avoid layout-reflow properties (`width`, `height`, `top`, `left`) and operate strictly on GPU-composited `transform` and `opacity`.
 - Perpetual animations (`spin-slow`, `animate-float`, `animate-bounce-slow`) have relaxed, non-distracting cycles (4s to 40s).
@@ -491,7 +491,7 @@ In Tailwind CSS v4, tokens are defined centrally in [app/app.css](file:///c:/Use
   import type { Route } from './+types/home';
 
   export const meta: Route.MetaFunction = () => [
-    { title: 'SuaraWarga - Wadah Aspirasi & Aduan Warga' },
+    { title: 'Si Waday - Wadah Aspirasi & Aduan Warga' },
     {
       name: 'description',
       content: 'Platform aspirasi dan pengaduan warga yang transparan, responsif, dan akuntabel.',
@@ -507,3 +507,27 @@ In Tailwind CSS v4, tokens are defined centrally in [app/app.css](file:///c:/Use
   - `app/routes/`: Route modules (`home.tsx`, `aspiration.tsx`).
   - `app/types/`: Domain TypeScript types (`aspiration.ts`, `ui.ts`).
   - `app/constants/`: Static configuration & datasets (`aspirations.ts`, `faq.ts`, `navigation.ts`).
+
+### 8.3 Favicon & Web Icon System
+
+The application web icon is derived directly from the primary brand identity badge:
+
+- **Vector Web Icon (`public/favicon.svg`)**:
+  - High-precision SVG icon formatted at `64x64` with squircle radius `rx="18"`.
+  - Background: Linear gradient from `#FF7557` to `#F05432` (`coral-gradient`).
+  - Foreground: Centered vector Megaphone path in crisp white (`#FFFFFF`) with `stroke-width="2.2"`.
+  - Infinitely scalable, ultra-lightweight (&lt; 1KB), with pixel-sharp rendering on Retina, 4K, dark mode, and light mode browser tab bars.
+- **Apple Touch Icon (`public/apple-touch-icon.png`)**:
+  - `180x180` high-density PNG for iOS Safari home screen bookmarks and mobile web app manifests.
+- **Legacy Fallback Favicon (`public/favicon.ico`)**:
+  - Multi-resolution packed binary container housing `16x16`, `32x32`, and `48x48` PNG image payloads.
+- **Root Manifest Registration (`app/root.tsx`)**:
+  - Registered declaratively in `links: Route.LinksFunction`:
+    ```typescript
+    export const links: Route.LinksFunction = () => [
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+      { rel: 'alternate icon', type: 'image/x-icon', href: '/favicon.ico' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      // ...
+    ];
+    ```

@@ -13,7 +13,7 @@ export function Footer() {
               <div className="bg-accent-500 flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold text-white">
                 <Megaphone className="h-4 w-4" aria-hidden="true" />
               </div>
-              <span className="text-lg font-bold text-white">SuaraWarga</span>
+              <span className="text-lg font-bold text-white">Si Waday</span>
             </div>
             <p className="text-xs leading-relaxed text-slate-400">
               Platform independen aspirasi &amp; pengaduan publik untuk mewujudkan kota yang
@@ -68,7 +68,7 @@ export function Footer() {
 
         {/* Sub-Footer */}
         <div className="flex flex-col items-center justify-between gap-4 pt-8 text-xs text-slate-500 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} SuaraWarga Indonesia. Hak cipta dilindungi.</p>
+          <p>&copy; {new Date().getFullYear()} Si Waday Indonesia. Hak cipta dilindungi.</p>
           <div className="flex gap-6">
             <a href="/#beranda" className="transition-colors hover:text-slate-300">
               Kebijakan Privasi

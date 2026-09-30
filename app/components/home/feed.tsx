@@ -79,7 +79,7 @@ export function Feed({
               PARTISIPASI PUBLIK
             </span>
             <h2 className="text-darknavy-900 text-3xl font-extrabold">
-              Aspirasi &amp; Suara Warga Terkini
+              Aspirasi &amp; Aduan Warga Terkini
             </h2>
           </div>
 
