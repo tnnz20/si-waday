@@ -2,6 +2,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-sans:
+    'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  --color-warm-50: #fdfbf7;
+  --color-warm-100: #faf5f0;
+  --color-warm-200: #f4ece1;
+  --color-warm-300: #e8dbcb;
+  --color-accent-50: #fff0eb;
+  --color-accent-100: #ffe0d5;
+  --color-accent-500: #ff6b4a;
+  --color-accent-600: #f05432;
+  --color-accent-700: #d43d1d;
+  --color-darknavy-800: #262935;
+  --color-darknavy-900: #191b24;
+  --color-darknavy-950: #11131a;
+  --color-navy-800: #262935;
+  --color-navy-900: #191b24;
+  --color-navy-950: #11131a;
+  --radius-4xl: 2.5rem;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -79,5 +101,73 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom Design System Utilities */
+.soft-card {
+  background: #ffffff;
+  box-shadow: 0 10px 40px -10px rgba(40, 30, 20, 0.05);
+  border: 1px solid rgba(230, 220, 210, 0.6);
+}
+
+.coral-glow {
+  box-shadow: 0 20px 40px -15px rgba(255, 107, 74, 0.35);
+}
+
+/* Perpetual Micro-Animations */
+@keyframes rotateOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-slow {
+  animation: rotateOrbit 40s linear infinite;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+/* Interactive Transitions & Tactile Feedback */
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+button:active,
+a:active {
+  transform: scale(0.97);
+}
+
+/* Accessibility & Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
