@@ -123,7 +123,10 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               </div>
 
               {/* Orbiting Satellite Node 1: Citizen Complaint */}
-              <div className="border-warm-200 animate-bounce-slow absolute top-4 left-16 flex items-center gap-2 rounded-2xl border bg-white p-2 shadow-lg">
+              <div
+                className="border-warm-200 absolute top-4 left-16 flex animate-bounce items-center gap-2 rounded-2xl border bg-white p-2 shadow-lg"
+                style={{ animationDuration: '4s' }}
+              >
                 <img
                   className="h-9 w-9 rounded-xl object-cover"
                   src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
