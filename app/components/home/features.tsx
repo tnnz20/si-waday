@@ -1,3 +1,5 @@
+import { Card } from '@/components/ui/card';
+
 import {
   ArrowRight,
   Building2,
@@ -10,7 +12,7 @@ import {
 
 export function Features() {
   return (
-    <section id="keunggulan" className="bg-[#FAF5F0] py-24">
+    <section id="keunggulan" className="bg-background py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mx-auto mb-16 max-w-2xl text-center">
@@ -29,7 +31,7 @@ export function Features() {
         {/* Asymmetric 3x2 Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Card 1: Safe & Verified */}
-          <div className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
+          <Card className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <ShieldCheck className="h-5 w-5" aria-hidden="true" />
             </div>
@@ -38,10 +40,10 @@ export function Features() {
               Data dan laporan masyarakat dilindungi enkripsi. Pilihan mode anonim membuat Anda
               leluasa bersuara.
             </p>
-          </div>
+          </Card>
 
           {/* Card 2: Featured Focal Card in Full Coral */}
-          <div className="bg-accent-500 coral-glow flex flex-col justify-between rounded-3xl p-8 text-white transition-all duration-300 hover:-translate-y-1">
+          <Card className="bg-accent-500 coral-glow flex flex-col justify-between rounded-3xl border-none p-8 text-white transition-all duration-300 hover:-translate-y-1">
             <div>
               <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-lg font-bold text-white">
                 <Zap className="h-5 w-5" aria-hidden="true" />
@@ -56,55 +58,55 @@ export function Features() {
               <span>Layanan Publik Gratis</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </div>
-          </div>
+          </Card>
 
-          {/* Card 3: Universal Access */}
-          <div className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
+          {/* Card 3: Realtime Notifications */}
+          <Card className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <Smartphone className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Akses Di Mana Saja</h3>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Notifikasi Real-time</h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Dapat diakses dengan lancar lewat smartphone, tablet, maupun laptop tanpa perlu
-              mengunduh aplikasi berat.
+              Dapatkan pembaruan langsung via nomor tiket saat laporan Anda ditanggapi oleh dinas
+              terkait.
             </p>
-          </div>
+          </Card>
 
-          {/* Card 4: Real-time Progress Tracking */}
-          <div className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
+          {/* Card 4: Quick Action */}
+          <Card className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <Gauge className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Pantau Progres Real-Time</h3>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Tindak Lanjut Cepat</h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Lacak setiap tahapan penanganan laporan Anda langsung dari nomor tiket khusus hingga
-              selesai.
+              Sistem eskalasi otomatis memastikan aduan Anda diterima dinas yang berwenang dalam
+              waktu singkat.
             </p>
-          </div>
+          </Card>
 
-          {/* Card 5: Direct to Public Agencies */}
-          <div className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
-            <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
-              <Building2 className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Langsung ke Instansi</h3>
-            <p className="text-xs leading-relaxed text-slate-500">
-              Pengaduan diteruskan secara otomatis ke dinas berwenang seperti Dinas PUPR, Dishub,
-              atau Dinkes.
-            </p>
-          </div>
-
-          {/* Card 6: Community Endorsement */}
-          <div className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
+          {/* Card 5: Public Discussion */}
+          <Card className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <MessageSquare className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Dukungan Warga</h3>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Diskusi Komunitas</h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Sesama warga dapat berinteraksi, memberikan dukungan upvote, serta memperkuat urgensi
-              keluhan.
+              Warga lain dapat memberikan dukungan suara dan komentar solutif agar masalah cepat
+              diprioritaskan.
             </p>
-          </div>
+          </Card>
+
+          {/* Card 6: Connected City Offices */}
+          <Card className="soft-card rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1">
+            <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
+              <Building2 className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Terhubung ke Dinas</h3>
+            <p className="text-xs leading-relaxed text-slate-500">
+              Terintegrasi langsung dengan puluhan dinas pemkot/pemkab untuk penanganan langsung di
+              lapangan.
+            </p>
+          </Card>
         </div>
       </div>
     </section>

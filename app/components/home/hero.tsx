@@ -1,3 +1,7 @@
+import { Link } from 'react-router';
+
+import { Badge } from '@/components/ui/badge';
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -8,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface HeroProps {
-  onOpenAspirationModal: () => void;
+  onOpenAspirationModal?: () => void;
 }
 
 export function Hero({ onOpenAspirationModal }: HeroProps) {
@@ -57,19 +61,32 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
 
             {/* CTAs */}
             <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row lg:justify-start">
-              <button
-                type="button"
-                onClick={onOpenAspirationModal}
-                className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
-              >
-                <span>Sampaikan Aspirasi</span>
-                <ArrowRight
-                  className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                  aria-hidden="true"
-                />
-              </button>
+              {onOpenAspirationModal ? (
+                <button
+                  type="button"
+                  onClick={onOpenAspirationModal}
+                  className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
+                >
+                  <span>Sampaikan Aspirasi</span>
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </button>
+              ) : (
+                <Link
+                  to="/aspiration"
+                  className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
+                >
+                  <span>Sampaikan Aspirasi</span>
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </Link>
+              )}
               <a
-                href="#tentang"
+                href="/#keunggulan"
                 className="border-warm-300 text-darknavy-900 hover:bg-warm-100 flex w-full items-center justify-center gap-2 rounded-full border bg-white px-7 py-4 text-sm font-bold transition-all sm:w-auto"
               >
                 <PlayCircle className="text-accent-500 h-4 w-4" aria-hidden="true" />
@@ -132,9 +149,9 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
                   src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
                   alt="Budi S."
                 />
-                <div className="pr-2 text-[11px]">
+                <div className="text-xs-tight pr-2">
                   <p className="text-darknavy-900 leading-none font-bold">Budi S.</p>
-                  <span className="text-accent-500 text-[9px] font-semibold">Perbaikan Jalan</span>
+                  <span className="text-accent-500 text-2xs font-semibold">Perbaikan Jalan</span>
                 </div>
               </div>
 
@@ -145,33 +162,36 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
                   src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80"
                   alt="Rina K."
                 />
-                <div className="pr-1 text-[11px]">
+                <div className="text-xs-tight pr-1">
                   <p className="text-darknavy-900 leading-none font-bold">Rina K.</p>
-                  <span className="text-[9px] text-slate-400">Terverifikasi</span>
+                  <span className="text-2xs text-slate-400">Terverifikasi</span>
                 </div>
               </div>
 
               {/* Orbiting Satellite Node 3: Progress Card */}
               <div className="border-warm-200 animate-float absolute bottom-12 left-6 max-w-[160px] rounded-2xl border bg-white p-3 text-left shadow-xl">
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                <Badge
+                  variant="outline"
+                  className="text-2xs border-none bg-amber-100 px-2 py-0.5 font-bold text-amber-700"
+                >
                   Progres
-                </span>
+                </Badge>
                 <p className="text-darknavy-900 mt-1 line-clamp-1 text-xs font-bold">
                   Penerangan Jalan
                 </p>
-                <p className="text-[10px] text-slate-400">Dinas PUPR</p>
+                <p className="text-2xs text-slate-400">Dinas PUPR</p>
               </div>
 
               {/* Floating Stat Card Badge */}
               <div className="bg-darknavy-900 absolute right-8 bottom-6 max-w-[200px] rounded-3xl p-4 text-white shadow-2xl">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-accent-500 text-[10px] font-bold tracking-wider uppercase">
+                  <span className="text-accent-500 text-2xs font-bold tracking-wider uppercase">
                     Status Laporan
                   </span>
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />
                 </div>
                 <p className="text-xl font-extrabold">98.4%</p>
-                <p className="mt-0.5 text-[10px] text-slate-400">
+                <p className="text-2xs mt-0.5 text-slate-400">
                   Laporan terselesaikan dengan baik bulan ini.
                 </p>
               </div>

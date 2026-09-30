@@ -1,3 +1,11 @@
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+
+import type { Aspiration, Category } from '@/types/aspiration';
+
 import {
   Building2,
   Construction,
@@ -10,8 +18,6 @@ import {
   Trees,
   User,
 } from 'lucide-react';
-
-import type { Aspiration, Category } from '@/types/aspiration';
 
 interface FeedProps {
   aspirations: Aspiration[];
@@ -54,6 +60,15 @@ export function Feed({
     return matchesCategory && matchesSearch;
   });
 
+  const handleVoteClick = (id: string, currentVoted: boolean) => {
+    onToggleVote(id);
+    if (!currentVoted) {
+      toast.success('Terima kasih! Dukungan Anda tercatat.');
+    } else {
+      toast.info('Dukungan dibatalkan.');
+    }
+  };
+
   return (
     <section id="aspirasi" className="bg-white py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -70,14 +85,14 @@ export function Feed({
 
           {/* Quick Search Bar */}
           <div className="relative w-full md:w-80">
-            <input
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Cari topik, lokasi, atau ID..."
-              className="bg-warm-100 border-warm-300 focus:ring-accent-500 w-full rounded-full border py-3.5 pr-4 pl-10 text-xs transition-all focus:ring-2 focus:outline-none"
+              className="border-warm-300 bg-warm-100 focus-visible:ring-accent-500 rounded-full py-6 pr-4 pl-10 text-xs shadow-none"
             />
-            <Search className="absolute top-4 left-4 h-4 w-4 text-slate-400" aria-hidden="true" />
+            <Search className="absolute top-4 left-3.5 h-4 w-4 text-slate-400" aria-hidden="true" />
           </div>
         </div>
 
@@ -107,7 +122,7 @@ export function Feed({
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((item) => (
-              <div
+              <Card
                 key={item.id}
                 className="soft-card flex flex-col justify-between rounded-3xl p-7 transition-all duration-300 hover:-translate-y-1"
               >
@@ -120,16 +135,17 @@ export function Feed({
                       </div>
                       <div>
                         <h4 className="text-darknavy-900 text-xs font-bold">{item.author}</h4>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-2xs text-slate-400">
                           {item.location} • {item.date}
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-[10px] font-bold ${item.statusBg}`}
+                    <Badge
+                      variant="outline"
+                      className={`text-2xs rounded-full border-none px-3 py-1 font-bold ${item.statusBg}`}
                     >
                       {item.status}
-                    </span>
+                    </Badge>
                   </div>
 
                   {/* Title (Interactive Track Link) */}
@@ -149,7 +165,7 @@ export function Feed({
 
                 <div>
                   {/* Agency & Ticket Code Info Bar */}
-                  <div className="bg-warm-100 border-warm-200 mb-4 flex items-center justify-between rounded-2xl border p-3 text-[10px]">
+                  <div className="bg-warm-100 border-warm-200 text-2xs mb-4 flex items-center justify-between rounded-2xl border p-3">
                     <span className="flex items-center gap-1 font-bold text-slate-600">
                       <Building2 className="text-accent-500 h-3.5 w-3.5" aria-hidden="true" />
                       <span>{item.agency}</span>
@@ -161,7 +177,7 @@ export function Feed({
                   <div className="border-warm-200 flex items-center justify-between border-t pt-3 text-xs">
                     <button
                       type="button"
-                      onClick={() => onToggleVote(item.id)}
+                      onClick={() => handleVoteClick(item.id, item.voted)}
                       className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold transition-all ${
                         item.voted
                           ? 'bg-accent-50 text-accent-500'
@@ -174,13 +190,13 @@ export function Feed({
                       />
                       <span>{item.votes}</span>
                     </button>
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                    <span className="text-2xs flex items-center gap-1 font-medium text-slate-400">
                       <MessageSquare className="h-3 w-3" aria-hidden="true" />
                       <span>{item.comments} Tanggapan</span>
                     </span>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : (

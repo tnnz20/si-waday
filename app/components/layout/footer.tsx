@@ -1,3 +1,5 @@
+import { FOOTER_NAV_LINKS, MITRA_AGENCIES } from '@/constants/navigation';
+
 import { Megaphone, PhoneCall } from 'lucide-react';
 
 export function Footer() {
@@ -23,26 +25,13 @@ export function Footer() {
           <div>
             <h4 className="mb-4 text-xs font-bold tracking-wider text-white uppercase">Navigasi</h4>
             <ul className="space-y-2.5 text-xs font-medium">
-              <li>
-                <a href="#beranda" className="transition-colors hover:text-white">
-                  Beranda
-                </a>
-              </li>
-              <li>
-                <a href="#keunggulan" className="transition-colors hover:text-white">
-                  Keunggulan Platform
-                </a>
-              </li>
-              <li>
-                <a href="#aspirasi" className="transition-colors hover:text-white">
-                  Daftar Aspirasi
-                </a>
-              </li>
-              <li>
-                <a href="#faq" className="transition-colors hover:text-white">
-                  FAQ
-                </a>
-              </li>
+              {FOOTER_NAV_LINKS.map((link) => (
+                <li key={link.label}>
+                  <a href={link.href} className="transition-colors hover:text-white">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -52,26 +41,13 @@ export function Footer() {
               Instansi Mitra
             </h4>
             <ul className="space-y-2.5 text-xs font-medium">
-              <li>
-                <a href="#aspirasi" className="transition-colors hover:text-white">
-                  Dinas Pekerjaan Umum (PUPR)
-                </a>
-              </li>
-              <li>
-                <a href="#aspirasi" className="transition-colors hover:text-white">
-                  Dinas Perhubungan
-                </a>
-              </li>
-              <li>
-                <a href="#aspirasi" className="transition-colors hover:text-white">
-                  Dinas Lingkungan Hidup
-                </a>
-              </li>
-              <li>
-                <a href="#aspirasi" className="transition-colors hover:text-white">
-                  Dinas Kesehatan
-                </a>
-              </li>
+              {MITRA_AGENCIES.map((agency) => (
+                <li key={agency.name}>
+                  <a href={agency.href} className="transition-colors hover:text-white">
+                    {agency.name}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -94,10 +70,10 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 pt-8 text-xs text-slate-500 sm:flex-row">
           <p>&copy; {new Date().getFullYear()} SuaraWarga Indonesia. Hak cipta dilindungi.</p>
           <div className="flex gap-6">
-            <a href="#beranda" className="transition-colors hover:text-slate-300">
+            <a href="/#beranda" className="transition-colors hover:text-slate-300">
               Kebijakan Privasi
             </a>
-            <a href="#beranda" className="transition-colors hover:text-slate-300">
+            <a href="/#beranda" className="transition-colors hover:text-slate-300">
               Syarat &amp; Ketentuan
             </a>
           </div>

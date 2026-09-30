@@ -1,9 +1,5 @@
 export type Category =
-  | 'semua'
-  | 'Infrastruktur'
-  | 'Pelayanan Publik'
-  | 'Kebersihan & Lingkungan'
-  | 'Kesehatan';
+  'semua' | 'Infrastruktur' | 'Pelayanan Publik' | 'Kebersihan & Lingkungan' | 'Kesehatan';
 
 export type TicketStatus = 'Selesai' | 'Dalam Proses' | 'Terverifikasi';
 

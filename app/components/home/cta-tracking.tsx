@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
 import { Search } from 'lucide-react';
 
 interface CtaTrackingProps {
@@ -16,7 +19,7 @@ export function CtaTracking({ onTrackTicket }: CtaTrackingProps) {
   };
 
   return (
-    <section className="bg-darknavy-900 relative overflow-hidden py-20 text-white">
+    <section id="lacak-tiket" className="bg-darknavy-900 relative overflow-hidden py-20 text-white">
       {/* Subtle Glow Graphics */}
       <div
         className="bg-accent-500/20 pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
@@ -40,20 +43,20 @@ export function CtaTracking({ onTrackTicket }: CtaTrackingProps) {
         </p>
 
         <form onSubmit={handleSubmit} className="mx-auto flex max-w-md flex-col gap-3 sm:flex-row">
-          <input
+          <Input
             type="text"
             value={ticketInput}
             onChange={(e) => setTicketInput(e.target.value)}
             placeholder="Contoh: ASP-2026-9081"
-            className="focus:ring-accent-500 flex-grow rounded-full border border-white/20 bg-white/10 px-6 py-4 font-mono text-xs text-white uppercase placeholder-slate-400 focus:ring-2 focus:outline-none"
+            className="focus-visible:ring-accent-500 rounded-full border-white/20 bg-white/10 px-6 py-6 font-mono text-xs text-white uppercase placeholder:text-slate-400"
           />
-          <button
+          <Button
             type="submit"
-            className="bg-accent-500 hover:bg-accent-600 flex items-center justify-center gap-2 rounded-full px-8 py-4 text-xs font-bold whitespace-nowrap text-white shadow-lg transition-all"
+            className="bg-accent-500 hover:bg-accent-600 flex items-center justify-center gap-2 rounded-full px-8 py-6 text-xs font-bold whitespace-nowrap text-white shadow-lg transition-all"
           >
             <Search className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Cek Status</span>
-          </button>
+          </Button>
         </form>
       </div>
     </section>
