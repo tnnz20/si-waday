@@ -1,0 +1,16 @@
+{
+  "scannedAt": "2026-09-30",
+  "systemManaged": true,
+  "systemDoc": "DESIGN.md",
+  "fontStack": "Plus Jakarta Sans + Inter + ui-monospace (Google Fonts, app/root.tsx)",
+  "palette": "Warm Sand (#faf5f0) + Obsidian Navy (#191b24) + Sunset Coral (#ff6b4a) (app/app.css)",
+  "motion": "CSS hardware-accelerated transitions & keyframes (app/app.css)",
+  "spacing": "Tailwind CSS v4 4-pt scale with rounded-3xl / rounded-4xl",
+  "framework": "React Router v8 Framework Mode + Vite v8 + Tailwind CSS v4",
+  "preserved": [
+    "DESIGN.md locked design system",
+    "Plus Jakarta Sans & Inter font stack",
+    "Warm Sand / Obsidian Navy / Sunset Coral palette",
+    "app/app.css design tokens & animations"
+  ]
+}
