@@ -45,9 +45,9 @@ export function AspirationModal({ isOpen, onClose, onSubmit }: AspirationModalPr
     <div
       role="dialog"
       aria-modal="true"
-      className="bg-darknavy-950/70 fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 backdrop-blur-sm"
+      className="bg-darknavy-950/70 modal-backdrop-animate fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 backdrop-blur-sm"
     >
-      <div className="border-warm-200 my-8 w-full max-w-lg overflow-hidden rounded-3xl border bg-white shadow-2xl">
+      <div className="border-warm-200 modal-content-animate my-8 w-full max-w-lg overflow-hidden rounded-3xl border bg-white shadow-2xl">
         {/* Modal Header */}
         <div className="bg-darknavy-900 flex items-center justify-between px-6 py-5 text-white">
           <div className="flex items-center gap-3">
@@ -255,9 +255,9 @@ export function TrackModal({ isOpen, ticketId, onClose }: TrackModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="bg-darknavy-950/70 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      className="bg-darknavy-950/70 modal-backdrop-animate fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
     >
-      <div className="border-warm-200 w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl">
+      <div className="border-warm-200 modal-content-animate w-full max-w-md overflow-hidden rounded-3xl border bg-white shadow-2xl">
         {/* Header */}
         <div className="bg-darknavy-900 flex items-center justify-between px-6 py-4 text-white">
           <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ export function ToastContainer({ toasts }: ToastContainerProps) {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`pointer-events-auto flex items-center gap-3 rounded-full px-5 py-3.5 text-xs font-semibold shadow-2xl transition-all duration-300 ${
+          className={`toast-animate pointer-events-auto flex items-center gap-3 rounded-full px-5 py-3.5 text-xs font-semibold shadow-2xl transition-all duration-300 ${
             toast.type === 'success'
               ? 'bg-darknavy-900 border-accent-500/40 border text-white'
               : 'bg-darknavy-900 text-white'

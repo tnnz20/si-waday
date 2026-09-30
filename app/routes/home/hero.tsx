@@ -123,10 +123,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               </div>
 
               {/* Orbiting Satellite Node 1: Citizen Complaint */}
-              <div
-                className="border-warm-200 absolute top-4 left-16 flex animate-bounce items-center gap-2 rounded-2xl border bg-white p-2 shadow-lg"
-                style={{ animationDuration: '4s' }}
-              >
+              <div className="border-warm-200 animate-float absolute top-4 left-16 flex items-center gap-2 rounded-2xl border bg-white p-2 shadow-lg">
                 <img
                   className="h-9 w-9 rounded-xl object-cover"
                   src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80"
@@ -139,7 +136,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               </div>
 
               {/* Orbiting Satellite Node 2: Verification */}
-              <div className="border-warm-200 absolute top-12 right-6 flex items-center gap-2 rounded-2xl border bg-white p-2.5 shadow-lg">
+              <div className="border-warm-200 animate-float-delayed absolute top-12 right-6 flex items-center gap-2 rounded-2xl border bg-white p-2.5 shadow-lg">
                 <img
                   className="h-8 w-8 rounded-full object-cover"
                   src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80"
@@ -152,7 +149,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               </div>
 
               {/* Orbiting Satellite Node 3: Progress Card */}
-              <div className="border-warm-200 absolute bottom-12 left-6 max-w-[160px] rounded-2xl border bg-white p-3 text-left shadow-xl">
+              <div className="border-warm-200 animate-float absolute bottom-12 left-6 max-w-[160px] rounded-2xl border bg-white p-3 text-left shadow-xl">
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
                   Progres
                 </span>
@@ -177,11 +174,15 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
               </div>
 
               {/* Micro Floating Reaction Bubbles */}
-              <div className="border-warm-200 text-accent-500 absolute top-1/2 left-0 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border bg-white font-bold shadow-md">
-                <Heart className="fill-accent-500 h-4 w-4" aria-hidden="true" />
+              <div className="animate-float-delayed pointer-events-none absolute top-[44%] left-0">
+                <div className="border-warm-200 text-accent-500 flex h-10 w-10 items-center justify-center rounded-full border bg-white font-bold shadow-md">
+                  <Heart className="fill-accent-500 h-4 w-4" aria-hidden="true" />
+                </div>
               </div>
-              <div className="border-warm-200 absolute top-1/3 right-2 flex h-9 w-9 items-center justify-center rounded-full border bg-white font-bold text-blue-500 shadow-md">
-                <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              <div className="animate-float pointer-events-none absolute top-[32%] right-2">
+                <div className="border-warm-200 flex h-9 w-9 items-center justify-center rounded-full border bg-white font-bold text-blue-500 shadow-md">
+                  <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                </div>
               </div>
             </div>
           </div>

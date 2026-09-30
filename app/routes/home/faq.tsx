@@ -64,11 +64,17 @@ export function Faq() {
                     aria-hidden="true"
                   />
                 </button>
-                {isOpen ? (
-                  <div className="border-warm-100 border-t px-6 pt-4 pb-6 text-xs leading-relaxed text-slate-600">
-                    {item.answer}
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                    isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="border-warm-100 border-t px-6 pt-4 pb-6 text-xs leading-relaxed text-slate-600">
+                      {item.answer}
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}
