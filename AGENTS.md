@@ -15,21 +15,23 @@
 .
 ├── app/
 │   ├── components/
-│   │   ├── ui/                # shadcn/ui primitive components (button, dialog, input, etc.)
-│   │   ├── layout/            # App-wide layouts (navbar, sidebar, footer)
-│   │   └── shared/            # Reusable UI components shared across 2+ routes
-│   ├── constants/             # Static constants (APP_NAME, APP_DESCRIPTION, etc.)
+│   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, etc.)
+│   │   ├── layout/            # Structural layout blocks (navbar, footer, sidebar, breadcrumbs)
+│   │   ├── shared/            # Reusable UI components shared across 2+ routes
+│   │   └── ui/                # shadcn/ui primitive components (button, dialog, sonner, input, etc.)
+│   ├── constants/             # Static constants & datasets (aspirations.ts, faq.ts, navigation.ts)
 │   ├── db/
 │   │   ├── migrations/        # Generated SQL migrations and metadata snapshots
 │   │   ├── schema/            # Drizzle table schema definitions (*.ts)
 │   │   └── index.server.ts    # Drizzle client singleton with discrete credentials
 │   ├── hooks/                 # Custom React client hooks
+│   ├── layouts/               # Route shell layouts with <Outlet /> (home-layout.tsx, etc.)
 │   ├── lib/                   # Utility helpers (cn(), logger.server.ts, etc.)
 │   ├── middleware/            # React Router 8 server middlewares (logger.server.ts, auth, etc.)
 │   ├── routes/                # Route modules (loaders, actions, page components)
 │   ├── schema/                # Zod validation schemas
-│   ├── types/                 # Shared TypeScript interfaces & types
-│   ├── app.css                # Tailwind CSS v4 imports & theme tokens
+│   ├── types/                 # Shared TypeScript interfaces & types (aspiration.ts, ui.ts)
+│   ├── app.css                # Tailwind CSS v4 imports, theme tokens & shadcn variables
 │   ├── root.tsx               # Root document layout, HTML shell, and global middleware
 │   └── routes.ts              # Route manifest & URL configuration
 ├── scripts/
@@ -49,6 +51,13 @@
 ### 1. Routing & Route Modules (React Router Framework Mode)
 
 - Define all routes in [`app/routes.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes.ts) using `@react-router/dev/routes` helpers (`index`, `route`, `layout`, `prefix`).
+- Wrap route groups inside persistent layout shells using `layout()`:
+  ```tsx
+  layout('layouts/home-layout.tsx', [
+    index('routes/home.tsx'),
+    route('aspiration', 'routes/aspiration.tsx'),
+  ]),
+  ```
 - Route files must live inside [`app/routes/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes/).
 - Route-level code splitting is **automatic**; do not wrap route modules with manual `React.lazy()`.
 - Always import and type route functions using auto-generated types from `./+types/<route-filename>`:
@@ -59,17 +68,55 @@
   export async function action({ request }: Route.ActionArgs) { ... }
   export default function Home({ loaderData }: Route.ComponentProps) { ... }
   ```
+- Use React Router `<Link>` and `<NavLink>` for client-side navigation (e.g. `<Link to="/aspiration">`). Use hash anchor links for in-page section scrolling (e.g. `<Link to="/#lacak-tiket">`).
 - Use `useNavigation().state` in [`app/root.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/root.tsx) for page transition indicators.
 - Use `HydrateFallback` for routes requiring client-side initialization skeletons.
 
-### 2. Components Organization
+### 2. Layout Architecture (`app/layouts/` vs `app/components/layout/`)
 
-- **`app/components/ui/`**: Reserved exclusively for shadcn/ui primitives. Standard shadcn primitives use `React.forwardRef` and are excluded from React 19 ref refactorings.
-- **`app/components/layout/`**: Layout blocks (Navbar, Sidebar, Footer, Breadcrumbs).
-- **`app/components/shared/`**: Reusable custom components utilized by two or more pages.
-- **Single-page components**: If a component is only used by one route, keep it adjacent to that route in `app/routes/` or a subfolder within `app/routes/`.
+- **`app/layouts/` (Route Layout Shells)**:
+  - Registered via `layout(...)` in `app/routes.ts`.
+  - Must render React Router v8 `<Outlet />` to host active child routes.
+  - Hosts persistent page chrome (`Navbar`, `Footer`) and global layout-level providers (such as Sonner's `<Toaster />`).
+  - Example: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx).
+- **`app/components/layout/` (Structural Layout Blocks)**:
+  - Reserved for reusable visual layout blocks: `Navbar`, `Footer`, `Sidebar`, `Breadcrumbs`.
+  - Consumed by route layouts across the application.
 
-### 3. Avoid Barrel Files (`bundle-barrel-imports`)
+### 3. Components Organization & shadcn/ui
+
+- **`app/components/ui/`**: Reserved exclusively for shadcn/ui primitives (`Button`, `Dialog`, `Accordion`, `Sonner`, `Card`, `Badge`, `Switch`, `Select`, `Input`, `Textarea`).
+  - Standard shadcn primitives use `React.forwardRef` and are excluded from React 19 ref refactorings.
+  - When adapting styling, use the `cn()` utility (`app/lib/utils.ts`) at the component call site or configure custom primitive defaults.
+  - **Never re-invent custom primitives** (like manual modal backdrops, dropdowns, or accordions) when a shadcn component exists in `app/components/ui/`.
+- **`app/components/<domain>/`**: Domain/page presentation widgets belong in domain folders (e.g., `app/components/home/` contains `hero.tsx`, `feed.tsx`, `stats.tsx`, `faq.tsx`, `cta-tracking.tsx`, `modals.tsx`).
+- **`app/components/shared/`**: Reusable custom components utilized by two or more distinct features/routes.
+- **`app/types/` & `app/constants/`**: Keep data structures and static mock datasets centralized in dedicated files (e.g., `app/types/aspiration.ts`, `app/constants/faq.ts`). Do not mix static content inside route component files.
+
+### 4. Global Toast Notifications (Sonner)
+
+- Standardized on **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted once inside `app/layouts/home-layout.tsx`.
+- Never build custom floating toast containers or pass toast state down through prop drilling.
+- Dispatch toast notifications imperatively from anywhere:
+  ```typescript
+  import { toast } from 'sonner';
+
+  toast.success('Aspirasi Terkirim!', {
+    description: 'Laporan Anda telah berhasil dicatat dengan ID ASP-2026-9081.',
+  });
+  ```
+
+### 5. Tailwind CSS v4 & Canonical Classes (`suggestCanonicalClasses`)
+
+- **Strictly enforce canonical classes**: Never use arbitrary bracket classes when standard Tailwind v4 utilities or project tokens exist:
+  - Use `min-h-dvh` instead of arbitrary `min-h-[100dvh]`.
+  - Use `bg-background` (or semantic `bg-warm-100`) instead of arbitrary `bg-[#FAF5F0]`.
+  - Use `text-2xs` (0.625rem / 10px) instead of arbitrary `text-[10px]`.
+  - Use `text-xs-tight` (0.6875rem / 11px) instead of arbitrary `text-[11px]`.
+  - Use project color tokens (`border-warm-200`, `bg-darknavy-900`, `text-accent-500`) instead of raw hex values (`border-[#e8dbcb]`, `bg-[#191b24]`).
+- Design tokens and shadcn custom properties are mapped in `:root` and `@theme inline` in [`app/app.css`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css).
+
+### 6. Avoid Barrel Files (`bundle-barrel-imports`)
 
 - **Do not create single re-export `index.ts` files** (e.g. `app/middleware/index.ts` or `app/db/schema/index.ts`).
 - Consumers must import directly from module files:
@@ -78,7 +125,7 @@
   - `import * as schema from './schema/schema';`
 - This ensures maximum tree-shaking efficiency and avoids bundle bloat.
 
-### 4. JSX & Conditional Rendering (`rendering-conditional-render`)
+### 7. JSX & Conditional Rendering (`rendering-conditional-render`)
 
 - Never use `&&` for conditional JSX rendering when the condition can be a number, string, or falsy primitive (`{count && <Badge />}` can render `0`).
 - Always use explicit ternary expressions:
@@ -95,7 +142,7 @@
   }
   ```
 
-### 5. TypeScript Best Practices (`typescript-advanced-types`)
+### 8. TypeScript Best Practices (`typescript-advanced-types`)
 
 - Avoid double unsafe casting (`globalThis as unknown as { ... }`).
 - For global singletons, use ambient declarations:
@@ -109,7 +156,7 @@
   const status = response instanceof Response ? response.status : 200;
   ```
 
-### 6. Database & Drizzle ORM
+### 9. Database & Drizzle ORM
 
 - **No `DATABASE_URL`**: Never introduce monolithic connection strings. The project uses discrete environment variables:
   `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_HOST_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`.
@@ -120,7 +167,7 @@
   - Remote migration over SSH: `make db-migrate ssh=true` (or `npm run db:migrate -- --ssh`)
   - SSH tunnel credentials use `SSH_*` and `SSH_POSTGRES_*` variables in `.env`.
 
-### 7. Containerization & Compose
+### 10. Containerization & Compose
 
 - Default container engine is **Podman**.
 - `compose.yaml` services: `postgres` service on top attached to `si-waday-net` network with persistent volume `postgres-data`.
@@ -128,7 +175,7 @@
   - Default: `make compose-up` / `make compose-down` (executes `podman compose`)
   - Docker: `make compose-up engine=docker` / `make compose-down engine=docker` (executes `docker compose`)
 
-### 8. Minimalism & YAGNI (`ponytail`)
+### 11. Minimalism & YAGNI (`ponytail`)
 
 - Follow the simplicity ladder:
   1. Does this need to exist? (Skip speculative code).
@@ -138,7 +185,7 @@
   5. Shortest diff wins.
 - Do not create empty boilerplate, placeholder types, or unrequested scaffolding.
 
-### 9. Git Commits (`caveman-commit`)
+### 12. Git Commits (`caveman-commit`)
 
 - Follow Conventional Commits format: `<type>(<scope>): <summary>`
 - Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`.

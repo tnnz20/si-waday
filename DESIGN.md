@@ -1,6 +1,6 @@
 # Design System: SuaraWarga (Modern Citizen Aspiration & Grievance Platform)
 
-This document is the **Single Source of Truth (SSOT)** for visual design architecture, styling tokens, interface components, and motion interactions for the **SuaraWarga** (`si-waday`) platform. It is structured and maintained based on the implementation across [app/routes/home.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes/home.tsx), modular components under `app/components/`, layouts in `app/components/layout/`, Tailwind CSS v4 styling in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), and design directives from **Google Stitch (`stitch-design-taste`)**, **Tailwind CSS v4**, and **React Router v8 (Framework Mode)**.
+This document is the **Single Source of Truth (SSOT)** for visual design architecture, styling tokens, interface components, and motion interactions for the **SuaraWarga** (`si-waday`) platform. It is structured and maintained based on the implementation across [app/layouts/home-layout.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), route modules under `app/routes/`, domain components in `app/components/home/`, layout chrome in `app/components/layout/`, shadcn/ui primitives in `app/components/ui/`, Tailwind CSS v4 styling in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), and design directives from **Google Stitch (`stitch-design-taste`)**, **Tailwind CSS v4**, and **React Router v8 (Framework Mode)**.
 
 ---
 
@@ -42,6 +42,8 @@ The color token system integrates natively into **Tailwind CSS v4** via the `@th
 
 ### 2.1 Color Tokens Specification
 
+#### SuaraWarga Brand & Palette Tokens (@theme)
+
 | CSS / Tailwind Token                       | Hex / RGBA Value | Functional Role & Application                                                                                      |
 | :----------------------------------------- | :--------------- | :----------------------------------------------------------------------------------------------------------------- |
 | `--color-warm-50` (`bg-warm-50`)           | `#fdfbf7`        | Sub-surface backgrounds, light hover element states, avatar badges.                                                |
@@ -57,6 +59,25 @@ The color token system integrates natively into **Tailwind CSS v4** via the `@th
 | `--color-accent-600` (`bg-accent-600`)     | `#f05432`        | Primary button hover states, active text emphasis.                                                                 |
 | `--color-accent-700` (`bg-accent-700`)     | `#d43d1d`        | Primary button pressed/active states, intense emphasis.                                                            |
 | `Pure Surface White` (`bg-white`)          | `#ffffff`        | Aspiration card containers (`soft-card`), statistics strips, modal body containers, FAQ cards.                     |
+
+#### shadcn/ui Semantic Token Mapping (:root)
+
+All shadcn primitives consume CSS custom properties configured in `:root` within [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css), seamlessly harmonized with the SuaraWarga brand:
+
+| shadcn Token       | CSS Variable Value    | Mapped Utility Classes                      | Role in UI                                               |
+| :----------------- | :-------------------- | :------------------------------------------ | :------------------------------------------------------- |
+| `background`       | `#faf5f0`             | `bg-background`                             | Root application background, page shells, outer wrappers |
+| `foreground`       | `#191b24`             | `text-foreground`                           | Primary readable ink across all standard surfaces        |
+| `card` / `popover` | `#ffffff`             | `bg-card`, `bg-popover`                     | Soft-card containers, modals, dropdown menus             |
+| `primary`          | `#ff6b4a`             | `bg-primary`, `text-primary-foreground`     | Main action buttons, active toggles, highlighted pills   |
+| `secondary`        | `#f4ece1`             | `bg-secondary`, `text-secondary-foreground` | Subtle backdrops, chip tags, secondary buttons           |
+| `muted`            | `#f4ece1` / `#64748b` | `bg-muted`, `text-muted-foreground`         | Inactive tabs, helper texts, placeholder labels          |
+| `accent`           | `#fff0eb` / `#ff6b4a` | `bg-accent`, `text-accent-foreground`       | Hover states, pill badges, selected list options         |
+| `border` / `input` | `#e8dbcb`             | `border-border`, `border-input`             | Card outlines, input borders, structural dividers        |
+| `ring`             | `#ff6b4a`             | `ring-ring`, `ring-primary`                 | Accessibility focus rings, active step nodes             |
+
+> [!IMPORTANT]
+> **Enforce Canonical Classes (`suggestCanonicalClasses`)**: Never use arbitrary color brackets such as `bg-[#FAF5F0]`, `text-[#191B24]`, or `border-[#E8DBCB]`. Always use semantic canonical tokens: `bg-background` (or `bg-warm-100`), `text-foreground` (or `text-darknavy-900`), and `border-border` (or `border-warm-300`). This ensures complete theme coherency and eliminates Tailwind compiler warnings.
 
 ### 2.2 Functional Status & State Palette
 
@@ -104,15 +125,20 @@ The typography system relies on `"Plus Jakarta Sans"` with robust fallbacks, gua
 
 ### 3.2 Hierarchy & Scale Spacing
 
-| Hierarchy Level              | Size & Weight                                               | Line-Height & Tracking                                      | Application in Routes                                                             |
-| :--------------------------- | :---------------------------------------------------------- | :---------------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| **Hero Title (`h1`)**        | `clamp(2.25rem, 5vw, 3.75rem)` (36px–60px), ExtraBold 800   | `leading-[1.12]`, `tracking-tight` (`-0.025em`)             | _"Do everything in your power for the progress of our city."_                     |
-| **Section Title (`h2`)**     | `1.875rem`–`2.25rem` (30px–36px), ExtraBold 800             | `leading-tight`, `tracking-tight`                           | Headers: _"A Single Civic Space"_, _"Recent Aspirations"_, _"FAQ"_.               |
-| **Card / Item Title (`h3`)** | `1.125rem` (18px), Bold 700                                 | `leading-snug`                                              | Feed item titles, feature card titles, FAQ question labels.                       |
-| **Subtitle / Lead**          | `1.0rem`–`1.125rem` (16px–18px), Normal 400                 | `leading-relaxed` (`1.625`), text `slate-600`               | Hero subheadings and section introductions.                                       |
-| **Body / Description**       | `0.875rem`–`0.75rem` (14px / 12px), Normal 400 / Medium 500 | `leading-relaxed`, text `slate-500` / `slate-600`           | Citizen complaint descriptions, FAQ answers, form helper notes.                   |
-| **Badge / Eyebrow**          | `0.75rem` (12px), Bold 700 / ExtraBold 800                  | `uppercase`, `tracking-widest` (`0.1em`), text `accent-500` | Eyebrow badges: _"WHY CHOOSE US"_, _"CIVIC ENGAGEMENT"_, _"TICKET TRANSPARENCY"_. |
-| **Ticket & Metadata**        | `0.6875rem`–`0.75rem` (11px–12px), Mono & Bold              | `font-mono`, text `slate-400` / `darknavy-900`              | Ticket IDs `ASP-2026-XXXX`, timestamps _"2 hours ago"_.                           |
+| Hierarchy Level                     | Size & Weight                                               | Line-Height & Tracking                                      | Application in Routes                                                             |
+| :---------------------------------- | :---------------------------------------------------------- | :---------------------------------------------------------- | :-------------------------------------------------------------------------------- |
+| **Hero Title (`h1`)**               | `clamp(2.25rem, 5vw, 3.75rem)` (36px–60px), ExtraBold 800   | `leading-[1.12]`, `tracking-tight` (`-0.025em`)             | _"Do everything in your power for the progress of our city."_                     |
+| **Section Title (`h2`)**            | `1.875rem`–`2.25rem` (30px–36px), ExtraBold 800             | `leading-tight`, `tracking-tight`                           | Headers: _"A Single Civic Space"_, _"Recent Aspirations"_, _"FAQ"_.               |
+| **Card / Item Title (`h3`)**        | `1.125rem` (18px), Bold 700                                 | `leading-snug`                                              | Feed item titles, feature card titles, FAQ question labels.                       |
+| **Subtitle / Lead**                 | `1.0rem`–`1.125rem` (16px–18px), Normal 400                 | `leading-relaxed` (`1.625`), text `slate-600`               | Hero subheadings and section introductions.                                       |
+| **Body / Description**              | `0.875rem`–`0.75rem` (14px / 12px), Normal 400 / Medium 500 | `leading-relaxed`, text `slate-500` / `slate-600`           | Citizen complaint descriptions, FAQ answers, form helper notes.                   |
+| **Badge / Eyebrow**                 | `0.75rem` (12px), Bold 700 / ExtraBold 800                  | `uppercase`, `tracking-widest` (`0.1em`), text `accent-500` | Eyebrow badges: _"WHY CHOOSE US"_, _"CIVIC ENGAGEMENT"_, _"TICKET TRANSPARENCY"_. |
+| **Ticket & Metadata**               | `0.6875rem`–`0.75rem` (11px–12px), Mono & Bold              | `font-mono`, text `slate-400` / `darknavy-900`              | Ticket IDs `ASP-2026-XXXX`, timestamps _"2 hours ago"_.                           |
+| **Micro Badges (`text-2xs`)**       | `0.625rem` (10px), Medium / Bold 700                        | `leading-[0.875rem]`, font-sans or font-mono                | Overlapping avatar numbers, compact indicator tags, micro-counter pills.          |
+| **Tight Subtext (`text-xs-tight`)** | `0.6875rem` (11px), Medium 500                              | `leading-4` (`1rem`), font-sans                             | Auxiliary timestamps, compact form hints, table metadata.                         |
+
+> [!TIP]
+> **Canonical Typography Utilities**: Avoid arbitrary brackets like `text-[10px]` or `text-[11px]`. Always use the registered `@theme` utilities `text-2xs` (10px) and `text-xs-tight` (11px) or standard `text-xs` (12px).
 
 ---
 
@@ -185,46 +211,55 @@ A 6-card value proposition layout (`grid-cols-1 md:grid-cols-3 gap-6`) designed 
 
 A full-bleed dark contrast section placed near the bottom (`bg-darknavy-900 text-white py-20`):
 
-- Visual Effect: Dual ambient blur backdrops (`bg-accent-500/20 blur-3xl`).
-- Tracking Form: Semi-transparent monospaced input (`bg-white/10 border-white/20 uppercase font-mono`) paired with coral "Check Status" CTA button, triggering the `TrackModal`.
+- **Section Anchor Target**: Configured with `id="lacak-tiket"` allowing the Navbar "Lacak Tiket" button and deep links to smoothly anchor directly to this tracking tool.
+- **Visual Effect**: Dual ambient blur backdrops (`bg-accent-500/20 blur-3xl`).
+- **Tracking Form**: Semi-transparent monospaced input (`bg-white/10 border-white/20 uppercase font-mono`) paired with coral "Check Status" CTA button, triggering the `TrackModal`.
 
-### 4.7 FAQ Section (Accordion)
+### 4.7 FAQ Section (shadcn/ui Accordion)
 
-A centered, focused container (`max-w-3xl`) featuring clean accordion cards (`overflow-hidden rounded-3xl border border-warm-200 bg-white`):
+A centered, focused container (`max-w-3xl`) built upon **shadcn/ui Accordion** primitives (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`):
 
-- Smooth expansion click interaction.
-- Arrow icon rotation `rotate-180` over `300ms`.
-- Answers covering anonymous privacy, standard 24-hour SLA response timelines, and complaint scope.
+- **Single Collapsible Mode**: Configured as `type="single" collapsible` to keep cognitive load minimal for citizens.
+- **Styling & Anatomy**:
+  - `AccordionItem`: Bordered container with `overflow-hidden rounded-3xl border border-warm-200 bg-white mb-4 shadow-sm`.
+  - `AccordionTrigger`: Crisp typography (`font-bold text-darknavy-900 hover:no-underline hover:text-accent-500 py-6 px-6 sm:px-8`) with an animated rotating chevron.
+  - `AccordionContent`: Relaxed readable body (`text-slate-600 px-6 sm:px-8 pb-6 text-sm leading-relaxed border-t border-warm-100 pt-4`).
+- Answers cover anonymous privacy, standard 24-hour SLA response timelines, and complaint scope.
 
-### 4.8 Modals & Notification Toasts
+### 4.8 Modals & Global Notifications (shadcn/ui Dialog & Sonner)
 
-- **AspirationModal (Grievance Submission Form)**:
-  - Dark header `bg-darknavy-900 text-white` with pencil icon and close button.
-  - "Submit Anonymously" toggle switch: When toggled, locks the name field to "Anonymous Citizen".
-  - Two-column grid for Name & District, and Category & Target Agency.
-  - Problem title input and detailed description textarea with coral focus ring.
-  - Submit button with paper plane icon and immediate feedback.
-- **TrackModal (Ticket Status Tracking)**:
-  - Dark header and prominent monospaced ticket ID with status chip.
-  - 4-step vertical timeline visualization:
-    - 1. Report Received (Green Checkmark)
-    - 2. Admin Verified (Green Checkmark)
-    - 3. Field Work In Progress (Active Coral Accent with `ring-4 ring-accent-100`)
-    - 4. Resolution Completed (Muted / Pending)
-- **ToastContainer (Floating Notifications)**:
-  - Fixed bottom-right positioning (`fixed bottom-5 right-5 z-50`).
-  - Dark capsule pill `bg-darknavy-900 text-white` with subtle coral border and status icons.
-  - Auto-dismisses after 4000ms.
+- **AspirationModal & TrackModal (shadcn/ui Dialog)**:
+  - Both modals are constructed using shadcn **`Dialog`** primitives (`Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`).
+  - Native accessibility: Screen reader focus management, escape key handlers, backdrop blur, and scroll locking handled declaratively.
+  - Modal headers feature dark branding `bg-darknavy-900 text-white rounded-t-3xl p-6 sm:p-8`, with custom styled close buttons.
+  - **TrackModal Timeline**: 4-step vertical timeline visualization with interactive status nodes (`Report Received`, `Admin Verified`, `Field Work In Progress`, `Resolution Completed`).
+- **Global Toast Notifications (Sonner)**:
+  - The application replaces ad-hoc floating containers with **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted once inside `app/layouts/home-layout.tsx`.
+  - Dispatched imperatively from any component or action handler with zero prop drilling:
+    ```typescript
+    import { toast } from 'sonner';
 
-### 4.9 Navigation & Footer Chrome
+    toast.success('Aspirasi Terkirim!', {
+      description: 'Laporan Anda telah berhasil dicatat dengan ID ASP-2026-9081.',
+    });
+    ```
+  - Displays high-contrast civic alerts with subtle borders, rich status coloring, and fluid entry/exit spring physics.
 
-- **GlobalNav**:
+### 4.9 Navigation, Layout Chrome & Dedicated Routes
+
+- **GlobalNav (`app/components/layout/navbar.tsx`)**:
   - Sticky glassmorphic bar (`sticky top-0 z-40 border-b border-warm-300/60 bg-warm-100/90 backdrop-blur-md`).
   - SuaraWarga brand identity with rounded coral megaphone icon container.
   - Desktop navigation items with gentle coral hover accents.
-  - Quick action buttons: "Track Ticket" and obsidian "Write Aspiration".
+  - **Quick Action Links**:
+    - **"Lacak Tiket"**: Links smoothly to the in-page anchor `/#lacak-tiket` via `<Link to="/#lacak-tiket">`.
+    - **"Tulis Aspirasi"**: Direct navigation to the dedicated aspiration submission route `to="/aspiration"` via `<Link to="/aspiration">`.
   - Responsive mobile drawer menu for screen widths under 768px.
-- **SiteFooter**:
+- **Dedicated Submission Page (`app/routes/aspiration.tsx`)**:
+  - Full-page citizen form route wrapped seamlessly by `HomeLayout`.
+  - Built with shadcn **`Card`**, **`Input`**, **`Textarea`**, **`Switch`**, **`Select`**, and **`Button`**.
+  - Features an "Anonymous Submission" toggle that locks identity fields for privacy.
+- **SiteFooter (`app/components/layout/footer.tsx`)**:
   - Full obsidian backdrop (`bg-darknavy-900 border-t border-darknavy-800 text-slate-400`).
   - 4 columns: Platform overview, Quick navigation links, Partner Government Agencies (Public Works, Transport, Environment, Health), and Emergency 112 Hotline badge.
 
@@ -234,6 +269,7 @@ A centered, focused container (`max-w-3xl`) featuring clean accordion cards (`ov
 
 ### 5.1 Container & Grid Standards
 
+- **Canonical Dynamic Viewport (`min-h-dvh`)**: All full-height root shells, layouts, and page containers must use `min-h-dvh` instead of arbitrary `min-h-[100dvh]`.
 - **Max Width Boundary**: `max-w-7xl` (`80rem` / `1280px`) for all content containers, centered (`mx-auto`), with adaptive horizontal padding (`px-4 sm:px-6 lg:px-8`).
 - **Section Spacing Rhythm**:
   - Desktop: `py-20` to `py-24` (80px–96px) ensuring clear visual hierarchy and breathing room between sections.
@@ -244,7 +280,7 @@ A centered, focused container (`max-w-3xl`) featuring clean accordion cards (`ov
 
 - **Small Mobile Devices (`< 640px` / `sm`)**:
   - Hero CTAs and tracking input forms stack vertically (`w-full`).
-  - Modal form inputs collapse into a single vertical column.
+  - Modal and page form inputs collapse into a single vertical column.
   - Headline typography scales down proportionally (`text-4xl`).
 - **Tablet Devices (`< 768px` / `md`)**:
   - Desktop horizontal navigation collapses into a mobile drawer toggle.
@@ -253,6 +289,39 @@ A centered, focused container (`max-w-3xl`) featuring clean accordion cards (`ov
 - **Medium Desktop Displays (`< 1024px` / `lg`)**:
   - Split-screen Hero (copy left + orbital cluster right) stacks cleanly.
   - Orbital cluster scales down proportionally without breaking layout flow.
+
+### 5.3 Route Layout Architecture (`app/layouts/` & `<Outlet />`)
+
+Layouts are decoupled into distinct architectural layers:
+
+1. **Route Layout Shells (`app/layouts/`)**:
+   - Registered in [app/routes.ts](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes.ts) using the `layout()` helper.
+   - Render the persistent layout chrome, dynamic child content via React Router v8 **`<Outlet />`**, and global infrastructure providers (such as Sonner's `<Toaster />`).
+   - Example: [app/layouts/home-layout.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx):
+     ```tsx
+     import { Outlet } from 'react-router';
+
+     import { Footer } from '@/components/layout/footer';
+     import { Navbar } from '@/components/layout/navbar';
+     import { Toaster } from '@/components/ui/sonner';
+
+     export default function HomeLayout() {
+       return (
+         <div className="bg-background text-foreground selection:bg-accent-500 flex min-h-dvh flex-col antialiased selection:text-white">
+           <Navbar />
+           <main className="flex-1">
+             <Outlet />
+           </main>
+           <Footer />
+           <Toaster position="bottom-right" richColors />
+         </div>
+       );
+     }
+     ```
+2. **Structural Layout Blocks (`app/components/layout/`)**:
+   - Reusable layout components such as `Navbar`, `Footer`, `Sidebar`, `Breadcrumbs` consumed across multiple route layouts.
+3. **Route Modules (`app/routes/`)**:
+   - Clean section controllers (`routes/home.tsx`, `routes/aspiration.tsx`) that focus purely on data loading, actions, and page-specific composition.
 
 ---
 
@@ -317,21 +386,13 @@ a:active {
 }
 ```
 
-### 6.3 Accessibility & Reduced Motion
+### 6.3 Accessibility & Motion Performance
 
-In strict compliance with WCAG 2.1 Level AAA guidelines, user motion preferences are fully respected:
+In strict compliance with WCAG 2.1 accessibility guidelines, motion design in SuaraWarga is engineered for smooth, performant rendering:
 
-```css
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-}
-```
+- Animations avoid layout-reflow properties (`width`, `height`, `top`, `left`) and operate strictly on GPU-composited `transform` and `opacity`.
+- Perpetual animations (`spin-slow`, `animate-float`, `animate-bounce-slow`) have relaxed, non-distracting cycles (4s to 40s).
+- Avoid indiscriminate global wildcard resets (`* { animation: none !important; }`) that could inadvertently degrade or break user interactions on platforms with default system accessibility flags.
 
 ---
 
@@ -343,7 +404,13 @@ Strict prohibitions to safeguard premium aesthetics, UX consistency, and perform
 - ❌ **NO Generic Purple / Neon Blue AI Glows**: No clichéd purple-to-blue gradients or neon sci-fi box shadows.
 - ❌ **NO Flat Unvaried 3-Card Grids**: Feature grids must maintain visual rhythm; at least one card must serve as a high-contrast _featured focal card_ (`bg-accent-500`).
 - ❌ **NO Unstyled Default System Fonts**: Typography must bind to `Plus Jakarta Sans` with `ui-monospace` for ticket codes and analytical metrics.
-- ❌ **NO Raw `h-screen` on Mobile Viewports**: Use `min-h-[100dvh]` to eliminate mobile URL bar jump bugs (e.g., iOS Safari).
+- ❌ **NO Arbitrary CSS Bracket Values When Canonical Exists**:
+  - Never use arbitrary `min-h-[100dvh]` — use canonical `min-h-dvh`.
+  - Never use arbitrary `bg-[#FAF5F0]` — use canonical `bg-background` or semantic `bg-warm-100`.
+  - Never use arbitrary `text-[10px]` — use canonical `text-2xs`.
+  - Never use arbitrary `text-[11px]` — use canonical `text-xs-tight` or standard `text-xs`.
+- ❌ **NO Custom Wheel Re-inventions for UI Primitives**: Always reuse shadcn/ui components from `app/components/ui/` (`Dialog`, `Accordion`, `Sonner`, `Card`, `Badge`, `Switch`, `Select`, `Button`) customized via `cn()`.
+- ❌ **NO Prop-Drilled Floating Toast Containers**: Never pass toast callback functions down component trees; mount Sonner's `<Toaster />` once in route layouts and dispatch imperatively via `toast.*`.
 - ❌ **NO Direct Layout Reflow Property Animations**: Never animate reflow properties such as `top`, `left`, `width`, or `height`. Always animate `transform` and `opacity`.
 - ❌ **NO Raw Informal Emojis**: Never render bare emojis in public civic UI; utilize crisp vector icons (Lucide or FontAwesome).
 - ❌ **NO Dropped Accessibility Focus States**: All inputs and interactive elements must present clear focus rings (`focus:ring-2 focus:ring-accent-500`).
@@ -353,11 +420,13 @@ Strict prohibitions to safeguard premium aesthetics, UX consistency, and perform
 
 ## 8. Tech Stack Integration & Code Conventions
 
-### 8.1 Tailwind CSS v4 `@theme` Architecture
+### 8.1 Tailwind CSS v4 Theme & Token Architecture
 
-In Tailwind CSS v4, tokens are defined centrally in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css) using the `@theme` directive:
+In Tailwind CSS v4, tokens are defined centrally in [app/app.css](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css) using `@theme`, `@theme inline`, and `:root` custom properties:
 
 ```css
+@import 'tailwindcss';
+
 @theme {
   --font-sans:
     'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -374,29 +443,67 @@ In Tailwind CSS v4, tokens are defined centrally in [app/app.css](file:///c:/Use
   --color-darknavy-800: #262935;
   --color-darknavy-900: #191b24;
   --color-darknavy-950: #11131a;
-  --color-navy-800: #262935;
-  --color-navy-900: #191b24;
-  --color-navy-950: #11131a;
   --radius-4xl: 2.5rem;
+  --text-2xs: 0.625rem;
+  --text-xs-tight: 0.6875rem;
+}
+
+:root {
+  --background: #faf5f0;
+  --foreground: #191b24;
+  --card: #ffffff;
+  --card-foreground: #191b24;
+  --popover: #ffffff;
+  --popover-foreground: #191b24;
+  --primary: #ff6b4a;
+  --primary-foreground: #ffffff;
+  --secondary: #f4ece1;
+  --secondary-foreground: #191b24;
+  --muted: #f4ece1;
+  --muted-foreground: #64748b;
+  --accent: #fff0eb;
+  --accent-foreground: #ff6b4a;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
+  --border: #e8dbcb;
+  --input: #e8dbcb;
+  --ring: #ff6b4a;
+  --radius: 0.625rem;
 }
 ```
 
-### 8.2 React Router v8 Route Conventions
+### 8.2 React Router v8 Route Conventions & Layout Manifest
 
+- **Route Layout Nesting (`app/routes.ts`)**:
+  Persistent layout shells wrap child routes via `layout()`, providing shared navigation, footers, and toast providers:
+  ```typescript
+  import { type RouteConfig, index, layout, route } from '@react-router/dev/routes';
+
+  export default [
+    layout('layouts/home-layout.tsx', [
+      index('routes/home.tsx'),
+      route('aspiration', 'routes/aspiration.tsx'),
+    ]),
+  ] satisfies RouteConfig;
+  ```
 - **SEO & Meta Export**: Use declarative `meta()` in route modules such as [app/routes/home.tsx](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes/home.tsx):
   ```typescript
   import type { Route } from './+types/home';
 
   export const meta: Route.MetaFunction = () => [
-    { title: 'SuaraWarga - Modern Citizen Aspiration & Grievance Platform' },
+    { title: 'SuaraWarga - Wadah Aspirasi & Aduan Warga' },
     {
       name: 'description',
-      content:
-        'Transparent, responsive, and inclusive civic engagement platform for modern cities.',
+      content: 'Platform aspirasi dan pengaduan warga yang transparan, responsif, dan akuntabel.',
     },
   ];
   ```
-- **Component Decomposition & Single-Page Isolation**:
-  - Adhere to `AGENTS.md` component placement guidelines: single-page components remain adjacent to their route under `app/routes/` or a subfolder within `app/routes/`.
-  - Reusable layout modules (Navbar, Footer, Shell) belong under `app/components/layout/`.
-  - Reusable cross-route primitives belong under `app/components/ui/` (shadcn primitives) or `app/components/shared/`.
+- **Directory Hierarchy & Responsibilities**:
+  - `app/layouts/`: Route layout shells hosting `<Outlet />` (e.g. `home-layout.tsx`).
+  - `app/components/layout/`: Reusable structural layout blocks (`navbar.tsx`, `footer.tsx`).
+  - `app/components/home/`: Domain presentation widgets for the landing route (`hero.tsx`, `features.tsx`, `feed.tsx`, `stats.tsx`, `cta-tracking.tsx`, `faq.tsx`, `modals.tsx`).
+  - `app/components/ui/`: shadcn/ui primitives (`dialog.tsx`, `accordion.tsx`, `sonner.tsx`, etc.).
+  - `app/components/shared/`: Shared reusable components across multiple routes.
+  - `app/routes/`: Route modules (`home.tsx`, `aspiration.tsx`).
+  - `app/types/`: Domain TypeScript types (`aspiration.ts`, `ui.ts`).
+  - `app/constants/`: Static configuration & datasets (`aspirations.ts`, `faq.ts`, `navigation.ts`).
