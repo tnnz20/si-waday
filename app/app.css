@@ -163,6 +163,22 @@
   animation-delay: -3s;
 }
 
+@keyframes bounce-slow {
+  0%,
+  100% {
+    transform: translateY(-10px);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3.5s infinite;
+}
+
 /* Modal and Toast Micro-Animations */
 @keyframes modalIn {
   from {
@@ -221,6 +237,7 @@
   .spin-slow,
   .animate-float,
   .animate-float-delayed,
+  .animate-bounce-slow,
   .animate-ping,
   .animate-bounce {
     animation: none !important;
