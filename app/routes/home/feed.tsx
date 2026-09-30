@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 
-import type { Aspiration, Category } from './types';
+import type { Aspiration, Category } from '@/types/aspiration';
 
 interface FeedProps {
   aspirations: Aspiration[];

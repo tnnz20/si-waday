@@ -2,7 +2,8 @@ import { useState } from 'react';
 
 import { CheckCircle2, Info, PenLine, Route, Send, UserCheck, X } from 'lucide-react';
 
-import type { Category, NewAspirationInput, ToastMessage } from './types';
+import type { Category, NewAspirationInput } from '@/types/aspiration';
+import type { ToastMessage } from '@/types/ui';
 
 interface AspirationModalProps {
   isOpen: boolean;

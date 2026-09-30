@@ -1,5 +1,9 @@
 export type Category =
-  'semua' | 'Infrastruktur' | 'Pelayanan Publik' | 'Kebersihan & Lingkungan' | 'Kesehatan';
+  | 'semua'
+  | 'Infrastruktur'
+  | 'Pelayanan Publik'
+  | 'Kebersihan & Lingkungan'
+  | 'Kesehatan';
 
 export type TicketStatus = 'Selesai' | 'Dalam Proses' | 'Terverifikasi';
 
@@ -17,12 +21,6 @@ export interface Aspiration {
   comments: number;
   date: string;
   voted: boolean;
-}
-
-export interface ToastMessage {
-  id: string;
-  message: string;
-  type: 'info' | 'success';
 }
 
 export interface NewAspirationInput {
