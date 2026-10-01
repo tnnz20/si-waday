@@ -37,7 +37,7 @@ export function AspirationModal({ isOpen, onClose, onSubmit }: AspirationModalPr
   const [author, setAuthor] = useState('');
   const [location, setLocation] = useState('');
   const [category, setCategory] = useState<Category>('Infrastruktur');
-  const [agency, setAgency] = useState('Dinas PUPR');
+  const [agency, setAgency] = useState('Komisi III DPRD (Pembangunan & Infrastruktur)');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -164,16 +164,16 @@ export function AspirationModal({ isOpen, onClose, onSubmit }: AspirationModalPr
                 htmlFor="modal-agency"
                 className="text-darknavy-900 text-2xs mb-1 block font-bold"
               >
-                Instansi Tujuan
+                Tujuan Komisi / Sekretariat DPRD
               </label>
               <Select value={agency} onValueChange={setAgency}>
                 <SelectTrigger id="modal-agency" className="border-warm-200 bg-warm-100">
-                  <SelectValue placeholder="Pilih Instansi" />
+                  <SelectValue placeholder="Pilih Komisi / Bagian DPRD" />
                 </SelectTrigger>
                 <SelectContent>
-                  {AGENCIES.map((instansi) => (
-                    <SelectItem key={instansi} value={instansi}>
-                      {instansi}
+                  {AGENCIES.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -282,7 +282,7 @@ export function TrackModal({ isOpen, ticketId, onClose }: TrackModalProps) {
               <span className="absolute top-0 -left-[21px] h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
               <p className="text-darknavy-900 text-xs font-bold">Terverifikasi Admin</p>
               <p className="text-2xs text-slate-400">
-                17 Agt 2026 • 10:45 WIB — Diteruskan ke instansi
+                17 Agt 2026 • 10:45 WIB — Diteruskan ke Komisi DPRD
               </p>
             </div>
             <div className="relative">
