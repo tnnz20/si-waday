@@ -79,28 +79,15 @@ jobs:
 
             echo "🚀 Deploying image: ${APP_IMAGE}"
 
-            # Determine container engine (podman or docker)
-            if command -v podman-compose &> /dev/null || podman compose version &> /dev/null; then
-              COMPOSE_CMD="podman compose -p si-waday"
-              PRUNE_CMD="podman image prune -f"
-            else
-              COMPOSE_CMD="docker compose -p si-waday"
-              PRUNE_CMD="docker image prune -f"
-            fi
-
-            # Pull the newly published image
-            $COMPOSE_CMD pull app
-
-            # Apply database migrations using one-off runner container
-            echo "🔄 Running database migrations..."
-            $COMPOSE_CMD run --rm app npm run db:migrate || true
+            # Pull the newly published image using Podman
+            podman compose -p si-waday pull app
 
             # Gracefully restart the app container
             echo "🔄 Restarting application service..."
-            $COMPOSE_CMD stop app
-            $COMPOSE_CMD rm -f app
-            $COMPOSE_CMD up -d --no-deps app
+            podman compose -p si-waday stop app
+            podman compose -p si-waday rm -f app
+            podman compose -p si-waday up -d --no-deps app
 
             # Clean up dangling/unused images
-            $PRUNE_CMD
+            podman image prune -f
             echo "✅ Deployment completed successfully!"

@@ -336,7 +336,6 @@ On the remote server:
 2. Set up your production `.env` file with discrete `POSTGRES_*` credentials and `NODE_ENV=production`.
 3. In `compose.yaml`, uncomment the `app` service block to enable the application container.
 4. The deployment workflow will automatically:
-   - Pull the new container image (`ghcr.io/<owner>/si-waday/app:<tag>`).
-   - Run database migrations (`npm run db:migrate`).
-   - Gracefully restart the `app` container.
-   - Clean up dangling images (`podman image prune -f` or `docker image prune -f`).
+   - Pull the new container image (`ghcr.io/<owner>/si-waday/app:<tag>`) via `podman compose`.
+   - Gracefully restart the `app` container via `podman compose`.
+   - Clean up dangling images (`podman image prune -f`).

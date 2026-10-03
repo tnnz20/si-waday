@@ -185,7 +185,7 @@
 - `compose.yaml` services: `postgres` service on top attached to `si-waday-net` network with persistent volume `postgres-data`.
 - In repository `compose.yaml`, the `app` service is kept commented out for local database-only development, and uncommented on the VPS for full stack orchestration.
 - **Full-Stack Container Architecture:** The application image (`Dockerfile`) uses `node:24-alpine` running `react-router-serve ./build/server/index.js` on port 3000 under `NODE_ENV=production`. Node.js acts as the native web server; do not bundle Nginx inside the container.
-- **CI/CD Deployment:** Automated GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and publishes container images to GHCR (`ghcr.io/<repo>/app`) on release tags (`v*.*.*`) or manual dispatch, runs migrations, and deploys via SSH.
+- **CI/CD Deployment:** Automated GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and publishes container images to GHCR (`ghcr.io/<repo>/app`) on release tags (`v*.*.*`) or manual dispatch, and deploys via SSH using Podman.
 - Makefile supports switching engine:
   - Default: `make compose-up` / `make compose-down` (executes `podman compose`)
   - Docker: `make compose-up engine=docker` / `make compose-down engine=docker` (executes `docker compose`)
