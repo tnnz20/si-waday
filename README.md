@@ -18,23 +18,29 @@ Wadah Aspirasi & Aduan Warga.
 ```text
 .
 ├── app/
-│   ├── components/        # Reusable UI components & shadcn primitives
-│   │   └── ui/            # Button, Input, etc.
-│   ├── constants/         # App-wide constants (APP_NAME, etc.)
-│   ├── db/                # Database layer
+│   ├── components/        # UI components & domain presentation widgets
+│   │   ├── admin/         # Admin dashboard widgets & tab panels
+│   │   ├── aspiration/    # Multi-step aspiration & complaint form wizard
+│   │   ├── home/          # Landing page sections (hero, feed, stats, faq, etc.)
+│   │   ├── layout/        # Persistent navigation chrome (navbar, footer, admin-sidebar)
+│   │   ├── shared/        # Cross-route reusable components
+│   │   └── ui/            # shadcn/ui primitives (button, dialog, sonner, tooltip, etc.)
+│   ├── constants/         # App-wide constants & datasets (tapin.ts, admin-data.ts, etc.)
+│   ├── db/                # Database layer (PostgreSQL + Drizzle ORM)
 │   │   ├── migrations/    # Generated SQL migration files
 │   │   ├── schema/        # Drizzle table schemas
 │   │   └── index.server.ts# Drizzle DB client instance
 │   ├── hooks/             # Custom React hooks
+│   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout)
 │   ├── lib/               # Utility functions (logger, cn helper, etc.)
 │   ├── middleware/        # Server middlewares (request logger, auth, etc.)
-│   ├── routes/            # React Router routes and pages
+│   ├── routes/            # Route modules (home.tsx, aspiration.tsx, admin.tsx)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
-│   ├── app.css            # Tailwind v4 styles & CSS variables
+│   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables
 │   ├── root.tsx           # Root layout & HTML shell
-│   └── routes.ts          # Route configuration
-├── public/                # Static public assets
+│   └── routes.ts          # Route manifest configuration
+├── public/                # Static public assets (icons, favicon, logos)
 ├── scripts/               # Migration & SSH tunnel scripts
 │   ├── migrate.ts         # Migration runner (local & SSH)
 │   └── tunnel.ts          # SSH port forwarder
@@ -45,6 +51,24 @@ Wadah Aspirasi & Aduan Warga.
 ├── package.json           # Dependencies and scripts
 └── README.md
 ```
+
+---
+
+## Key Pages & Features
+
+- **Beranda (`/`):**
+  - Hero banner with quick navigation to citizen forms and ticket tracking.
+  - Interactive ticket tracking section (`/#lacak-tiket`).
+  - Recent public aspiration feed, real-time activity metrics, and FAQ accordion.
+- **Formulir Aspirasi & Aduan Warga (`/aspiration`):**
+  - **Langkah 1:** Validasi data pelapor dengan unggah bukti e-KTP.
+  - **Langkah 2A (Aspirasi Dapil):** Pemilihan daerah pemilihan (Dapil), profil & foto anggota dewan DPRD Tapin, kamus usulan Pokir, alamat, dan penanda peta koordinat GPS.
+  - **Langkah 2B (Aduan Masyarakat):** Laporan keluhan fasilitas umum dengan routing pengawasan Komisi DPRD dan bukti foto pendukung.
+  - **Pasca-Kirim:** Survei Indeks Kepuasan Masyarakat (IKM) dan dialog bukti penerimaan tiket resmi.
+- **Dashboard Admin & Statistik (`/dashboard`):**
+  - Pusat kendali bento-grid untuk rekapitulasi KPI dan tren aduan warga.
+  - Tabel filter dan pencarian untuk usulan Pokir dan aduan publik.
+  - Modal inspeksi detail tiket, audit pergerakan status, dan analisis kepuasan masyarakat.
 
 ---
 
