@@ -1,0 +1,106 @@
+name: Deploy Application
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Customize tag to deploy (e.g. v1.0.0 or latest)'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  build-and-push:
+    name: Build and Push App Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image tags
+        id: meta
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${REPO}/app"
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push application image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.image }}:latest
+          cache-from: type=gha,scope=si-waday-app
+          cache-to: type=gha,scope=si-waday-app,mode=max
+
+  deploy:
+    name: Deploy Service via SSH
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy application container via SSH
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE || '' }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Export version tag and normalized image path for compose session
+            export VERSION_TAG=${{ inputs.tag || github.ref_name }}
+            REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export APP_IMAGE=ghcr.io/${REPO}/app:${VERSION_TAG}
+
+            echo "🚀 Deploying image: ${APP_IMAGE}"
+
+            # Determine container engine (podman or docker)
+            if command -v podman-compose &> /dev/null || podman compose version &> /dev/null; then
+              COMPOSE_CMD="podman compose -p si-waday"
+              PRUNE_CMD="podman image prune -f"
+            else
+              COMPOSE_CMD="docker compose -p si-waday"
+              PRUNE_CMD="docker image prune -f"
+            fi
+
+            # Pull the newly published image
+            $COMPOSE_CMD pull app
+
+            # Apply database migrations using one-off runner container
+            echo "🔄 Running database migrations..."
+            $COMPOSE_CMD run --rm app npm run db:migrate || true
+
+            # Gracefully restart the app container
+            echo "🔄 Restarting application service..."
+            $COMPOSE_CMD stop app
+            $COMPOSE_CMD rm -f app
+            $COMPOSE_CMD up -d --no-deps app
+
+            # Clean up dangling/unused images
+            $PRUNE_CMD
+            echo "✅ Deployment completed successfully!"

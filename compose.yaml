@@ -20,6 +20,7 @@ services:
       start_period: 30s
 
   # app:
+  #   image: ${APP_IMAGE:-si-waday:latest}
   #   build:
   #     context: .
   #     dockerfile: Dockerfile
@@ -31,6 +32,7 @@ services:
   #   environment:
   #     POSTGRES_HOST: postgres
   #     POSTGRES_PORT: 5432
+  #     NODE_ENV: production
   #   networks:
   #     - si-waday-net
   #   depends_on:

@@ -303,3 +303,40 @@ Opens Drizzle Studio at **[https://local.drizzle.studio](https://local.drizzle.s
 | `npm run db:migrate -- --ssh`                   | `make db-migrate ssh=true`          | Apply migrations via SSH tunnel              |
 | `npm run db:push`                               | `make db-push`                      | Push schema directly without migration files |
 | `npm run db:studio`                             | `make db-studio`                    | Open Drizzle Studio UI                       |
+
+---
+
+## CI/CD & Deployment (GitHub Actions)
+
+The repository includes an automated deployment workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) that builds a production Docker image, pushes it to GitHub Container Registry (GHCR), and deploys it to your VPS over SSH.
+
+### 1. Deployment Triggers
+
+- **Git Tag:** Pushing any release tag matching `v*.*.*` (e.g. `v1.0.0`).
+- **Manual Dispatch:** In the GitHub repository, navigate to **Actions** > **Deploy Application** > **Run workflow** (specifying optional version tag).
+
+### 2. Required GitHub Repository Secrets
+
+Configure the following secrets in **Settings** > **Secrets and variables** > **Actions**:
+
+| Secret           | Description                             | Example                                  |
+| :--------------- | :-------------------------------------- | :--------------------------------------- |
+| `SSH_HOST`       | VPS IP address or domain                | `203.0.113.10`                           |
+| `SSH_PORT`       | SSH port (defaults to 22)               | `22`                                     |
+| `SSH_USER`       | SSH user                                | `ubuntu`                                 |
+| `SSH_KEY`        | SSH private key (Ed25519 or RSA)        | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `SSH_PASSPHRASE` | _(Optional)_ SSH private key passphrase |                                          |
+| `DEPLOY_PATH`    | Deployment path on the remote VPS       | `/opt/si-waday`                          |
+
+### 3. VPS Setup Instructions
+
+On the remote server:
+
+1. Clone or copy the repository to `DEPLOY_PATH` (e.g., `/opt/si-waday`).
+2. Set up your production `.env` file with discrete `POSTGRES_*` credentials and `NODE_ENV=production`.
+3. In `compose.yaml`, uncomment the `app` service block to enable the application container.
+4. The deployment workflow will automatically:
+   - Pull the new container image (`ghcr.io/<owner>/si-waday/app:<tag>`).
+   - Run database migrations (`npm run db:migrate`).
+   - Gracefully restart the `app` container.
+   - Clean up dangling images (`podman image prune -f` or `docker image prune -f`).
