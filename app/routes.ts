@@ -5,4 +5,5 @@ export default [
     index('routes/home.tsx'),
     route('aspiration', 'routes/aspiration.tsx'),
   ]),
+  layout('layouts/admin-layout.tsx', [route('dashboard', 'routes/admin.tsx')]),
 ] satisfies RouteConfig;

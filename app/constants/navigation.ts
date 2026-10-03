@@ -19,8 +19,8 @@ export const FOOTER_NAV_LINKS: NavLink[] = [
 ];
 
 export const MITRA_AGENCIES: { name: string; href: string }[] = [
-  { name: 'Dinas Pekerjaan Umum (PUPR)', href: '/#aspirasi' },
-  { name: 'Dinas Perhubungan', href: '/#aspirasi' },
-  { name: 'Dinas Lingkungan Hidup', href: '/#aspirasi' },
-  { name: 'Dinas Kesehatan', href: '/#aspirasi' },
+  { name: 'Komisi I DPRD (Pemerintahan & Hukum)', href: '/#aspirasi' },
+  { name: 'Komisi II DPRD (Ekonomi & Pertanian)', href: '/#aspirasi' },
+  { name: 'Komisi III DPRD (Pembangunan & Infrastruktur)', href: '/#aspirasi' },
+  { name: 'Sekretariat DPRD Kab. Tapin', href: '/#aspirasi' },
 ];

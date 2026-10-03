@@ -13,14 +13,14 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: 'faq-2',
-    question: 'Berapa lama laporan diproses oleh instansi terkait?',
+    question: 'Berapa lama aspirasi & aduan diproses oleh DPRD Tapin?',
     answer:
-      'Proses verifikasi admin memerlukan waktu maksimal 3 jam. Setelah diverifikasi, instansi terkait berkewajiban memberikan respon awal atau penanganan dalam kurun 1 x 24 jam.',
+      'Proses verifikasi admin Sekretariat DPRD memerlukan waktu maksimal 3 jam. Setelah diverifikasi, Komisi atau Anggota DPRD terkait akan menelaah dan memberikan respon awal dalam kurun 1 x 24 jam.',
   },
   {
     id: 'faq-3',
-    question: 'Jenis pengaduan apa saja yang bisa disampaikan?',
+    question: 'Jenis aspirasi & aduan apa saja yang bisa disampaikan?',
     answer:
-      'Masyarakat dapat melaporkan kerusakan jalan/infrastruktur, kualitas pelayanan kantor dinas, kebersihan/penumpukan sampah, fasilitas kesehatan, hingga ide pembangunan kota.',
+      'Masyarakat dapat menyampaikan usulan Pokir pembangunan ke anggota dewan Dapil, melaporkan keluhan infrastruktur, kebersihan lingkungan, mutu pelayanan publik, hingga pengawasan kebijakan daerah ke Komisi DPRD Tapin.',
   },
 ];

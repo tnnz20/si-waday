@@ -16,8 +16,8 @@ export function Footer() {
               <span className="text-lg font-bold text-white">Si Waday</span>
             </div>
             <p className="text-xs leading-relaxed text-slate-400">
-              Platform independen aspirasi &amp; pengaduan publik untuk mewujudkan kota yang
-              transparan, responsif, dan inklusif.
+              Portal resmi aspirasi pokok-pokok pikiran (Pokir) &amp; pengaduan masyarakat DPRD
+              Kabupaten Tapin untuk menjembatani suara warga secara transparan dan akuntabel.
             </p>
           </div>
 
@@ -38,7 +38,7 @@ export function Footer() {
           {/* Column 3: Partner Agencies */}
           <div>
             <h4 className="mb-4 text-xs font-bold tracking-wider text-white uppercase">
-              Instansi Mitra
+              Komisi &amp; Alat Kelengkapan DPRD
             </h4>
             <ul className="space-y-2.5 text-xs font-medium">
               {MITRA_AGENCIES.map((agency) => (
@@ -68,7 +68,10 @@ export function Footer() {
 
         {/* Sub-Footer */}
         <div className="flex flex-col items-center justify-between gap-4 pt-8 text-xs text-slate-500 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} Si Waday Indonesia. Hak cipta dilindungi.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Si Waday — Sekretariat DPRD Kabupaten Tapin. Hak cipta
+            dilindungi.
+          </p>
           <div className="flex gap-6">
             <a href="/#beranda" className="transition-colors hover:text-slate-300">
               Kebijakan Privasi

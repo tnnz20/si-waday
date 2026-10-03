@@ -179,7 +179,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
                 <p className="text-darknavy-900 mt-1 line-clamp-1 text-xs font-bold">
                   Penerangan Jalan
                 </p>
-                <p className="text-2xs text-slate-400">Dinas PUPR</p>
+                <p className="text-2xs text-slate-400">Komisi III DPRD</p>
               </div>
 
               {/* Floating Stat Card Badge */}

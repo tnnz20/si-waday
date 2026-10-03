@@ -67,8 +67,8 @@ export function Features() {
             </div>
             <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Notifikasi Real-time</h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Dapatkan pembaruan langsung via nomor tiket saat laporan Anda ditanggapi oleh dinas
-              terkait.
+              Dapatkan pembaruan langsung via nomor tiket saat aspirasi dan aduan Anda ditanggapi
+              oleh komisi atau anggota dewan DPRD terkait.
             </p>
           </Card>
 
@@ -77,10 +77,10 @@ export function Features() {
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <Gauge className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Tindak Lanjut Cepat</h3>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Tindak Lanjut Legislatif</h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Sistem eskalasi otomatis memastikan aduan Anda diterima dinas yang berwenang dalam
-              waktu singkat.
+              Sistem penelaahan legislatif memastikan aspirasi &amp; aduan Anda diterima komisi DPRD
+              yang membidangi dalam waktu singkat.
             </p>
           </Card>
 
@@ -92,7 +92,7 @@ export function Features() {
             <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Diskusi Komunitas</h3>
             <p className="text-xs leading-relaxed text-slate-500">
               Warga lain dapat memberikan dukungan suara dan komentar solutif agar masalah cepat
-              diprioritaskan.
+              diprioritaskan dewan.
             </p>
           </Card>
 
@@ -101,10 +101,12 @@ export function Features() {
             <div className="bg-accent-50 text-accent-500 mb-6 flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-bold">
               <Building2 className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">Terhubung ke Dinas</h3>
+            <h3 className="text-darknavy-900 mb-2 text-lg font-bold">
+              Terhubung ke Dewan &amp; Komisi
+            </h3>
             <p className="text-xs leading-relaxed text-slate-500">
-              Terintegrasi langsung dengan puluhan dinas pemkot/pemkab untuk penanganan langsung di
-              lapangan.
+              Terintegrasi langsung dengan 25 anggota dewan dan seluruh komisi DPRD Kabupaten Tapin
+              untuk pengawasan aspirasi warga.
             </p>
           </Card>
         </div>

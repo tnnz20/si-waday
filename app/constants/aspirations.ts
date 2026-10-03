@@ -9,19 +9,29 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const AGENCIES: string[] = [
-  'Dinas PUPR',
-  'Dinas Perhubungan',
-  'Dinas Lingkungan Hidup',
-  'Dinas Kesehatan',
+  'Komisi I DPRD (Pemerintahan & Hukum)',
+  'Komisi II DPRD (Ekonomi & Pertanian)',
+  'Komisi III DPRD (Pembangunan & Infrastruktur)',
+  'Sekretariat DPRD Kab. Tapin',
+];
+
+export const EXTENDED_AGENCIES: string[] = [
+  'Komisi I DPRD (Pemerintahan, Hukum & Pelayanan Publik)',
+  'Komisi II DPRD (Ekonomi, Keuangan & Pertanian)',
+  'Komisi III DPRD (Pembangunan, Jalan & Lingkungan Hidup)',
+  'Sekretariat DPRD Kab. Tapin (Bagian Fasilitasi Pengaduan)',
+  'Badan Aspirasi & Pengawasan DPRD Tapin',
+  'Pimpinan DPRD Kabupaten Tapin',
+  'Fraksi-Fraksi DPRD Tapin',
 ];
 
 export const INITIAL_ASPIRATIONS: Aspiration[] = [
   {
     id: 'ASP-2026-9081',
     author: 'Budi Santoso',
-    location: 'Kec. Merdeka',
+    location: 'Kec. Tapin Utara',
     category: 'Infrastruktur',
-    agency: 'Dinas Perhubungan',
+    agency: 'Komisi III DPRD (Pembangunan & Infrastruktur)',
     title: 'Perbaikan Lampu Penerangan Jalan Diponegoro',
     content:
       'Lampu penerangan jalan sepanjang Jl. Diponegoro RT 04 mati total sejak dua hari lalu. Membahayakan pengendara di malam hari.',
@@ -35,10 +45,10 @@ export const INITIAL_ASPIRATIONS: Aspiration[] = [
   {
     id: 'ASP-2026-9075',
     author: 'Siti Rahma (Anonim)',
-    location: 'Kec. Bandung Tengah',
+    location: 'Kec. Binuang',
     category: 'Pelayanan Publik',
-    agency: 'Dinas Kebersihan',
-    title: 'Penumpukan Sampah di Depan Pasar Induk',
+    agency: 'Komisi I DPRD (Pemerintahan & Pelayanan Publik)',
+    title: 'Penumpukan Sampah di Depan Pasar Induk Binuang',
     content:
       'Sampah menumpuk sejak 3 hari lalu dan menimbulkan bau menyengat hingga ke pemukiman warga sekitarnya.',
     status: 'Selesai',
@@ -51,10 +61,10 @@ export const INITIAL_ASPIRATIONS: Aspiration[] = [
   {
     id: 'ASP-2026-8942',
     author: 'Ahmad Rizky',
-    location: 'Kec. Coblong',
+    location: 'Kec. Tapin Selatan',
     category: 'Infrastruktur',
-    agency: 'Dinas PUPR',
-    title: 'Jalan Berlubang Cukup Dalam di Dekat Pertigaan Dago',
+    agency: 'Komisi III DPRD (Pembangunan & Infrastruktur)',
+    title: 'Jalan Berlubang Cukup Dalam di Jalur Rantau-Binuang',
     content:
       'Terdapat lubang jalan berdiameter 50cm yang merusak kendaraan dan membahayakan pengendara motor.',
     status: 'Selesai',
