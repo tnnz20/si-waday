@@ -111,7 +111,7 @@ export function Navbar() {
                     <span className="text-2xs font-extrabold tracking-wider text-slate-400 uppercase">
                       Pilih Jenis Aduan / Usulan
                     </span>
-                    <span className="text-3xs bg-warm-200 text-darknavy-900 rounded-full px-2 py-0.5 font-bold">
+                    <span className="text-2xs bg-warm-200 text-darknavy-900 rounded-full px-2 py-0.5 font-bold">
                       Kab. Tapin
                     </span>
                   </div>
@@ -131,7 +131,7 @@ export function Navbar() {
                           <p className="text-darknavy-900 group-hover:text-accent-600 text-xs font-extrabold transition-colors">
                             1. Aduan Masyarakat
                           </p>
-                          <span className="text-3xs bg-warm-200 rounded px-1.5 py-0.5 font-semibold text-slate-600">
+                          <span className="text-2xs bg-warm-200 rounded px-1.5 py-0.5 font-semibold text-slate-600">
                             Komisi DPRD
                           </span>
                         </div>
@@ -156,7 +156,7 @@ export function Navbar() {
                           <p className="text-darknavy-900 text-xs font-extrabold transition-colors group-hover:text-emerald-700">
                             2. Aduan Penyampaian Aspirasi Dapil
                           </p>
-                          <span className="text-3xs rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-800">
+                          <span className="text-2xs rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-800">
                             DPRD
                           </span>
                         </div>

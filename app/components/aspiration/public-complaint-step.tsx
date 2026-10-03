@@ -81,6 +81,15 @@ export function PublicComplaintStep({
       setErrors((prev) => ({ ...prev, [`photo${index}`]: 'Ukuran foto maksimal 8MB.' }));
       return;
     }
+
+    if (index === 1 && data.photo1PreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(data.photo1PreviewUrl);
+    } else if (index === 2 && data.photo2PreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(data.photo2PreviewUrl);
+    } else if (index === 3 && data.photo3PreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(data.photo3PreviewUrl);
+    }
+
     const previewUrl = URL.createObjectURL(file);
     if (index === 1) {
       onChange({ photo1FileName: file.name, photo1PreviewUrl: previewUrl });
@@ -88,6 +97,28 @@ export function PublicComplaintStep({
       onChange({ photo2FileName: file.name, photo2PreviewUrl: previewUrl });
     } else {
       onChange({ photo3FileName: file.name, photo3PreviewUrl: previewUrl });
+    }
+  };
+
+  const handleRemovePhoto = (index: 1 | 2 | 3) => {
+    if (index === 1) {
+      if (data.photo1PreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(data.photo1PreviewUrl);
+      }
+      onChange({ photo1FileName: '', photo1PreviewUrl: '' });
+      if (photo1InputRef.current) photo1InputRef.current.value = '';
+    } else if (index === 2) {
+      if (data.photo2PreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(data.photo2PreviewUrl);
+      }
+      onChange({ photo2FileName: '', photo2PreviewUrl: '' });
+      if (photo2InputRef.current) photo2InputRef.current.value = '';
+    } else {
+      if (data.photo3PreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(data.photo3PreviewUrl);
+      }
+      onChange({ photo3FileName: '', photo3PreviewUrl: '' });
+      if (photo3InputRef.current) photo3InputRef.current.value = '';
     }
   };
 
@@ -679,7 +710,7 @@ export function PublicComplaintStep({
                       ) : (
                         <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
                       )}
-                      <span className="text-3xs truncate font-mono text-slate-700">
+                      <span className="text-2xs truncate font-mono text-slate-700">
                         {data.photo1FileName || 'Gambar.png'}
                       </span>
                     </div>
@@ -688,7 +719,7 @@ export function PublicComplaintStep({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => onChange({ photo1FileName: '', photo1PreviewUrl: '' })}
+                        onClick={() => handleRemovePhoto(1)}
                         className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -722,7 +753,7 @@ export function PublicComplaintStep({
                       ) : (
                         <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
                       )}
-                      <span className="text-3xs truncate font-mono text-slate-700">
+                      <span className="text-2xs truncate font-mono text-slate-700">
                         {data.photo2FileName || 'Gambar.png'}
                       </span>
                     </div>
@@ -731,7 +762,7 @@ export function PublicComplaintStep({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => onChange({ photo2FileName: '', photo2PreviewUrl: '' })}
+                        onClick={() => handleRemovePhoto(2)}
                         className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -765,7 +796,7 @@ export function PublicComplaintStep({
                       ) : (
                         <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
                       )}
-                      <span className="text-3xs truncate font-mono text-slate-700">
+                      <span className="text-2xs truncate font-mono text-slate-700">
                         {data.photo3FileName || 'Gambar.png'}
                       </span>
                     </div>
@@ -774,7 +805,7 @@ export function PublicComplaintStep({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => onChange({ photo3FileName: '', photo3PreviewUrl: '' })}
+                        onClick={() => handleRemovePhoto(3)}
                         className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
                       >
                         <Trash2 className="h-3 w-3" />

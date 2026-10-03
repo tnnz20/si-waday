@@ -291,7 +291,7 @@ export default function AspirationPage() {
                     Langkah 1
                   </span>
                   {currentStep > 1 ? (
-                    <span className="py-0.2 text-3xs rounded-full bg-emerald-200/60 px-1.5 font-bold text-emerald-800">
+                    <span className="text-2xs rounded-full bg-emerald-200/60 px-1.5 py-0.5 font-bold text-emerald-800">
                       Selesai
                     </span>
                   ) : null}

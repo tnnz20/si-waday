@@ -68,6 +68,10 @@ export function IdentityStep({
       return;
     }
 
+    if (data.idCardPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(data.idCardPreviewUrl);
+    }
+
     const previewUrl = URL.createObjectURL(file);
     onChange({
       idCardFileName: file.name,
@@ -80,6 +84,9 @@ export function IdentityStep({
   };
 
   const handleRemoveFile = () => {
+    if (data.idCardPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(data.idCardPreviewUrl);
+    }
     onChange({
       idCardFileName: '',
       idCardPreviewUrl: '',
