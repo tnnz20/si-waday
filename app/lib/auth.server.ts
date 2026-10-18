@@ -32,9 +32,16 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 // JWT Signing & Verification (jose)
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET_STRING =
-  process.env.JWT_SECRET || 'super-secret-jwt-key-min-32-chars-long-siwaday-2026';
-const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
+function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is required in production.');
+    }
+    return new TextEncoder().encode('super-secret-jwt-key-min-32-chars-long-siwaday-2026');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const ISSUER = 'urn:siwaday:issuer';
 const AUDIENCE = 'urn:siwaday:audience';
@@ -45,6 +52,7 @@ export interface AuthUserPayload {
   role: UserRole;
   fullName: string;
   avatarUrl: string | null;
+  regionId?: string | null;
 }
 
 /**
@@ -56,6 +64,7 @@ export async function signAccessToken(payload: AuthUserPayload): Promise<string>
     role: payload.role,
     fullName: payload.fullName,
     avatarUrl: payload.avatarUrl,
+    regionId: payload.regionId ?? null,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(payload.id)
@@ -63,7 +72,7 @@ export async function signAccessToken(payload: AuthUserPayload): Promise<string>
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime('15m')
-    .sign(JWT_SECRET);
+    .sign(getJwtSecretKey());
 }
 
 /**
@@ -77,7 +86,7 @@ export async function signRefreshToken(userId: string): Promise<string> {
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(JWT_SECRET);
+    .sign(getJwtSecretKey());
 }
 
 /**
@@ -85,7 +94,7 @@ export async function signRefreshToken(userId: string): Promise<string> {
  */
 export async function verifyAccessToken(token: string): Promise<AuthUserPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, {
+    const { payload } = await jwtVerify(token, getJwtSecretKey(), {
       issuer: ISSUER,
       audience: AUDIENCE,
     });
@@ -98,6 +107,7 @@ export async function verifyAccessToken(token: string): Promise<AuthUserPayload 
       role: (payload.role as UserRole) || 'moderator',
       fullName: String(payload.fullName || ''),
       avatarUrl: typeof payload.avatarUrl === 'string' ? payload.avatarUrl : null,
+      regionId: typeof payload.regionId === 'string' ? payload.regionId : null,
     };
   } catch {
     return null;
@@ -109,7 +119,7 @@ export async function verifyAccessToken(token: string): Promise<AuthUserPayload 
  */
 export async function verifyRefreshToken(token: string): Promise<{ userId: string } | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, {
+    const { payload } = await jwtVerify(token, getJwtSecretKey(), {
       issuer: ISSUER,
       audience: AUDIENCE,
     });

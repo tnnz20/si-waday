@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { Form, redirect, useNavigation } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
@@ -40,17 +40,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
-  const email = String(formData.get('email') || '').trim();
+  const identifier = String(formData.get('identifier') || formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
   const rawRedirectTo = String(formData.get('redirectTo') || '/dashboard');
   const redirectTo =
     rawRedirectTo.startsWith('/') && !rawRedirectTo.startsWith('//') ? rawRedirectTo : '/dashboard';
 
-  if (!email || !password) {
-    return { error: 'Email dan kata sandi wajib diisi.' };
+  if (!identifier || !password) {
+    return { error: 'Email atau username dan kata sandi wajib diisi.' };
   }
 
-  // Find user and profile
+  // Find user and profile matching email or slug (case-insensitive)
   const [user] = await db
     .select({
       id: users.id,
@@ -61,14 +61,24 @@ export async function action({ request }: Route.ActionArgs) {
       deletedAt: users.deletedAt,
       fullName: userProfiles.fullName,
       avatarUrl: userProfiles.avatarUrl,
+      regionId: userProfiles.regionId,
+      slug: userProfiles.slug,
     })
     .from(users)
     .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
-    .where(and(eq(users.email, email), isNull(users.deletedAt)))
+    .where(
+      and(
+        or(
+          eq(users.email, identifier.toLowerCase()),
+          eq(userProfiles.slug, identifier.toLowerCase())
+        ),
+        isNull(users.deletedAt)
+      )
+    )
     .limit(1);
 
   if (!user) {
-    return { error: 'Email atau kata sandi tidak sesuai.' };
+    return { error: 'Email/username atau kata sandi tidak sesuai.' };
   }
 
   if (!user.isActive) {
@@ -77,7 +87,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const isPasswordValid = verifyPassword(password, user.passwordHash);
   if (!isPasswordValid) {
-    return { error: 'Email atau kata sandi tidak sesuai.' };
+    return { error: 'Email/username atau kata sandi tidak sesuai.' };
   }
 
   // Update lastLoginAt
@@ -90,6 +100,7 @@ export async function action({ request }: Route.ActionArgs) {
     role: user.role,
     fullName: user.fullName || user.email,
     avatarUrl: user.avatarUrl,
+    regionId: user.regionId,
   };
 
   const accessToken = await signAccessToken(payload);
@@ -133,22 +144,22 @@ export default function LoginPage({ loaderData, actionData }: Route.ComponentPro
               </div>
             ) : null}
 
-            {/* Email Field */}
+            {/* Identifier Field (Email or Username) */}
             <div className="space-y-1.5 text-left">
               <label
-                htmlFor="email"
+                htmlFor="identifier"
                 className="text-darknavy-900 block text-xs font-bold tracking-wide uppercase"
               >
-                Alamat Email
+                Email atau Username
               </label>
               <div className="relative">
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="identifier"
+                  name="identifier"
+                  type="text"
                   required
-                  autoComplete="email"
-                  placeholder="admin@siwaday.tapinkab.go.id"
+                  autoComplete="username"
+                  placeholder="admin atau nama@siwaday.tapinkab.go.id"
                   className="border-warm-200 bg-warm-50 h-11 text-sm transition-all focus-visible:ring-emerald-500"
                 />
               </div>

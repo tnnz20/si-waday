@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from 'react';
 
+import { getInitials } from '@/lib/utils';
+
 import { MapPicker } from '@/components/aspiration/map-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,15 +48,6 @@ import {
   Trash2,
   ZoomIn,
 } from 'lucide-react';
-
-function getInitials(name: string): string {
-  const cleanName = name.replace(/^(H\.|Dr\.|Hj\.|Drs\.|Ir\.|M\.)\s*/gi, '').trim();
-  const parts = cleanName.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return cleanName.slice(0, 2).toUpperCase() || 'DW';
-}
 
 interface ProposalStepProps {
   data: UsulanFormData;

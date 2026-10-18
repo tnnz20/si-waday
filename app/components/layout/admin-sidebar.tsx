@@ -16,7 +16,7 @@ import { Button } from '~/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '~/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import type { AuthUserPayload } from '~/lib/auth.server';
-import { cn } from '~/lib/utils';
+import { cn, getInitials } from '~/lib/utils';
 
 import {
   ChevronRight,
@@ -49,15 +49,6 @@ export interface AdminSidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onSearchFocus?: () => void;
-}
-
-function getInitials(name: string): string {
-  const clean = name.replace(/^(H\.|Dr\.|Hj\.|Drs\.|Ir\.|M\.)\s*/gi, '').trim();
-  const parts = clean.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return clean.slice(0, 2).toUpperCase() || 'AD';
 }
 
 export function AdminSidebar({

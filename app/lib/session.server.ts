@@ -155,6 +155,7 @@ export async function getAuthUser(request: Request): Promise<GetAuthUserResult |
       role: users.role,
       fullName: userProfiles.fullName,
       avatarUrl: userProfiles.avatarUrl,
+      regionId: userProfiles.regionId,
     })
     .from(users)
     .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
@@ -178,6 +179,7 @@ export async function getAuthUser(request: Request): Promise<GetAuthUserResult |
     role: dbUser.role,
     fullName: dbUser.fullName || dbUser.email,
     avatarUrl: dbUser.avatarUrl,
+    regionId: dbUser.regionId,
   };
 
   // 4. Mint new tokens and return them with response headers for automatic cookie refresh

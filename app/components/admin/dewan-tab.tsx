@@ -2,9 +2,9 @@ import * as React from 'react';
 
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { Input } from '~/components/ui/input';
+import { getInitials } from '~/lib/utils';
 
-import { Landmark, Search, ShieldCheck, Users } from 'lucide-react';
+import { Landmark, ShieldCheck, Users } from 'lucide-react';
 
 export interface LegislatorItem {
   id: string;
@@ -19,19 +19,10 @@ export interface LegislatorItem {
 
 interface DewanTabProps {
   legislators: LegislatorItem[];
+  searchQuery?: string;
 }
 
-function getInitials(name: string): string {
-  const clean = name.replace(/^(H\.|Dr\.|Hj\.|Drs\.|Ir\.|M\.)\s*/gi, '').trim();
-  const parts = clean.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return clean.slice(0, 2).toUpperCase() || 'DW';
-}
-
-export function DewanTab({ legislators }: DewanTabProps) {
-  const [searchQuery, setSearchQuery] = React.useState('');
+export function DewanTab({ legislators, searchQuery = '' }: DewanTabProps) {
   const [filterRole, setFilterRole] = React.useState<'all' | 'DPRD Tapin' | 'DPR RI'>('all');
 
   const filtered = React.useMemo(() => {
@@ -156,18 +147,6 @@ export function DewanTab({ legislators }: DewanTabProps) {
               </button>
             </div>
           </div>
-
-          {/* Search Bar */}
-          <div className="relative mt-4">
-            <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama anggota dewan, partai politik, komisi, atau dapil..."
-              className="border-warm-200 bg-warm-50 h-10 pl-10 text-xs sm:text-sm"
-            />
-          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -214,9 +193,15 @@ export function DewanTab({ legislators }: DewanTabProps) {
                       <p className="font-medium text-slate-700">{rep.commission}</p>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <span className="text-2xs inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-extrabold text-emerald-800">
-                        ● Aktif
-                      </span>
+                      {rep.isActive ? (
+                        <span className="text-2xs inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-extrabold text-emerald-800">
+                          ● Aktif
+                        </span>
+                      ) : (
+                        <span className="text-2xs inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 font-bold text-slate-500">
+                          ○ Nonaktif
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

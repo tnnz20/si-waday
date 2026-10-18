@@ -1,9 +1,9 @@
 import * as React from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { Input } from '~/components/ui/input';
+import { getInitials } from '~/lib/utils';
 
-import { Mail, Search, Shield, ShieldCheck } from 'lucide-react';
+import { Mail, Shield, ShieldCheck } from 'lucide-react';
 
 export interface ModeratorItem {
   id: string;
@@ -16,19 +16,10 @@ export interface ModeratorItem {
 
 interface ModeratorsTabProps {
   moderators: ModeratorItem[];
+  searchQuery?: string;
 }
 
-function getInitials(name: string): string {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase() || 'MD';
-}
-
-export function ModeratorsTab({ moderators }: ModeratorsTabProps) {
-  const [searchQuery, setSearchQuery] = React.useState('');
-
+export function ModeratorsTab({ moderators, searchQuery = '' }: ModeratorsTabProps) {
   const filtered = React.useMemo(() => {
     return moderators.filter((m) => {
       const q = searchQuery.toLowerCase();
@@ -112,18 +103,6 @@ export function ModeratorsTab({ moderators }: ModeratorsTabProps) {
               </CardDescription>
             </div>
           </div>
-
-          {/* Search Bar */}
-          <div className="relative mt-4">
-            <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama moderator, email, atau wilayah dapil..."
-              className="border-warm-200 bg-warm-50 h-10 pl-10 text-xs sm:text-sm"
-            />
-          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -165,9 +144,15 @@ export function ModeratorsTab({ moderators }: ModeratorsTabProps) {
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <span className="text-2xs inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-extrabold text-emerald-800">
-                        ● Aktif
-                      </span>
+                      {mod.isActive ? (
+                        <span className="text-2xs inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-extrabold text-emerald-800">
+                          ● Aktif
+                        </span>
+                      ) : (
+                        <span className="text-2xs inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 font-bold text-slate-500">
+                          ○ Nonaktif
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

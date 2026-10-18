@@ -207,10 +207,12 @@ export default function AdminPage({ loaderData }: Route.ComponentProps) {
 
             {activeTab === 'kepuasan' ? <SatisfactionTab tickets={tickets} /> : null}
 
-            {activeTab === 'users-dewan' ? <DewanTab legislators={loaderData.legislators} /> : null}
+            {activeTab === 'users-dewan' ? (
+              <DewanTab legislators={loaderData.legislators} searchQuery={searchQuery} />
+            ) : null}
 
             {activeTab === 'users-moderator' ? (
-              <ModeratorsTab moderators={loaderData.moderators} />
+              <ModeratorsTab moderators={loaderData.moderators} searchQuery={searchQuery} />
             ) : null}
           </main>
         </div>

@@ -96,6 +96,13 @@ export function AdminHeader({
   const currentTabInfo = TAB_CONFIG[activeTab] || TAB_CONFIG.overview;
   const TabIcon = currentTabInfo.icon;
 
+  const searchPlaceholder =
+    activeTab === 'users-dewan'
+      ? 'Cari nama dewan, partai, dapil...'
+      : activeTab === 'users-moderator'
+        ? 'Cari nama moderator, email, dapil...'
+        : 'Cari ID tiket, nama, lokasi...';
+
   const handleExport = () => {
     toast.success('Mengekspor Laporan Rekapitulasi', {
       description: `Format CSV/Excel untuk data ${currentTabInfo.title} sedang diunduh.`,
@@ -158,7 +165,7 @@ export function AdminHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Cari ID tiket, nama, lokasi..."
+              placeholder={searchPlaceholder}
               className="border-warm-200 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-9 pl-10 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
             />
             {searchQuery ? (
