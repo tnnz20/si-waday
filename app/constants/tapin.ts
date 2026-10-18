@@ -20,7 +20,7 @@ export interface AnggotaDprdTapin {
 
 export const DAPIL_TAPIN_LIST: DapilTapin[] = [
   {
-    id: 'dapil-1',
+    id: 'DAPIL-TAPIN-1',
     name: 'Dapil Tapin 1',
     label: 'Dapil Tapin 1 (Tapin Utara, Bungur, Lokpaikat, Piani)',
     seats: '7 Kursi DPRD',
@@ -28,7 +28,7 @@ export const DAPIL_TAPIN_LIST: DapilTapin[] = [
     description: 'Wilayah pusat pemerintahan kota Rantau dan kawasan penyangga utara.',
   },
   {
-    id: 'dapil-2',
+    id: 'DAPIL-TAPIN-2',
     name: 'Dapil Tapin 2',
     label: 'Dapil Tapin 2 (Tapin Selatan, Salam Babaris, Binuang, Hatungun)',
     seats: '10 Kursi DPRD',
@@ -36,7 +36,7 @@ export const DAPIL_TAPIN_LIST: DapilTapin[] = [
     description: 'Wilayah selatan, sentra perekonomian, perkebunan, dan industri Binuang.',
   },
   {
-    id: 'dapil-3',
+    id: 'DAPIL-TAPIN-3',
     name: 'Dapil Tapin 3',
     label: 'Dapil Tapin 3 (Candi Laras Utara, Candi Laras Selatan, Tapin Tengah, Bakarangan)',
     seats: '8 Kursi DPRD',

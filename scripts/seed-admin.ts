@@ -2,10 +2,11 @@ import { eq } from 'drizzle-orm';
 
 import { userProfiles, users } from '../app/db/schema/schema';
 import { hashPassword } from '../app/lib/auth.server';
-import { getScriptDb } from './db';
+import { type ScriptDb, getScriptDb } from './db';
 
-export async function seedAdmin() {
-  const { db, client } = getScriptDb();
+export async function seedAdmin(context?: ScriptDb) {
+  const ownContext = !context ? await getScriptDb() : null;
+  const db = context?.db || ownContext!.db;
 
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@siwaday.tapinkab.go.id';
@@ -81,7 +82,9 @@ export async function seedAdmin() {
 
     console.log(`✅ Super Admin seeded successfully: ${adminEmail}`);
   } finally {
-    await client.end();
+    if (ownContext) {
+      await ownContext.close();
+    }
   }
 }
 

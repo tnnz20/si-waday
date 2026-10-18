@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev build start lint lint-fix typecheck format format-check compose-up compose-down db-generate db-migrate db-push db-studio
+.PHONY: help install dev build start lint lint-fix typecheck format format-check compose-up compose-down db-generate db-migrate db-push db-studio db-seed db-seed-admin db-seed-representatives db-seed-moderators
 
 ENGINE ?= $(if $(engine),$(engine),podman)
 
@@ -22,6 +22,7 @@ help:
 	@echo "  db-migrate      Run Drizzle migrations (pass ssh=true for SSH tunnel)"
 	@echo "  db-push         Push Drizzle schema to database"
 	@echo "  db-studio       Launch Drizzle Studio"
+	@echo "  db-seed         Run all database seeders (pass ssh=true for SSH tunnel)"
 
 install:
 	npm install
@@ -69,13 +70,13 @@ db-studio:
 	npm run db:studio
 
 db-seed:
-	npm run db:seed
+	npm run db:seed $(if $(filter true,$(ssh)),-- --ssh)
 
 db-seed-admin:
-	npm run db:seed:admin
+	npm run db:seed:admin $(if $(filter true,$(ssh)),-- --ssh)
 
 db-seed-representatives:
-	npm run db:seed:representatives
+	npm run db:seed:representatives $(if $(filter true,$(ssh)),-- --ssh)
 
 db-seed-moderators:
-	npm run db:seed:moderators
+	npm run db:seed:moderators $(if $(filter true,$(ssh)),-- --ssh)

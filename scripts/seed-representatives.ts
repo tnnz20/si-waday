@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import { regions, userProfiles, users } from '../app/db/schema/schema';
 import { hashPassword } from '../app/lib/auth.server';
-import { getScriptDb } from './db';
+import { type ScriptDb, getScriptDb } from './db';
 
 const REGIONS_DATA = [
   {
@@ -39,57 +39,65 @@ const REGIONS_DATA = [
   },
 ];
 
+interface LegislatorMember {
+  name: string;
+  party: string;
+  dapilCode: string;
+  commission: string;
+  gender: 'male' | 'female';
+}
+
 // All 25 DPRD Tapin members
-const DPRD_TAPIN_MEMBERS = [
+const DPRD_TAPIN_MEMBERS: LegislatorMember[] = [
   // Dapil 1
   {
     name: 'H. Daritaniansyah',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Midpay Syahbani',
     party: 'PDI Perjuangan',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Hairuji',
     party: 'Partai Gerindra',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Rakhmat Hidayat',
     party: 'Partai NasDem',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Muhammad Baseri',
     party: 'Partai PKB',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Ismail',
     party: 'Partai Demokrat',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Rustan Nawawi',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-1',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
 
   // Dapil 2
@@ -98,70 +106,70 @@ const DPRD_TAPIN_MEMBERS = [
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Taufik Hidayat',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Rahman Nor Wahyudi',
     party: 'Partai Gerindra',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Misran',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: "M. Tegar Mi'radinata",
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Fatmawati',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'female' as const,
+    gender: 'female',
   },
   {
     name: 'Wahyu Nugroho Ranoro',
     party: 'PDI Perjuangan',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Mislan',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Yamar Hadi',
     party: 'Partai NasDem',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Rajudin Noor',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-2',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
 
   // Dapil 3
@@ -170,102 +178,102 @@ const DPRD_TAPIN_MEMBERS = [
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Gilang Firdaus Helmi',
     party: 'Partai PKS',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Yuspianor',
     party: 'PDI Perjuangan',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'M. Fajri Rahman',
     party: 'Partai Gerindra',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Herni Mustika',
     party: 'Partai PKB',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'female' as const,
+    gender: 'female',
   },
   {
     name: 'Ahmad Syarnobi',
     party: 'Partai PAN',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Ihwanudin',
     party: 'Partai PPP',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Robby Apriandie',
     party: 'Partai Demokrat',
     dapilCode: 'DAPIL-TAPIN-3',
     commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male' as const,
+    gender: 'male',
   },
 ];
 
 // DPR RI Representatives (Dapil Kalsel 1)
-const DPR_RI_MEMBERS = [
+const DPR_RI_MEMBERS: LegislatorMember[] = [
   {
     name: 'Bambang Heri Purnama',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi VI (Perdagangan & BUMN)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Sandi Fitrian Noor',
     party: 'Partai Golkar',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi IV (Pertanian & Kelautan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Rifqinizamy Karsayuda',
     party: 'Partai NasDem',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi II (Pemerintahan & Hukum)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Habib Aboe Bakar Al-Habsyi',
     party: 'Partai PKS',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi III (Hukum & Keamanan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'Muhammad Rano Alfath',
     party: 'Partai PKB',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi III (Hukum & Keamanan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
   {
     name: 'H. Endang Agustina',
     party: 'Partai PAN',
     dapilCode: 'DAPIL-KALSEL-1',
     commission: 'Komisi V (Infrastruktur & Perhubungan)',
-    gender: 'male' as const,
+    gender: 'male',
   },
 ];
 
@@ -277,8 +285,80 @@ function generateSlug(name: string): string {
     .replace(/\s+/g, '-');
 }
 
-export async function seedRepresentatives() {
-  const { db, client } = getScriptDb();
+async function seedLegislators(
+  db: ScriptDb['db'],
+  members: LegislatorMember[],
+  role: 'dprd' | 'dpr',
+  emailDomain: string,
+  regionIdMap: Map<string, string>,
+  defaultPasswordHash: string
+) {
+  for (const member of members) {
+    const slug = generateSlug(member.name);
+    const email = `${slug}@${emailDomain}`;
+    const regionId = regionIdMap.get(member.dapilCode);
+
+    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    let userId: string;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      await db
+        .update(users)
+        .set({ role, isActive: true, updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    } else {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email,
+          passwordHash: defaultPasswordHash,
+          role,
+          isActive: true,
+        })
+        .returning({ id: users.id });
+      userId = newUser.id;
+    }
+
+    const [existingProfile] = await db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, userId))
+      .limit(1);
+
+    if (existingProfile) {
+      await db
+        .update(userProfiles)
+        .set({
+          fullName: member.name,
+          slug,
+          gender: member.gender,
+          avatarUrl: null, // Default photo first
+          regionId,
+          party: member.party,
+          commission: member.commission,
+          updatedAt: new Date(),
+        })
+        .where(eq(userProfiles.id, existingProfile.id));
+    } else {
+      await db.insert(userProfiles).values({
+        userId,
+        fullName: member.name,
+        slug,
+        gender: member.gender,
+        avatarUrl: null, // Default photo first
+        regionId,
+        party: member.party,
+        commission: member.commission,
+      });
+    }
+  }
+}
+
+export async function seedRepresentatives(context?: ScriptDb) {
+  const ownContext = !context ? await getScriptDb() : null;
+  const db = context?.db || ownContext!.db;
 
   try {
     console.log('🏛️ Seeding Regions (Wilayah)...');
@@ -322,135 +402,24 @@ export async function seedRepresentatives() {
 
     // Seed DPRD members
     console.log('👥 Seeding DPRD Kabupaten Tapin members...');
-    for (const member of DPRD_TAPIN_MEMBERS) {
-      const slug = generateSlug(member.name);
-      const email = `${slug}@dprd.tapinkab.go.id`;
-      const regionId = regionIdMap.get(member.dapilCode);
-
-      const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-
-      let userId: string;
-
-      if (existingUser) {
-        userId = existingUser.id;
-        await db
-          .update(users)
-          .set({ role: 'dprd', isActive: true, updatedAt: new Date() })
-          .where(eq(users.id, userId));
-      } else {
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            email,
-            passwordHash: defaultPasswordHash,
-            role: 'dprd',
-            isActive: true,
-          })
-          .returning({ id: users.id });
-        userId = newUser.id;
-      }
-
-      const [existingProfile] = await db
-        .select()
-        .from(userProfiles)
-        .where(eq(userProfiles.userId, userId))
-        .limit(1);
-
-      if (existingProfile) {
-        await db
-          .update(userProfiles)
-          .set({
-            fullName: member.name,
-            slug,
-            gender: member.gender,
-            avatarUrl: null, // Default photo first
-            regionId,
-            party: member.party,
-            commission: member.commission,
-            updatedAt: new Date(),
-          })
-          .where(eq(userProfiles.id, existingProfile.id));
-      } else {
-        await db.insert(userProfiles).values({
-          userId,
-          fullName: member.name,
-          slug,
-          gender: member.gender,
-          avatarUrl: null, // Default photo first
-          regionId,
-          party: member.party,
-          commission: member.commission,
-        });
-      }
-    }
+    await seedLegislators(
+      db,
+      DPRD_TAPIN_MEMBERS,
+      'dprd',
+      'dprd.tapinkab.go.id',
+      regionIdMap,
+      defaultPasswordHash
+    );
     console.log(`✅ Seeded ${DPRD_TAPIN_MEMBERS.length} DPRD members.`);
 
     // Seed DPR RI members
     console.log('👥 Seeding DPR RI (Dapil Kalsel 1) members...');
-    for (const member of DPR_RI_MEMBERS) {
-      const slug = generateSlug(member.name);
-      const email = `${slug}@dpr.go.id`;
-      const regionId = regionIdMap.get(member.dapilCode);
-
-      const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-
-      let userId: string;
-
-      if (existingUser) {
-        userId = existingUser.id;
-        await db
-          .update(users)
-          .set({ role: 'dpr', isActive: true, updatedAt: new Date() })
-          .where(eq(users.id, userId));
-      } else {
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            email,
-            passwordHash: defaultPasswordHash,
-            role: 'dpr',
-            isActive: true,
-          })
-          .returning({ id: users.id });
-        userId = newUser.id;
-      }
-
-      const [existingProfile] = await db
-        .select()
-        .from(userProfiles)
-        .where(eq(userProfiles.userId, userId))
-        .limit(1);
-
-      if (existingProfile) {
-        await db
-          .update(userProfiles)
-          .set({
-            fullName: member.name,
-            slug,
-            gender: member.gender,
-            avatarUrl: null,
-            regionId,
-            party: member.party,
-            commission: member.commission,
-            updatedAt: new Date(),
-          })
-          .where(eq(userProfiles.id, existingProfile.id));
-      } else {
-        await db.insert(userProfiles).values({
-          userId,
-          fullName: member.name,
-          slug,
-          gender: member.gender,
-          avatarUrl: null,
-          regionId,
-          party: member.party,
-          commission: member.commission,
-        });
-      }
-    }
+    await seedLegislators(db, DPR_RI_MEMBERS, 'dpr', 'dpr.go.id', regionIdMap, defaultPasswordHash);
     console.log(`✅ Seeded ${DPR_RI_MEMBERS.length} DPR RI members.`);
   } finally {
-    await client.end();
+    if (ownContext) {
+      await ownContext.close();
+    }
   }
 }
 

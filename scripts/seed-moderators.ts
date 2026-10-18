@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import { regions, userProfiles, users } from '../app/db/schema/schema';
 import { hashPassword } from '../app/lib/auth.server';
-import { getScriptDb } from './db';
+import { type ScriptDb, getScriptDb } from './db';
 
 const MODERATORS_DATA = [
   {
@@ -28,8 +28,9 @@ const MODERATORS_DATA = [
   },
 ];
 
-export async function seedModerators() {
-  const { db, client } = getScriptDb();
+export async function seedModerators(context?: ScriptDb) {
+  const ownContext = !context ? await getScriptDb() : null;
+  const db = context?.db || ownContext!.db;
 
   try {
     console.log('🛡️ Seeding regional moderators...');
@@ -101,7 +102,9 @@ export async function seedModerators() {
     }
     console.log(`✅ Seeded ${MODERATORS_DATA.length} moderators.`);
   } finally {
-    await client.end();
+    if (ownContext) {
+      await ownContext.close();
+    }
   }
 }
 
