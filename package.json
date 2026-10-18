@@ -18,7 +18,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed:admin": "tsx scripts/seed-admin.ts",
+    "db:seed:representatives": "tsx scripts/seed-representatives.ts",
+    "db:seed:moderators": "tsx scripts/seed-moderators.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.20",
