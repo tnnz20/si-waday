@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Menu,
   Search,
+  ShieldCheck,
   Star,
 } from 'lucide-react';
 
@@ -68,6 +69,22 @@ const TAB_CONFIG: Record<
     accentColor: 'text-amber-500',
     badgeBg: 'border-amber-200 bg-amber-50 text-amber-600',
   },
+  'users-dewan': {
+    title: 'Kelola Anggota Dewan Perwakilan Rakyat',
+    subtitle: 'Direktori anggota DPRD Kabupaten Tapin dan perwakilan DPR RI Dapil Kalsel 1',
+    label: 'Kelola Dewan',
+    icon: Landmark,
+    accentColor: 'text-emerald-500',
+    badgeBg: 'border-emerald-200 bg-emerald-50 text-emerald-600',
+  },
+  'users-moderator': {
+    title: 'Kelola Petugas Moderator Regional',
+    subtitle: 'Daftar akun verifikator aspirasi dan aduan warga per daerah pemilihan (Dapil)',
+    label: 'Kelola Moderator',
+    icon: ShieldCheck,
+    accentColor: 'text-blue-500',
+    badgeBg: 'border-blue-200 bg-blue-50 text-blue-600',
+  },
 };
 
 export function AdminHeader({
@@ -78,6 +95,13 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const currentTabInfo = TAB_CONFIG[activeTab] || TAB_CONFIG.overview;
   const TabIcon = currentTabInfo.icon;
+
+  const searchPlaceholder =
+    activeTab === 'users-dewan'
+      ? 'Cari nama dewan, partai, dapil...'
+      : activeTab === 'users-moderator'
+        ? 'Cari nama moderator, email, dapil...'
+        : 'Cari ID tiket, nama, lokasi...';
 
   const handleExport = () => {
     toast.success('Mengekspor Laporan Rekapitulasi', {
@@ -141,7 +165,7 @@ export function AdminHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Cari ID tiket, nama, lokasi..."
+              placeholder={searchPlaceholder}
               className="border-warm-200 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-9 pl-10 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
             />
             {searchQuery ? (
