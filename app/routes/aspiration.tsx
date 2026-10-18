@@ -1,7 +1,10 @@
 import { useState } from 'react';
 
+import { and, eq, isNull } from 'drizzle-orm';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
+import { db } from '~/db/index.server';
+import { regions, userProfiles, users } from '~/db/schema/schema';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { ProposalStep } from '@/components/aspiration/proposal-step';
@@ -18,7 +21,7 @@ import type {
 
 import { AGENCIES, CATEGORIES } from '@/constants/aspirations';
 import { APP_NAME } from '@/constants/index';
-import { DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
+import { DAPIL_DISTRICTS_MAP, DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
 
 import { ArrowLeft, Check, IdCard, Landmark, Megaphone, Send } from 'lucide-react';
 
@@ -33,7 +36,55 @@ export const meta: Route.MetaFunction = () => [
   },
 ];
 
-export default function AspirationPage() {
+export async function loader() {
+  const dapilRows = await db
+    .select({
+      id: regions.code,
+      name: regions.name,
+      description: regions.description,
+    })
+    .from(regions)
+    .where(eq(regions.type, 'dapil_dprd'));
+
+  const reps = await db
+    .select({
+      id: userProfiles.id,
+      name: userProfiles.fullName,
+      party: userProfiles.party,
+      commission: userProfiles.commission,
+      photoUrl: userProfiles.avatarUrl,
+      dapilId: regions.code,
+      dapilName: regions.name,
+    })
+    .from(userProfiles)
+    .innerJoin(users, eq(users.id, userProfiles.userId))
+    .leftJoin(regions, eq(regions.id, userProfiles.regionId))
+    .where(and(eq(users.role, 'dprd'), isNull(users.deletedAt), isNull(userProfiles.deletedAt)));
+
+  const dapils = dapilRows.map((d) => ({
+    id: d.id,
+    name: d.name,
+    label: `${d.name} (${(DAPIL_DISTRICTS_MAP[d.id] || []).join(', ')})`,
+    seats: '',
+    districts: DAPIL_DISTRICTS_MAP[d.id] || [],
+    description: d.description || '',
+  }));
+
+  const representatives = reps.map((r) => ({
+    id: r.id,
+    name: r.name,
+    party: r.party || '',
+    dapilId: r.dapilId || 'DAPIL-TAPIN-1',
+    dapilName: r.dapilName || 'Dapil Tapin 1',
+    districts: DAPIL_DISTRICTS_MAP[r.dapilId || ''] || [],
+    commission: r.commission || '',
+    photoUrl: r.photoUrl || '',
+  }));
+
+  return { dapils, representatives };
+}
+
+export default function AspirationPage({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -363,6 +414,8 @@ export default function AspirationPage() {
             onBack={handleBackToIdentity}
             onSubmit={handleSubmitDapil}
             isSubmitting={isSubmitting}
+            representatives={loaderData.representatives}
+            dapils={loaderData.dapils}
           />
         ) : (
           <PublicComplaintStep

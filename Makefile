@@ -67,3 +67,15 @@ db-push:
 
 db-studio:
 	npm run db:studio
+
+db-seed:
+	npm run db:seed
+
+db-seed-admin:
+	npm run db:seed:admin
+
+db-seed-representatives:
+	npm run db:seed:representatives
+
+db-seed-moderators:
+	npm run db:seed:moderators

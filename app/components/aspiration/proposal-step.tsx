@@ -24,7 +24,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { UsulanFormData } from '@/types/aspiration';
 
 import {
-  ANGGOTA_DPRD_TAPIN,
   type AnggotaDprdTapin,
   DAPIL_TAPIN_LIST,
   DESA_KELURAHAN_TAPIN_MAP,
@@ -54,6 +53,8 @@ interface ProposalStepProps {
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
+  representatives?: AnggotaDprdTapin[];
+  dapils?: typeof DAPIL_TAPIN_LIST;
 }
 
 export function ProposalStep({
@@ -62,6 +63,8 @@ export function ProposalStep({
   onBack,
   onSubmit,
   isSubmitting,
+  representatives = [],
+  dapils = DAPIL_TAPIN_LIST,
 }: ProposalStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -77,24 +80,27 @@ export function ProposalStep({
   const photo3InputRef = useRef<HTMLInputElement | null>(null);
 
   // Available subdistricts based on selected Dapil, or all subdistricts
-  const activeDapil = DAPIL_TAPIN_LIST.find((d) => d.id === data.dapilId);
+  const activeDapil = dapils.find((d) => d.id === data.dapilId);
   const availableDistricts = activeDapil ? activeDapil.districts : KECAMATAN_TAPIN_LIST;
 
   // Available villages based on selected subdistrict
   const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
 
   // Filtered representatives
-  const filteredRepresentatives = ANGGOTA_DPRD_TAPIN.filter((rep) => {
+  const filteredRepresentatives = representatives.filter((rep) => {
     const matchesDapil = repFilterDapil === 'all' || rep.dapilId === repFilterDapil;
     const matchesSearch =
       rep.name.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
       rep.party.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
       rep.commission.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
-      rep.districts.some((d) => d.toLowerCase().includes(repSearchQuery.toLowerCase()));
+      Boolean(
+        rep.districts &&
+        rep.districts.some((d) => d.toLowerCase().includes(repSearchQuery.toLowerCase()))
+      );
     return matchesDapil && matchesSearch;
   });
 
-  const selectedRepresentative = ANGGOTA_DPRD_TAPIN.find((rep) => rep.id === data.representativeId);
+  const selectedRepresentative = representatives.find((rep) => rep.id === data.representativeId);
 
   const handleSelectRepresentative = (rep: AnggotaDprdTapin) => {
     // If current kecamatan is not in the new dapil, pick the first one
