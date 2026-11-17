@@ -1,7 +1,10 @@
 import { eq } from 'drizzle-orm';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { regions, userProfiles, users } from '../app/db/schema/schema';
 import { hashPassword } from '../app/lib/auth.server';
+import { parseCsv } from './csv';
 import { type ScriptDb, getScriptDb } from './db';
 
 const REGIONS_DATA = [
@@ -46,190 +49,6 @@ interface LegislatorMember {
   commission: string;
   gender: 'male' | 'female';
 }
-
-// All 25 DPRD Tapin members
-const DPRD_TAPIN_MEMBERS: LegislatorMember[] = [
-  // Dapil 1
-  {
-    name: 'H. Daritaniansyah',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Midpay Syahbani',
-    party: 'PDI Perjuangan',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Hairuji',
-    party: 'Partai Gerindra',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'Rakhmat Hidayat',
-    party: 'Partai NasDem',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Muhammad Baseri',
-    party: 'Partai PKB',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'Ismail',
-    party: 'Partai Demokrat',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Rustan Nawawi',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-1',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-
-  // Dapil 2
-  {
-    name: 'Achmad Riduansyah',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'Taufik Hidayat',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'Rahman Nor Wahyudi',
-    party: 'Partai Gerindra',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Misran',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: "M. Tegar Mi'radinata",
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'Fatmawati',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'female',
-  },
-  {
-    name: 'Wahyu Nugroho Ranoro',
-    party: 'PDI Perjuangan',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Mislan',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Yamar Hadi',
-    party: 'Partai NasDem',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Rajudin Noor',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-2',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-
-  // Dapil 3
-  {
-    name: 'Dedy Arief Budiman',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Gilang Firdaus Helmi',
-    party: 'Partai PKS',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'male',
-  },
-  {
-    name: 'Yuspianor',
-    party: 'PDI Perjuangan',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'M. Fajri Rahman',
-    party: 'Partai Gerindra',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'Herni Mustika',
-    party: 'Partai PKB',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi II (Ekonomi & Keuangan)',
-    gender: 'female',
-  },
-  {
-    name: 'Ahmad Syarnobi',
-    party: 'Partai PAN',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Ihwanudin',
-    party: 'Partai PPP',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi I (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'Robby Apriandie',
-    party: 'Partai Demokrat',
-    dapilCode: 'DAPIL-TAPIN-3',
-    commission: 'Komisi III (Pembangunan & Infrastruktur)',
-    gender: 'male',
-  },
-];
 
 // DPR RI Representatives (Dapil Kalsel 1)
 const DPR_RI_MEMBERS: LegislatorMember[] = [
@@ -402,15 +221,21 @@ export async function seedRepresentatives(context?: ScriptDb) {
 
     // Seed DPRD members
     console.log('👥 Seeding DPRD Kabupaten Tapin members...');
+    const dprdMembersCsvPath = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      'data/dprd-tapin-members.csv'
+    );
+    const dprdTapinMembers = parseCsv<LegislatorMember>(dprdMembersCsvPath);
+
     await seedLegislators(
       db,
-      DPRD_TAPIN_MEMBERS,
+      dprdTapinMembers,
       'dprd',
       'dprd.tapinkab.go.id',
       regionIdMap,
       defaultPasswordHash
     );
-    console.log(`✅ Seeded ${DPRD_TAPIN_MEMBERS.length} DPRD members.`);
+    console.log(`✅ Seeded ${dprdTapinMembers.length} DPRD members.`);
 
     // Seed DPR RI members
     console.log('👥 Seeding DPR RI (Dapil Kalsel 1) members...');
