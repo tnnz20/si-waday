@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { NavLink, useLocation } from 'react-router';
+
 import type { AuthUserPayload } from '@/lib/auth.server';
 import { cn } from '@/lib/utils';
 
@@ -8,25 +10,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { ChevronRight, Landmark, ShieldCheck, Users } from 'lucide-react';
 
-import { ADMIN_NAV_ITEMS, type AdminTab } from './types';
+import { ADMIN_NAV_ITEMS } from './types';
 
 interface AdminSidebarNavProps {
-  activeTab: AdminTab;
-  onTabChange: (tab: AdminTab) => void;
   currentUser?: AuthUserPayload;
   isCollapsed?: boolean;
   onCloseMobile?: () => void;
 }
 
 export function AdminSidebarNav({
-  activeTab,
-  onTabChange,
   currentUser,
   isCollapsed = false,
   onCloseMobile,
 }: AdminSidebarNavProps) {
+  const location = useLocation();
   const isAdmin = currentUser?.role === 'admin';
-  const isUserManagementActive = activeTab === 'users-dewan' || activeTab === 'users-moderator';
+  const isUserManagementActive = location.pathname.startsWith('/dashboard/users');
   const [userGroupExpanded, setUserGroupExpanded] = React.useState<boolean | null>(null);
   const isUserGroupOpen = userGroupExpanded ?? isUserManagementActive;
 
@@ -36,28 +35,30 @@ export function AdminSidebarNav({
     return (
       <nav className="space-y-2" aria-label="Navigasi Menu Utama">
         {visibleNavItems.map((item) => {
-          const isActive = activeTab === item.id;
           const Icon = item.icon;
 
           return (
-            <Tooltip key={item.id}>
+            <Tooltip key={item.to}>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => onTabChange(item.id)}
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-150',
-                    isActive
-                      ? 'bg-warm-200/80 text-accent-500 shadow-xs'
-                      : 'hover:bg-warm-100 hover:text-darknavy-900 text-slate-500'
-                  )}
+                <NavLink
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-150',
+                      isActive
+                        ? 'bg-warm-200/80 text-accent-500 shadow-xs'
+                        : 'hover:bg-warm-100 hover:text-darknavy-900 text-slate-500'
+                    )
+                  }
                   aria-label={item.label}
-                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon
-                    className={cn('h-4.5 w-4.5', isActive ? 'text-accent-500' : 'text-slate-500')}
-                  />
-                </button>
+                  {({ isActive }) => (
+                    <Icon
+                      className={cn('h-4.5 w-4.5', isActive ? 'text-accent-500' : 'text-slate-500')}
+                    />
+                  )}
+                </NavLink>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p className="text-xs font-bold">{item.label}</p>
@@ -70,9 +71,8 @@ export function AdminSidebarNav({
         {isAdmin ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => onTabChange('users-dewan')}
+              <NavLink
+                to="/dashboard/users/legislators"
                 className={cn(
                   'flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-150',
                   isUserManagementActive
@@ -87,7 +87,7 @@ export function AdminSidebarNav({
                     isUserManagementActive ? 'text-accent-500' : 'text-slate-500'
                   )}
                 />
-              </button>
+              </NavLink>
             </TooltipTrigger>
             <TooltipContent side="right">
               <p className="text-xs font-bold">Manajemen Pengguna (Dewan / Moderator)</p>
@@ -105,33 +105,35 @@ export function AdminSidebarNav({
       </p>
 
       {visibleNavItems.map((item) => {
-        const isActive = activeTab === item.id;
         const Icon = item.icon;
 
         return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => {
-              onTabChange(item.id);
-              if (onCloseMobile) onCloseMobile();
-            }}
-            className={cn(
-              'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-150',
-              isActive
-                ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
-                : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
-            )}
-            aria-current={isActive ? 'page' : undefined}
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            onClick={onCloseMobile}
+            className={({ isActive }) =>
+              cn(
+                'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-150',
+                isActive
+                  ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
+                  : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
+              )
+            }
           >
-            <Icon
-              className={cn(
-                'h-4.5 w-4.5 shrink-0 transition-colors',
-                isActive ? 'text-accent-500' : 'text-slate-400 group-hover:text-slate-600'
-              )}
-            />
-            <span className="truncate leading-normal">{item.label}</span>
-          </button>
+            {({ isActive }) => (
+              <>
+                <Icon
+                  className={cn(
+                    'h-4.5 w-4.5 shrink-0 transition-colors',
+                    isActive ? 'text-accent-500' : 'text-slate-400 group-hover:text-slate-600'
+                  )}
+                />
+                <span className="truncate leading-normal">{item.label}</span>
+              </>
+            )}
+          </NavLink>
         );
       })}
 
@@ -173,49 +175,55 @@ export function AdminSidebarNav({
           </CollapsibleTrigger>
 
           <CollapsibleContent className="space-y-1 pt-1 pr-1 pl-4">
-            <button
-              type="button"
-              onClick={() => {
-                onTabChange('users-dewan');
-                if (onCloseMobile) onCloseMobile();
-              }}
-              className={cn(
-                'group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all duration-150',
-                activeTab === 'users-dewan'
-                  ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
-                  : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
-              )}
+            <NavLink
+              to="/dashboard/users/legislators"
+              onClick={onCloseMobile}
+              className={({ isActive }) =>
+                cn(
+                  'group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all duration-150',
+                  isActive
+                    ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
+                    : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
+                )
+              }
             >
-              <Landmark
-                className={cn(
-                  'h-4 w-4 shrink-0',
-                  activeTab === 'users-dewan' ? 'text-accent-500' : 'text-slate-400'
-                )}
-              />
-              <span className="truncate">Anggota Dewan</span>
-            </button>
+              {({ isActive }) => (
+                <>
+                  <Landmark
+                    className={cn(
+                      'h-4 w-4 shrink-0',
+                      isActive ? 'text-accent-500' : 'text-slate-400'
+                    )}
+                  />
+                  <span className="truncate">Anggota Dewan</span>
+                </>
+              )}
+            </NavLink>
 
-            <button
-              type="button"
-              onClick={() => {
-                onTabChange('users-moderator');
-                if (onCloseMobile) onCloseMobile();
-              }}
-              className={cn(
-                'group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all duration-150',
-                activeTab === 'users-moderator'
-                  ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
-                  : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
-              )}
+            <NavLink
+              to="/dashboard/users/moderators"
+              onClick={onCloseMobile}
+              className={({ isActive }) =>
+                cn(
+                  'group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold transition-all duration-150',
+                  isActive
+                    ? 'bg-warm-200/80 text-darknavy-900 font-extrabold shadow-2xs'
+                    : 'hover:bg-warm-100/80 hover:text-darknavy-900 text-slate-600'
+                )
+              }
             >
-              <ShieldCheck
-                className={cn(
-                  'h-4 w-4 shrink-0',
-                  activeTab === 'users-moderator' ? 'text-accent-500' : 'text-slate-400'
-                )}
-              />
-              <span className="truncate">Moderator Regional</span>
-            </button>
+              {({ isActive }) => (
+                <>
+                  <ShieldCheck
+                    className={cn(
+                      'h-4 w-4 shrink-0',
+                      isActive ? 'text-accent-500' : 'text-slate-400'
+                    )}
+                  />
+                  <span className="truncate">Moderator Regional</span>
+                </>
+              )}
+            </NavLink>
           </CollapsibleContent>
         </Collapsible>
       ) : null}

@@ -22,13 +22,8 @@ import { LogOut } from 'lucide-react';
 import { AdminSidebarHeader } from './admin-sidebar/admin-sidebar-header';
 import { AdminSidebarNav } from './admin-sidebar/admin-sidebar-nav';
 import { AdminSidebarUserMenu } from './admin-sidebar/admin-sidebar-user-menu';
-import { type AdminTab } from './admin-sidebar/types';
-
-export type { AdminTab };
 
 export interface AdminSidebarProps {
-  activeTab: AdminTab;
-  onTabChange: (tab: AdminTab) => void;
   currentUser?: AuthUserPayload;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -38,8 +33,6 @@ export interface AdminSidebarProps {
 }
 
 export function AdminSidebar({
-  activeTab,
-  onTabChange,
   currentUser,
   isOpenMobile = false,
   onCloseMobile,
@@ -64,8 +57,6 @@ export function AdminSidebar({
           onSearchFocus={onSearchFocus}
         />
         <AdminSidebarNav
-          activeTab={activeTab}
-          onTabChange={onTabChange}
           currentUser={currentUser}
           isCollapsed={collapsed}
           onCloseMobile={onDrawerClose}

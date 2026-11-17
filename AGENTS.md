@@ -32,7 +32,8 @@
 │   ├── lib/                   # Utility helpers (cn(), logger.server.ts, etc.)
 │   ├── middleware/            # React Router 8 server middlewares (logger.server.ts, auth, etc.)
 │   ├── routes/                # Route modules (loaders, actions, page components)
-│   │   ├── dashboard/         # Dashboard routes (dashboard-admin.tsx)
+│   │   ├── auth/              # Auth routes (login.tsx, logout.tsx)
+│   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*)
 │   │   ├── home.tsx           # Landing page route
 │   │   └── aspiration.tsx     # Citizen aspiration wizard route
 │   ├── schema/                # Zod validation schemas
@@ -71,7 +72,14 @@
     route('aspiration', 'routes/aspiration.tsx'),
   ]),
   layout('layouts/admin-layout.tsx', [
-    route('dashboard', 'routes/dashboard/dashboard-admin.tsx'),
+    route('dashboard', 'routes/dashboard/overview.tsx'),
+    route('dashboard/complaints', 'routes/dashboard/complaints.tsx'),
+    route('dashboard/aspirations', 'routes/dashboard/aspirations.tsx'),
+    route('dashboard/satisfaction', 'routes/dashboard/satisfaction.tsx'),
+    prefix('dashboard/users', [
+      route('legislators', 'routes/dashboard/users-legislators.tsx'),
+      route('moderators', 'routes/dashboard/users-moderators.tsx'),
+    ]),
   ]),
   ```
 - Route files must live inside [`app/routes/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes/).

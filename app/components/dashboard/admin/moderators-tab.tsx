@@ -3,8 +3,9 @@ import * as React from 'react';
 import { getInitials } from '@/lib/utils';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
-import { Mail, Shield, ShieldCheck } from 'lucide-react';
+import { Mail, Search, Shield, ShieldCheck } from 'lucide-react';
 
 export interface ModeratorItem {
   id: string;
@@ -20,17 +21,20 @@ interface ModeratorsTabProps {
   searchQuery?: string;
 }
 
-export function ModeratorsTab({ moderators, searchQuery = '' }: ModeratorsTabProps) {
+export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
+  const [internalSearch, setInternalSearch] = React.useState('');
+  const effectiveSearch = searchQuery ?? internalSearch;
+
   const filtered = React.useMemo(() => {
     return moderators.filter((m) => {
-      const q = searchQuery.toLowerCase();
+      const q = effectiveSearch.toLowerCase();
       return (
         m.name.toLowerCase().includes(q) ||
         m.email.toLowerCase().includes(q) ||
         m.dapilName.toLowerCase().includes(q)
       );
     });
-  }, [moderators, searchQuery]);
+  }, [moderators, effectiveSearch]);
 
   return (
     <div className="animate-in fade-in space-y-6 duration-200 sm:space-y-8">
@@ -102,6 +106,17 @@ export function ModeratorsTab({ moderators, searchQuery = '' }: ModeratorsTabPro
                 Petugas verifikator yang bertugas memvalidasi usulan dan aduan di setiap daerah
                 pemilihan
               </CardDescription>
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Cari nama, email, dapil..."
+                value={effectiveSearch}
+                onChange={(e) => setInternalSearch(e.target.value)}
+                className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-9 w-full rounded-2xl py-1.5 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-xs"
+              />
             </div>
           </div>
         </CardHeader>

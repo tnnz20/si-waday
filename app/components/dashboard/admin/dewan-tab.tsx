@@ -4,8 +4,9 @@ import { getInitials } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
-import { Landmark, ShieldCheck, Users } from 'lucide-react';
+import { Landmark, Search, ShieldCheck, Users } from 'lucide-react';
 
 export interface LegislatorItem {
   id: string;
@@ -23,13 +24,15 @@ interface DewanTabProps {
   searchQuery?: string;
 }
 
-export function DewanTab({ legislators, searchQuery = '' }: DewanTabProps) {
+export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
+  const [internalSearch, setInternalSearch] = React.useState('');
+  const effectiveSearch = searchQuery ?? internalSearch;
   const [filterRole, setFilterRole] = React.useState<'all' | 'DPRD Tapin' | 'DPR RI'>('all');
 
   const filtered = React.useMemo(() => {
     return legislators.filter((item) => {
       const matchRole = filterRole === 'all' || item.role === filterRole;
-      const query = searchQuery.toLowerCase();
+      const query = effectiveSearch.toLowerCase();
       const matchSearch =
         item.name.toLowerCase().includes(query) ||
         item.party.toLowerCase().includes(query) ||
@@ -37,7 +40,7 @@ export function DewanTab({ legislators, searchQuery = '' }: DewanTabProps) {
         item.dapilName.toLowerCase().includes(query);
       return matchRole && matchSearch;
     });
-  }, [legislators, searchQuery, filterRole]);
+  }, [legislators, effectiveSearch, filterRole]);
 
   const countDprd = legislators.filter((l) => l.role === 'DPRD Tapin').length;
   const countDpr = legislators.filter((l) => l.role === 'DPR RI').length;
@@ -111,41 +114,54 @@ export function DewanTab({ legislators, searchQuery = '' }: DewanTabProps) {
               </CardDescription>
             </div>
 
-            {/* Filter Pills */}
-            <div className="border-warm-200 bg-warm-50 text-2xs inline-flex rounded-xl border p-1">
-              <button
-                type="button"
-                onClick={() => setFilterRole('all')}
-                className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
-                  filterRole === 'all'
-                    ? 'bg-darknavy-900 text-white shadow-xs'
-                    : 'hover:text-darknavy-900 text-slate-600'
-                }`}
-              >
-                Semua ({legislators.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterRole('DPRD Tapin')}
-                className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
-                  filterRole === 'DPRD Tapin'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'hover:text-darknavy-900 text-slate-600'
-                }`}
-              >
-                DPRD Tapin ({countDprd})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterRole('DPR RI')}
-                className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
-                  filterRole === 'DPR RI'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'hover:text-darknavy-900 text-slate-600'
-                }`}
-              >
-                DPR RI ({countDpr})
-              </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-full sm:w-60">
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Cari dewan, partai, dapil..."
+                  value={effectiveSearch}
+                  onChange={(e) => setInternalSearch(e.target.value)}
+                  className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-9 w-full rounded-2xl py-1.5 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-xs"
+                />
+              </div>
+
+              {/* Filter Pills */}
+              <div className="border-warm-200 bg-warm-50 text-2xs inline-flex rounded-xl border p-1">
+                <button
+                  type="button"
+                  onClick={() => setFilterRole('all')}
+                  className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
+                    filterRole === 'all'
+                      ? 'bg-darknavy-900 text-white shadow-xs'
+                      : 'hover:text-darknavy-900 text-slate-600'
+                  }`}
+                >
+                  Semua ({legislators.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterRole('DPRD Tapin')}
+                  className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
+                    filterRole === 'DPRD Tapin'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'hover:text-darknavy-900 text-slate-600'
+                  }`}
+                >
+                  DPRD Tapin ({countDprd})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterRole('DPR RI')}
+                  className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
+                    filterRole === 'DPR RI'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'hover:text-darknavy-900 text-slate-600'
+                  }`}
+                >
+                  DPR RI ({countDpr})
+                </button>
+              </div>
             </div>
           </div>
         </CardHeader>
