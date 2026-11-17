@@ -19,7 +19,7 @@ Wadah Aspirasi & Aduan Warga.
 .
 ├── app/
 │   ├── components/        # UI components & domain presentation widgets
-│   │   ├── admin/         # Admin dashboard widgets & tab panels
+│   │   ├── dashboard/     # Dashboard domain widgets (admin, etc.)
 │   │   ├── aspiration/    # Multi-step aspiration & complaint form wizard
 │   │   ├── home/          # Landing page sections (hero, feed, stats, faq, etc.)
 │   │   ├── layout/        # Persistent navigation chrome (navbar, footer, admin-sidebar)
@@ -34,7 +34,7 @@ Wadah Aspirasi & Aduan Warga.
 │   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout)
 │   ├── lib/               # Utility functions (logger, cn helper, etc.)
 │   ├── middleware/        # Server middlewares (request logger, auth, etc.)
-│   ├── routes/            # Route modules (home.tsx, aspiration.tsx, admin.tsx)
+│   ├── routes/            # Route modules (home, aspiration, dashboard/dashboard-admin)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables

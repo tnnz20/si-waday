@@ -4,12 +4,12 @@ import { useSearchParams } from 'react-router';
 
 import { cn } from '@/lib/utils';
 
-import { AdminHeader } from '@/components/admin/admin-header';
-import { AspirationsTab } from '@/components/admin/aspirations-tab';
-import { ComplaintsTab } from '@/components/admin/complaints-tab';
-import { OverviewTab } from '@/components/admin/overview-tab';
-import { SatisfactionTab } from '@/components/admin/satisfaction-tab';
-import { TicketDetailModal } from '@/components/admin/ticket-detail-modal';
+import { AdminHeader } from '@/components/dashboard/admin/admin-header';
+import { AspirationsTab } from '@/components/dashboard/admin/aspirations-tab';
+import { ComplaintsTab } from '@/components/dashboard/admin/complaints-tab';
+import { OverviewTab } from '@/components/dashboard/admin/overview-tab';
+import { SatisfactionTab } from '@/components/dashboard/admin/satisfaction-tab';
+import { TicketDetailModal } from '@/components/dashboard/admin/ticket-detail-modal';
 import { AdminSidebar, type AdminTab } from '@/components/layout/admin-sidebar';
 
 import {
@@ -18,7 +18,7 @@ import {
   MOCK_ADMIN_TICKETS,
 } from '@/constants/admin-data';
 
-import type { Route } from './+types/admin';
+import type { Route } from './+types/dashboard-admin';
 
 export const meta: Route.MetaFunction = () => [
   { title: 'Dashboard Admin • SI-WADAY Kabupaten Tapin' },

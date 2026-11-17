@@ -15,7 +15,7 @@
 .
 ├── app/
 │   ├── components/
-│   │   ├── admin/             # Admin dashboard widgets & tab views (overview, aspirations, complaints, etc.)
+│   │   ├── dashboard/admin/   # Admin dashboard widgets & tab views (overview, aspirations, complaints, etc.)
 │   │   ├── aspiration/        # Aspiration & complaint multi-step form wizard (identity, proposal, map-picker, modals)
 │   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, etc.)
 │   │   ├── layout/            # Structural layout blocks (navbar, footer, admin-sidebar, breadcrumbs)
@@ -60,7 +60,7 @@
     route('aspiration', 'routes/aspiration.tsx'),
   ]),
   layout('layouts/admin-layout.tsx', [
-    route('dashboard', 'routes/admin.tsx'),
+    route('dashboard', 'routes/dashboard/dashboard-admin.tsx'),
   ]),
   ```
 - Route files must live inside [`app/routes/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes/).
@@ -94,7 +94,7 @@
   - Standard shadcn primitives use `React.forwardRef` and are excluded from React 19 ref refactorings.
   - When adapting styling, use the `cn()` utility (`app/lib/utils.ts`) at the component call site or configure custom primitive defaults.
   - **Never re-invent custom primitives** (like manual modal backdrops, dropdowns, or accordions) when a shadcn component exists in `app/components/ui/`.
-- **`app/components/<domain>/`**: Domain/page presentation widgets belong in domain folders (e.g., `app/components/home/`, `app/components/aspiration/`, `app/components/admin/`).
+- **`app/components/<domain>/`**: Domain/page presentation widgets belong in domain folders (e.g., `app/components/home/`, `app/components/aspiration/`, `app/components/dashboard/admin/`).
 - **`app/components/shared/`**: Reusable custom components utilized by two or more distinct features/routes.
 - **`app/types/` & `app/constants/`**: Keep data structures and static mock datasets centralized in dedicated files (e.g., `app/types/aspiration.ts`, `app/constants/tapin.ts`, `app/constants/admin-data.ts`). Do not mix static content inside route component files.
 
