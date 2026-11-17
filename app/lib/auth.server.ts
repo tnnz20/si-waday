@@ -1,6 +1,8 @@
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { SignJWT, jwtVerify } from 'jose';
 import crypto from 'node:crypto';
-import type { UserRole } from '~/db/schema/schema';
+import { db } from '~/db/index.server';
+import { type UserRole, userProfiles, users } from '~/db/schema/schema';
 
 /**
  * Hashes a plaintext password using Node's native scrypt.
@@ -129,4 +131,72 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: strin
   } catch {
     return null;
   }
+}
+
+export type AuthenticateUserResult =
+  { success: true; user: AuthUserPayload } | { success: false; error: string };
+
+/**
+ * Authenticates a user by identifier (email or slug) and plaintext password against PostgreSQL.
+ */
+export async function authenticateUser(
+  identifier: string,
+  password: string
+): Promise<AuthenticateUserResult> {
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      passwordHash: users.passwordHash,
+      role: users.role,
+      isActive: users.isActive,
+      deletedAt: users.deletedAt,
+      fullName: userProfiles.fullName,
+      avatarUrl: userProfiles.avatarUrl,
+      regionId: userProfiles.regionId,
+      slug: userProfiles.slug,
+    })
+    .from(users)
+    .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+    .where(
+      and(
+        or(
+          eq(users.email, identifier.toLowerCase()),
+          eq(userProfiles.slug, identifier.toLowerCase())
+        ),
+        isNull(users.deletedAt)
+      )
+    )
+    .limit(1);
+
+  if (!user) {
+    return { success: false, error: 'Email/username atau kata sandi tidak sesuai.' };
+  }
+
+  if (!user.isActive) {
+    return {
+      success: false,
+      error: 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+    };
+  }
+
+  const isPasswordValid = verifyPassword(password, user.passwordHash);
+  if (!isPasswordValid) {
+    return { success: false, error: 'Email/username atau kata sandi tidak sesuai.' };
+  }
+
+  // Update lastLoginAt
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
+
+  return {
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullName: user.fullName || user.email,
+      avatarUrl: user.avatarUrl,
+      regionId: user.regionId,
+    },
+  };
 }
