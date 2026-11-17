@@ -1,42 +1,35 @@
-import * as React from 'react';
+import type * as React from 'react';
 
-import { toast } from 'sonner';
+import { useLocation } from 'react-router';
 
-import type { AdminTab } from '@/components/layout/admin-sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 import {
   Building2,
   ChevronRight,
-  Download,
   Landmark,
   LayoutDashboard,
   Menu,
-  Search,
+  ShieldCheck,
   Star,
 } from 'lucide-react';
 
 interface AdminHeaderProps {
-  activeTab: AdminTab;
-  onOpenMobileMenu: () => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
+  onOpenMobileMenu?: () => void;
 }
 
-const TAB_CONFIG: Record<
-  AdminTab,
-  {
-    title: string;
-    subtitle: string;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    accentColor: string;
-    badgeBg: string;
-  }
-> = {
-  overview: {
+interface RouteHeaderMeta {
+  title: string;
+  subtitle: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accentColor: string;
+  badgeBg: string;
+}
+
+const ROUTE_HEADER_MAP: Record<string, RouteHeaderMeta> = {
+  '/dashboard': {
     title: 'Ringkasan Kinerja & KPI DPRD',
     subtitle: 'Analisis real-time pengaduan dan pokok pikiran DPRD Kabupaten Tapin',
     label: 'Overview',
@@ -44,7 +37,7 @@ const TAB_CONFIG: Record<
     accentColor: 'text-accent-500',
     badgeBg: 'border-accent-200 bg-accent-50 text-accent-600',
   },
-  aduan: {
+  '/dashboard/complaints': {
     title: 'Manajemen Aduan Masyarakat',
     subtitle: 'Verifikasi keluhan fasilitas dan aspirasi pengawasan komisi DPRD Tapin',
     label: 'Aduan Warga',
@@ -52,7 +45,7 @@ const TAB_CONFIG: Record<
     accentColor: 'text-accent-500',
     badgeBg: 'border-amber-200 bg-amber-50 text-amber-600',
   },
-  aspirasi: {
+  '/dashboard/aspirations': {
     title: 'Manajemen Aspirasi Dapil DPRD',
     subtitle: 'Penyerapan pokok-pokok pikiran (Pokir) 25 anggota dewan terpilih',
     label: 'Aspirasi Dapil',
@@ -60,7 +53,7 @@ const TAB_CONFIG: Record<
     accentColor: 'text-emerald-500',
     badgeBg: 'border-emerald-200 bg-emerald-50 text-emerald-600',
   },
-  kepuasan: {
+  '/dashboard/satisfaction': {
     title: 'Survei Kepuasan Aplikasi (CSAT)',
     subtitle: 'Ulasan kemudahan, kecepatan, dan evaluasi pengguna SI-WADAY',
     label: 'Survei CSAT',
@@ -68,22 +61,28 @@ const TAB_CONFIG: Record<
     accentColor: 'text-amber-500',
     badgeBg: 'border-amber-200 bg-amber-50 text-amber-600',
   },
+  '/dashboard/users/legislators': {
+    title: 'Kelola Anggota Dewan Perwakilan Rakyat',
+    subtitle: 'Direktori anggota DPRD Kabupaten Tapin dan perwakilan DPR RI Dapil Kalsel 1',
+    label: 'Kelola Dewan',
+    icon: Landmark,
+    accentColor: 'text-emerald-500',
+    badgeBg: 'border-emerald-200 bg-emerald-50 text-emerald-600',
+  },
+  '/dashboard/users/moderators': {
+    title: 'Kelola Petugas Moderator Regional',
+    subtitle: 'Daftar akun verifikator aspirasi dan aduan warga per daerah pemilihan (Dapil)',
+    label: 'Kelola Moderator',
+    icon: ShieldCheck,
+    accentColor: 'text-blue-500',
+    badgeBg: 'border-blue-200 bg-blue-50 text-blue-600',
+  },
 };
 
-export function AdminHeader({
-  activeTab,
-  onOpenMobileMenu,
-  searchQuery,
-  onSearchChange,
-}: AdminHeaderProps) {
-  const currentTabInfo = TAB_CONFIG[activeTab] || TAB_CONFIG.overview;
+export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
+  const location = useLocation();
+  const currentTabInfo = ROUTE_HEADER_MAP[location.pathname] || ROUTE_HEADER_MAP['/dashboard'];
   const TabIcon = currentTabInfo.icon;
-
-  const handleExport = () => {
-    toast.success('Mengekspor Laporan Rekapitulasi', {
-      description: `Format CSV/Excel untuk data ${currentTabInfo.title} sedang diunduh.`,
-    });
-  };
 
   return (
     <header className="border-warm-200/90 rounded-3xl border bg-white shadow-xs transition-all">
@@ -91,16 +90,18 @@ export function AdminHeader({
         {/* Left Side: Bento Icon, Breadcrumb, Title & Subtitle */}
         <div className="flex items-center gap-3.5">
           {/* Mobile hamburger menu button */}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onOpenMobileMenu}
-            className="border-warm-200 text-darknavy-900 hover:bg-warm-100 h-10 w-10 shrink-0 rounded-2xl lg:hidden"
-            aria-label="Buka Menu Sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {onOpenMobileMenu ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={onOpenMobileMenu}
+              className="border-warm-200 text-darknavy-900 hover:bg-warm-100 h-10 w-10 shrink-0 rounded-2xl lg:hidden"
+              aria-label="Buka Menu Sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          ) : null}
 
           {/* Squircle Bento Icon */}
           <div className="border-warm-200/80 bg-warm-50/80 hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-2xs sm:flex">
@@ -130,45 +131,6 @@ export function AdminHeader({
               {currentTabInfo.subtitle}
             </p>
           </div>
-        </div>
-
-        {/* Right Side: Quick Search, Export Button, and Notification Bell */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          {/* Quick Search using shadcn Input with comfortable height and font size */}
-          <div className="relative flex-1 sm:w-64 md:w-72">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Cari ID tiket, nama, lokasi..."
-              className="border-warm-200 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-9 pl-10 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="text-2xs absolute top-1/2 right-3 -translate-y-1/2 font-bold text-slate-400 hover:text-slate-600"
-              >
-                ×
-              </button>
-            ) : (
-              <kbd className="border-warm-200 text-2xs pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 rounded border bg-white px-1.5 py-0.5 font-mono text-slate-400">
-                /
-              </kbd>
-            )}
-          </div>
-
-          {/* Export Action Button */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleExport}
-            className="border-warm-200 text-darknavy-900 hover:bg-warm-100 hover:border-warm-300 hidden h-10 items-center gap-2 rounded-2xl px-4 text-xs font-bold shadow-2xs sm:flex sm:text-sm"
-          >
-            <Download className="text-accent-500 h-4 w-4" />
-            <span>Ekspor CSV</span>
-          </Button>
         </div>
       </div>
     </header>

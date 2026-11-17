@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -14,15 +15,17 @@ import {
 import { ADMIN_STATUS_META, type AdminTicketItem } from '@/constants/admin-data';
 import { DAPIL_TAPIN_LIST } from '@/constants/tapin';
 
-import { Eye, Filter, Landmark } from 'lucide-react';
+import { Eye, Filter, Landmark, Search } from 'lucide-react';
 
 interface AspirationsTabProps {
   tickets: AdminTicketItem[];
   onSelectTicket: (ticket: AdminTicketItem) => void;
-  searchQuery: string;
+  searchQuery?: string;
 }
 
 export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: AspirationsTabProps) {
+  const [internalSearch, setInternalSearch] = React.useState('');
+  const effectiveSearch = searchQuery ?? internalSearch;
   const [dapilFilter, setDapilFilter] = React.useState<string>('all');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
 
@@ -33,8 +36,8 @@ export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: Aspirat
   const filteredTickets = React.useMemo(() => {
     return aspirationTickets.filter((item) => {
       // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (effectiveSearch.trim()) {
+        const q = effectiveSearch.toLowerCase();
         const matchTitle = item.title.toLowerCase().includes(q);
         const matchId = item.id.toLowerCase().includes(q);
         const matchReporter = item.reporter.name.toLowerCase().includes(q);
@@ -58,7 +61,7 @@ export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: Aspirat
 
       return true;
     });
-  }, [aspirationTickets, searchQuery, dapilFilter, statusFilter]);
+  }, [aspirationTickets, effectiveSearch, dapilFilter, statusFilter]);
 
   return (
     <div className="space-y-5">
@@ -78,6 +81,18 @@ export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: Aspirat
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Search Input */}
+              <div className="relative w-full sm:w-64">
+                <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Cari pokok pikiran, dewan, dapil..."
+                  value={effectiveSearch}
+                  onChange={(e) => setInternalSearch(e.target.value)}
+                  className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-10 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
+                />
+              </div>
+
               <div className="flex items-center gap-1.5 text-slate-400">
                 <Filter className="h-4 w-4" />
                 <span className="text-xs font-bold tracking-wider uppercase">Filter:</span>

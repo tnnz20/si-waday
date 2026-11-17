@@ -24,7 +24,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ['app/routes/**/*.{ts,tsx}', 'app/root.tsx', 'app/components/ui/**/*.{ts,tsx}'],
+    files: [
+      'app/routes/**/*.{ts,tsx}',
+      'app/layouts/**/*.{ts,tsx}',
+      'app/root.tsx',
+      'app/components/ui/**/*.{ts,tsx}',
+    ],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

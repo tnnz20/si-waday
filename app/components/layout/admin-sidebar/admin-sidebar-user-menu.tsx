@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
+import type { AuthUserPayload } from '@/lib/auth.server';
+import { cn, getInitials } from '@/lib/utils';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,11 +11,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ChevronRight, ChevronsUpDown, LogOut, Sparkles, User } from 'lucide-react';
 
 interface AdminSidebarUserMenuProps {
+  currentUser?: AuthUserPayload;
   isCollapsed?: boolean;
+  onOpenLogoutDialog: () => void;
 }
 
-export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMenuProps) {
-  const navigate = useNavigate();
+export function AdminSidebarUserMenu({
+  currentUser,
+  isCollapsed = false,
+  onOpenLogoutDialog,
+}: AdminSidebarUserMenuProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const userMenuRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -40,19 +45,42 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
     };
   }, [userMenuOpen]);
 
+  const userName = currentUser?.fullName || 'Administrator Utama';
+  const userEmail = currentUser?.email || 'admin@siwaday.tapinkab.go.id';
+  const userRole = currentUser?.role || 'admin';
+  const initials = getInitials(userName);
+
+  const userRoleLabel =
+    userRole === 'admin'
+      ? 'Administrator Utama'
+      : userRole === 'moderator'
+        ? 'Moderator Regional'
+        : userRole === 'dprd'
+          ? 'Anggota DPRD Tapin'
+          : userRole === 'dpr'
+            ? 'Anggota DPR RI'
+            : 'Pengguna';
+
   if (isCollapsed) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Avatar className="border-warm-200 h-9 w-9 cursor-pointer rounded-xl border shadow-xs transition-all hover:ring-2 hover:ring-amber-500/30">
-            <AvatarFallback className="from-accent-500 flex h-full w-full items-center justify-center rounded-xl bg-linear-to-tr to-amber-500 text-xs font-extrabold text-white">
-              AD
-            </AvatarFallback>
-          </Avatar>
+          <button
+            type="button"
+            onClick={onOpenLogoutDialog}
+            className="cursor-pointer"
+            aria-label="Profil & Keluar"
+          >
+            <Avatar className="border-warm-200 h-9 w-9 rounded-xl border shadow-xs transition-all hover:ring-2 hover:ring-amber-500/30">
+              <AvatarFallback className="from-accent-500 flex h-full w-full items-center justify-center rounded-xl bg-linear-to-tr to-amber-500 text-xs font-extrabold text-white">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
         </TooltipTrigger>
         <TooltipContent side="right">
-          <p className="text-xs font-bold">Administrator Utama</p>
-          <p className="text-2xs text-slate-400">admin.setwan@tapinkab.go.id</p>
+          <p className="text-xs font-bold">{userName}</p>
+          <p className="text-2xs text-slate-400">Klik untuk keluar</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -68,7 +96,7 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
             className="hover:bg-warm-100/70 flex cursor-pointer items-center justify-between rounded-xl p-2 transition-colors"
             onClick={() => {
               toast.info('Profil Pengguna', {
-                description: 'Administrator Utama • admin.setwan@tapinkab.go.id',
+                description: `${userRoleLabel} • ${userEmail}`,
               });
               setUserMenuOpen(false);
             }}
@@ -76,12 +104,12 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
             <div className="flex min-w-0 items-center gap-2.5">
               <Avatar className="border-warm-200 h-9 w-9 shrink-0 rounded-xl border shadow-2xs">
                 <AvatarFallback className="from-accent-500 flex h-full w-full items-center justify-center rounded-xl bg-linear-to-tr to-amber-500 text-xs font-extrabold text-white">
-                  AD
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="text-darknavy-900 truncate text-sm font-bold">Administrator Utama</p>
-                <p className="truncate text-xs text-slate-500">admin.setwan@tapinkab.go.id</p>
+                <p className="text-darknavy-900 truncate text-sm font-bold">{userName}</p>
+                <p className="truncate text-xs text-slate-500">{userEmail}</p>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
@@ -109,7 +137,7 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
             type="button"
             onClick={() => {
               toast.info('Pengaturan Profil', {
-                description: 'Kelola informasi identitas & akun administrator.',
+                description: 'Kelola informasi identitas & akun pengguna.',
               });
               setUserMenuOpen(false);
             }}
@@ -125,11 +153,8 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
           <button
             type="button"
             onClick={() => {
-              toast.success('Berhasil keluar', {
-                description: 'Sesi administrator berhasil diakhiri.',
-              });
               setUserMenuOpen(false);
-              navigate('/');
+              onOpenLogoutDialog();
             }}
             className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
           >
@@ -148,21 +173,17 @@ export function AdminSidebarUserMenu({ isCollapsed = false }: AdminSidebarUserMe
           userMenuOpen ? 'ring-accent-500/30 bg-warm-200/90 ring-2' : ''
         )}
         aria-expanded={userMenuOpen}
-        aria-label="Menu Profil Administrator"
+        aria-label="Menu Profil Pengguna"
       >
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar className="border-warm-200 h-9 w-9 shrink-0 rounded-xl border shadow-2xs">
             <AvatarFallback className="from-accent-500 flex h-full w-full items-center justify-center rounded-xl bg-linear-to-tr to-amber-500 text-xs font-extrabold text-white">
-              AD
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="text-darknavy-900 truncate text-xs font-bold sm:text-sm">
-              Administrator Utama
-            </p>
-            <p className="text-2xs truncate text-slate-500 sm:text-xs">
-              admin.setwan@tapinkab.go.id
-            </p>
+            <p className="text-darknavy-900 truncate text-xs font-bold sm:text-sm">{userName}</p>
+            <p className="text-2xs truncate text-slate-500 sm:text-xs">{userRoleLabel}</p>
           </div>
         </div>
         <ChevronsUpDown className="group-hover:text-darknavy-900 h-4 w-4 shrink-0 text-slate-400 transition-colors" />

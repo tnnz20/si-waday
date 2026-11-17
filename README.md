@@ -35,7 +35,7 @@ Wadah Aspirasi & Aduan Warga.
 │   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout)
 │   ├── lib/               # Utility functions (logger, cn helper, auth, etc.)
 │   ├── middleware/        # Server middlewares (request logger, etc.)
-│   ├── routes/            # Route modules (home, aspiration, dashboard/dashboard-admin)
+│   ├── routes/            # Route modules (home, aspiration, auth/*, dashboard/*)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables

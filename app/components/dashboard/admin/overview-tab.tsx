@@ -1,6 +1,7 @@
 import * as React from 'react';
 
-import type { AdminTab } from '@/components/layout/admin-sidebar';
+import { Link } from 'react-router';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,10 +23,9 @@ import {
 interface OverviewTabProps {
   tickets: AdminTicketItem[];
   onSelectTicket: (ticket: AdminTicketItem) => void;
-  onNavigateTab: (tab: AdminTab) => void;
 }
 
-export function OverviewTab({ tickets, onSelectTicket, onNavigateTab }: OverviewTabProps) {
+export function OverviewTab({ tickets, onSelectTicket }: OverviewTabProps) {
   const recentTickets = tickets.slice(0, 5);
 
   return (
@@ -56,21 +56,23 @@ export function OverviewTab({ tickets, onSelectTicket, onNavigateTab }: Overview
 
             <div className="flex shrink-0 items-center gap-3">
               <Button
-                type="button"
-                onClick={() => onNavigateTab('aduan')}
+                asChild
                 className="coral-glow bg-accent-500 hover:bg-accent-600 rounded-full px-6 py-5.5 text-xs font-bold text-white shadow-lg sm:text-sm"
               >
-                <Megaphone className="mr-2 h-4 w-4" />
-                <span>Kelola Aduan ({ADMIN_KPI_DATA.totalComplaints})</span>
+                <Link to="/dashboard/complaints">
+                  <Megaphone className="mr-2 h-4 w-4" />
+                  <span>Kelola Aduan ({ADMIN_KPI_DATA.totalComplaints})</span>
+                </Link>
               </Button>
               <Button
-                type="button"
+                asChild
                 variant="outline"
-                onClick={() => onNavigateTab('aspirasi')}
                 className="border-darknavy-700 bg-darknavy-800 hover:bg-darknavy-700 rounded-full px-6 py-5.5 text-xs font-bold text-white shadow-sm sm:text-sm"
               >
-                <Landmark className="mr-2 h-4 w-4 text-emerald-400" />
-                <span>Pokir Dewan ({ADMIN_KPI_DATA.totalAspirations})</span>
+                <Link to="/dashboard/aspirations">
+                  <Landmark className="mr-2 h-4 w-4 text-emerald-400" />
+                  <span>Pokir Dewan ({ADMIN_KPI_DATA.totalAspirations})</span>
+                </Link>
               </Button>
             </div>
           </div>
@@ -201,14 +203,15 @@ export function OverviewTab({ tickets, onSelectTicket, onNavigateTab }: Overview
                 </CardDescription>
               </div>
               <Button
-                type="button"
+                asChild
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigateTab('aduan')}
                 className="text-accent-600 hover:text-accent-700 hover:bg-accent-50/60 flex items-center gap-1.5 text-xs font-bold"
               >
-                <span>Lihat Semua Data</span>
-                <ArrowUpRight className="h-4 w-4" />
+                <Link to="/dashboard/complaints">
+                  <span>Lihat Semua Data</span>
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
               </Button>
             </CardHeader>
 
