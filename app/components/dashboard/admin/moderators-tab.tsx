@@ -1,7 +1,8 @@
 import * as React from 'react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { getInitials } from '~/lib/utils';
+import { getInitials } from '@/lib/utils';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Mail, Shield, ShieldCheck } from 'lucide-react';
 

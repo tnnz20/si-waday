@@ -1,27 +1,30 @@
 import * as React from 'react';
 
+import { db } from '@/db/index.server';
+import { regions, userProfiles, users } from '@/db/schema/schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { useSearchParams } from 'react-router';
-import { AdminHeader } from '~/components/admin/admin-header';
-import { AspirationsTab } from '~/components/admin/aspirations-tab';
-import { ComplaintsTab } from '~/components/admin/complaints-tab';
-import { DewanTab, type LegislatorItem } from '~/components/admin/dewan-tab';
-import { type ModeratorItem, ModeratorsTab } from '~/components/admin/moderators-tab';
-import { OverviewTab } from '~/components/admin/overview-tab';
-import { SatisfactionTab } from '~/components/admin/satisfaction-tab';
-import { TicketDetailModal } from '~/components/admin/ticket-detail-modal';
-import { AdminSidebar, type AdminTab } from '~/components/layout/admin-sidebar';
+
+import { requireAuth } from '@/lib/session.server';
+import { cn } from '@/lib/utils';
+
+import { AdminHeader } from '@/components/dashboard/admin/admin-header';
+import { AspirationsTab } from '@/components/dashboard/admin/aspirations-tab';
+import { ComplaintsTab } from '@/components/dashboard/admin/complaints-tab';
+import { DewanTab, type LegislatorItem } from '@/components/dashboard/admin/dewan-tab';
+import { type ModeratorItem, ModeratorsTab } from '@/components/dashboard/admin/moderators-tab';
+import { OverviewTab } from '@/components/dashboard/admin/overview-tab';
+import { SatisfactionTab } from '@/components/dashboard/admin/satisfaction-tab';
+import { TicketDetailModal } from '@/components/dashboard/admin/ticket-detail-modal';
+import { AdminSidebar, type AdminTab } from '@/components/layout/admin-sidebar';
+
 import {
   type AdminTicketItem,
   type AdminTicketStatus,
   MOCK_ADMIN_TICKETS,
-} from '~/constants/admin-data';
-import { db } from '~/db/index.server';
-import { regions, userProfiles, users } from '~/db/schema/schema';
-import { requireAuth } from '~/lib/session.server';
-import { cn } from '~/lib/utils';
+} from '@/constants/admin-data';
 
-import type { Route } from './+types/admin';
+import type { Route } from './+types/dashboard-admin';
 
 export const meta: Route.MetaFunction = () => [
   { title: 'Dashboard Admin • SI-WADAY Kabupaten Tapin' },

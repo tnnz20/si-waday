@@ -1,8 +1,9 @@
 import * as React from 'react';
 
-import { Badge } from '~/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { getInitials } from '~/lib/utils';
+import { getInitials } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Landmark, ShieldCheck, Users } from 'lucide-react';
 
