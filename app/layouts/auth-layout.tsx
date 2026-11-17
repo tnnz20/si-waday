@@ -2,7 +2,7 @@ import { Link, Outlet } from 'react-router';
 
 import { Toaster } from '@/components/ui/sonner';
 
-import { ArrowLeft, Layers } from 'lucide-react';
+import { ArrowLeft, Megaphone } from 'lucide-react';
 
 export default function AuthLayout() {
   return (
@@ -11,19 +11,23 @@ export default function AuthLayout() {
       <header className="relative z-10 flex w-full items-center justify-between p-4 sm:px-8 sm:py-6">
         <Link
           to="/"
-          className="border-warm-200 text-darknavy-900 inline-flex items-center gap-2 rounded-xl border bg-white/80 px-3.5 py-2 text-xs font-bold shadow-xs backdrop-blur-sm transition-all hover:border-emerald-400 hover:bg-white sm:text-sm"
+          className="border-warm-200 text-darknavy-900 hover:border-accent-500 inline-flex items-center gap-2 rounded-xl border bg-white/80 px-3.5 py-2 text-xs font-bold shadow-xs backdrop-blur-sm transition-all hover:bg-white sm:text-sm"
         >
-          <ArrowLeft className="h-4 w-4 text-emerald-600" />
+          <ArrowLeft className="text-darknavy-900 h-4 w-4" />
           <span>Kembali ke Beranda</span>
         </Link>
 
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="bg-accent-500 shadow-accent-500/25 flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm transition-transform hover:scale-105">
-            <Layers className="h-5 w-5" />
+        {/* Brand Logo matching homepage */}
+        <Link to="/" className="group flex items-center gap-3">
+          <div className="bg-accent-500 shadow-accent-500/20 flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-md transition-transform group-hover:scale-105">
+            <Megaphone className="h-5 w-5" aria-hidden="true" />
           </div>
-          <span className="text-darknavy-900 font-extrabold tracking-tight sm:text-base">
-            SI-WADAY
-          </span>
+          <div>
+            <span className="text-darknavy-900 flex items-center gap-1.5 text-xl font-extrabold tracking-tight">
+              <span>Si</span>
+              <span className="text-accent-500">Waday</span>
+            </span>
+          </div>
         </Link>
       </header>
 
