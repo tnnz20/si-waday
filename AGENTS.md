@@ -111,9 +111,7 @@
 ### 3. Components Organization & shadcn/ui
 
 - **`app/components/ui/`**: Reserved exclusively for official shadcn/ui primitives (`Button`, `Dialog`, `DropdownMenu`, `Accordion`, `Sonner`, `Card`, `Badge`, `Switch`, `Select`, `Input`, `Textarea`, `Avatar`, `Tooltip`).
-  - **Official Component Documentation & Source Reference:**
-    - Full components catalog: [shadcn/ui Components](https://ui.shadcn.com/docs/components)
-    - Dropdown Menu: [shadcn/ui Dropdown Menu](https://ui.shadcn.com/docs/components/base/dropdown-menu)
+  - **Official Component Documentation & Source Reference:** [shadcn/ui Components](https://ui.shadcn.com/docs/components).
   - **Strict rule against custom primitives:** Never invent or build custom primitive components by yourself (e.g. manual dropdowns, floating menus, custom backdrops, or bespoke select boxes). Always refer to and install official shadcn/ui component specifications backed by `@radix-ui` primitives.
   - Standard shadcn primitives use `React.forwardRef` and are excluded from React 19 ref refactorings.
   - When adapting styling, use the `cn()` utility (`app/lib/utils.ts`) at the component call site or configure custom primitive defaults.
