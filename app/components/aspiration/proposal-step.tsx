@@ -24,7 +24,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { UsulanFormData } from '@/types/aspiration';
 
 import {
-  ANGGOTA_DPRD_TAPIN,
   type AnggotaDprdTapin,
   DAPIL_TAPIN_LIST,
   DESA_KELURAHAN_TAPIN_MAP,
@@ -48,12 +47,23 @@ import {
   ZoomIn,
 } from 'lucide-react';
 
+function getInitials(name: string): string {
+  const cleanName = name.replace(/^(H\.|Dr\.|Hj\.|Drs\.|Ir\.|M\.)\s*/gi, '').trim();
+  const parts = cleanName.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return cleanName.slice(0, 2).toUpperCase() || 'DW';
+}
+
 interface ProposalStepProps {
   data: UsulanFormData;
   onChange: (updates: Partial<UsulanFormData>) => void;
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
+  representatives?: AnggotaDprdTapin[];
+  dapils?: typeof DAPIL_TAPIN_LIST;
 }
 
 export function ProposalStep({
@@ -62,6 +72,8 @@ export function ProposalStep({
   onBack,
   onSubmit,
   isSubmitting,
+  representatives = [],
+  dapils = DAPIL_TAPIN_LIST,
 }: ProposalStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -77,24 +89,27 @@ export function ProposalStep({
   const photo3InputRef = useRef<HTMLInputElement | null>(null);
 
   // Available subdistricts based on selected Dapil, or all subdistricts
-  const activeDapil = DAPIL_TAPIN_LIST.find((d) => d.id === data.dapilId);
+  const activeDapil = dapils.find((d) => d.id === data.dapilId);
   const availableDistricts = activeDapil ? activeDapil.districts : KECAMATAN_TAPIN_LIST;
 
   // Available villages based on selected subdistrict
   const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
 
   // Filtered representatives
-  const filteredRepresentatives = ANGGOTA_DPRD_TAPIN.filter((rep) => {
+  const filteredRepresentatives = representatives.filter((rep) => {
     const matchesDapil = repFilterDapil === 'all' || rep.dapilId === repFilterDapil;
     const matchesSearch =
       rep.name.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
       rep.party.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
       rep.commission.toLowerCase().includes(repSearchQuery.toLowerCase()) ||
-      rep.districts.some((d) => d.toLowerCase().includes(repSearchQuery.toLowerCase()));
+      Boolean(
+        rep.districts &&
+        rep.districts.some((d) => d.toLowerCase().includes(repSearchQuery.toLowerCase()))
+      );
     return matchesDapil && matchesSearch;
   });
 
-  const selectedRepresentative = ANGGOTA_DPRD_TAPIN.find((rep) => rep.id === data.representativeId);
+  const selectedRepresentative = representatives.find((rep) => rep.id === data.representativeId);
 
   const handleSelectRepresentative = (rep: AnggotaDprdTapin) => {
     // If current kecamatan is not in the new dapil, pick the first one
@@ -313,11 +328,17 @@ export function ProposalStep({
                         title="Klik untuk perbesar foto profil anggota dewan"
                         className="group relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-emerald-500 bg-slate-100 shadow-md transition-all hover:ring-4 hover:ring-emerald-400/30 sm:h-28 sm:w-24"
                       >
-                        <img
-                          src={selectedRepresentative.photoUrl}
-                          alt={selectedRepresentative.name}
-                          className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                        />
+                        {selectedRepresentative.photoUrl ? (
+                          <img
+                            src={selectedRepresentative.photoUrl}
+                            alt={selectedRepresentative.name}
+                            className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-emerald-100 text-base font-extrabold text-emerald-800 sm:text-lg">
+                            {getInitials(selectedRepresentative.name)}
+                          </div>
+                        )}
                         <div className="from-darknavy-900/90 via-darknavy-900/50 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-1 text-center">
                           <span className="text-[10px] font-extrabold tracking-wider text-emerald-300 uppercase">
                             DPRD Tapin
@@ -406,7 +427,7 @@ export function ProposalStep({
                       </div>
 
                       {/* Dapil Tabs */}
-                      <div className="border-warm-200 bg-warm-50 text-2xs inline-flex rounded-lg border p-0.5">
+                      <div className="border-warm-200 bg-warm-50 text-2xs inline-flex flex-wrap rounded-lg border p-0.5">
                         <button
                           type="button"
                           onClick={() => setRepFilterDapil('all')}
@@ -416,41 +437,28 @@ export function ProposalStep({
                               : 'hover:text-darknavy-900 text-slate-600'
                           }`}
                         >
-                          Semua (25)
+                          Semua ({representatives.length})
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setRepFilterDapil('dapil-1')}
-                          className={`rounded-md px-2.5 py-1 font-bold transition-all ${
-                            repFilterDapil === 'dapil-1'
-                              ? 'bg-emerald-600 text-white'
-                              : 'hover:text-darknavy-900 text-slate-600'
-                          }`}
-                        >
-                          Dapil 1 (7)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRepFilterDapil('dapil-2')}
-                          className={`rounded-md px-2.5 py-1 font-bold transition-all ${
-                            repFilterDapil === 'dapil-2'
-                              ? 'bg-emerald-600 text-white'
-                              : 'hover:text-darknavy-900 text-slate-600'
-                          }`}
-                        >
-                          Dapil 2 (10)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRepFilterDapil('dapil-3')}
-                          className={`rounded-md px-2.5 py-1 font-bold transition-all ${
-                            repFilterDapil === 'dapil-3'
-                              ? 'bg-emerald-600 text-white'
-                              : 'hover:text-darknavy-900 text-slate-600'
-                          }`}
-                        >
-                          Dapil 3 (8)
-                        </button>
+                        {dapils.map((dapil) => {
+                          const count = representatives.filter(
+                            (r) => r.dapilId === dapil.id
+                          ).length;
+                          const isSelected = repFilterDapil === dapil.id;
+                          return (
+                            <button
+                              key={dapil.id}
+                              type="button"
+                              onClick={() => setRepFilterDapil(dapil.id)}
+                              className={`rounded-md px-2.5 py-1 font-bold transition-all ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'hover:text-darknavy-900 text-slate-600'
+                              }`}
+                            >
+                              {dapil.name.replace('Dapil Tapin ', 'Dapil ')} ({count})
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -505,12 +513,18 @@ export function ProposalStep({
                                 title="Klik untuk perbesar foto profil anggota dewan"
                                 className="border-warm-300 relative h-22 w-18 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 shadow-xs transition-colors group-hover:border-emerald-400 sm:h-24 sm:w-20"
                               >
-                                <img
-                                  src={rep.photoUrl}
-                                  alt={rep.name}
-                                  className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                                  loading="lazy"
-                                />
+                                {rep.photoUrl ? (
+                                  <img
+                                    src={rep.photoUrl}
+                                    alt={rep.name}
+                                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-emerald-100 text-sm font-extrabold text-emerald-800 sm:text-base">
+                                    {getInitials(rep.name)}
+                                  </div>
+                                )}
                                 <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-0.5 text-center">
                                   <span className="text-[8px] font-extrabold tracking-tight text-emerald-300 uppercase sm:text-[9px]">
                                     {rep.dapilName.replace('Dapil Tapin ', 'Dapil ')}
@@ -1157,11 +1171,17 @@ export function ProposalStep({
             <div className="flex flex-col items-center space-y-4 pt-2 text-center">
               {/* Foto Besar Wajah Dewan */}
               <div className="relative h-64 w-52 overflow-hidden rounded-2xl border-4 border-emerald-400 bg-slate-100 shadow-lg sm:h-72 sm:w-60">
-                <img
-                  src={previewRep.photoUrl}
-                  alt={previewRep.name}
-                  className="h-full w-full object-cover object-top"
-                />
+                {previewRep.photoUrl ? (
+                  <img
+                    src={previewRep.photoUrl}
+                    alt={previewRep.name}
+                    className="h-full w-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-emerald-100 text-3xl font-black text-emerald-800 sm:text-4xl">
+                    {getInitials(previewRep.name)}
+                  </div>
+                )}
                 <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t py-2 text-center">
                   <span className="text-xs font-black tracking-wider text-emerald-300 uppercase">
                     DPRD KABUPATEN TAPIN

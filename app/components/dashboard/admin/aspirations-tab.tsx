@@ -93,7 +93,7 @@ export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: Aspirat
                     <SelectItem value="all">Semua Dapil Tapin (1-3)</SelectItem>
                     {DAPIL_TAPIN_LIST.map((dapil) => (
                       <SelectItem key={dapil.id} value={dapil.id}>
-                        {dapil.name} ({dapil.seats} Kursi)
+                        {dapil.name} ({dapil.seats})
                       </SelectItem>
                     ))}
                   </SelectContent>

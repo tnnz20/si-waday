@@ -166,7 +166,7 @@ export const MOCK_ADMIN_TICKETS: AdminTicketItem[] = [
     categoryOrKamus: 'Perbaikan Rumah Tidak Layak Huni (RTLH)',
     targetDestination: 'H. Daritaniansyah',
     partyOrCommission: 'Partai Golkar • Komisi I (Pemerintahan & Hukum)',
-    dapilId: 'dapil-1',
+    dapilId: 'DAPIL-TAPIN-1',
     dapilName: 'Dapil Tapin 1 (Tapin Utara, Bungur, Lokpaikat, Piani)',
     description:
       'Pengusulan rehabilitasi atap bocor, dinding kalsiboard rapuh, dan lantai kayu lapuk untuk 2 unit rumah keluarga pra-sejahtera di Kelurahan Kupang agar layak huni dan aman saat musim hujan.',
@@ -265,7 +265,7 @@ export const MOCK_ADMIN_TICKETS: AdminTicketItem[] = [
     categoryOrKamus: 'Pembangunan Jalan Usaha Tani (JUT)',
     targetDestination: 'Achmad Riduansyah',
     partyOrCommission: 'Partai Golkar • Komisi II (Perekonomian & Pertanian)',
-    dapilId: 'dapil-2',
+    dapilId: 'DAPIL-TAPIN-2',
     dapilName: 'Dapil Tapin 2 (Tapin Selatan, Salam Babaris, Binuang, Hatungun)',
     description:
       'Pengerasan jalan usaha tani sepanjang 1.200 meter untuk mempermudah mobilisasi alsintan dan pengangkutan hasil panen padi sawah warga 3 kelompok tani binaan.',
@@ -363,7 +363,7 @@ export const MOCK_ADMIN_TICKETS: AdminTicketItem[] = [
     categoryOrKamus: 'Normalisasi Sungai & Pengendalian Banjir',
     targetDestination: 'Dedy Arief Budiman',
     partyOrCommission: 'Partai Golkar • Komisi III (Pembangunan & Infrastruktur)',
-    dapilId: 'dapil-3',
+    dapilId: 'DAPIL-TAPIN-3',
     dapilName: 'Dapil Tapin 3 (Candi Laras Utara, Candi Laras Selatan, Tapin Tengah, Bakarangan)',
     description:
       'Pengerukan pendangkalan endapan lumpur serta pembersihan tumbuhan eceng gondok tebal yang menghambat perahu nelayan dan memicu banjir genangan ke permukiman tepi sungai.',
@@ -465,7 +465,7 @@ export const MOCK_ADMIN_TICKETS: AdminTicketItem[] = [
     categoryOrKamus: 'Penerangan Jalan Umum (PJU) Pedesaan',
     targetDestination: 'H. Midpay Syahbani',
     partyOrCommission: 'Partai Golkar • Komisi III (Pembangunan)',
-    dapilId: 'dapil-1',
+    dapilId: 'DAPIL-TAPIN-1',
     dapilName: 'Dapil Tapin 1 (Tapin Utara, Bungur, Lokpaikat, Piani)',
     description:
       'Jalur penghubung antar desa sepanjang 2 kilometer gelap gulita saat malam, sering terjadi kecelakaan tunggal dan rawan tindak kejahatan jalanan.',

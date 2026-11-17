@@ -1,7 +1,10 @@
 import { useState } from 'react';
 
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
+import { db } from '~/db/index.server';
+import { regions, userProfiles, users } from '~/db/schema/schema';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { ProposalStep } from '@/components/aspiration/proposal-step';
@@ -18,7 +21,7 @@ import type {
 
 import { AGENCIES, CATEGORIES } from '@/constants/aspirations';
 import { APP_NAME } from '@/constants/index';
-import { DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
+import { DAPIL_DISTRICTS_MAP, DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
 
 import { ArrowLeft, Check, IdCard, Landmark, Megaphone, Send } from 'lucide-react';
 
@@ -33,7 +36,67 @@ export const meta: Route.MetaFunction = () => [
   },
 ];
 
-export default function AspirationPage() {
+export async function loader() {
+  const dapilRows = await db
+    .select({
+      id: regions.code,
+      name: regions.name,
+      description: regions.description,
+    })
+    .from(regions)
+    .where(eq(regions.type, 'dapil_dprd'))
+    .orderBy(asc(regions.code));
+
+  const reps = await db
+    .select({
+      id: userProfiles.id,
+      name: userProfiles.fullName,
+      party: userProfiles.party,
+      commission: userProfiles.commission,
+      photoUrl: userProfiles.avatarUrl,
+      dapilId: regions.code,
+      dapilName: regions.name,
+    })
+    .from(userProfiles)
+    .innerJoin(users, eq(users.id, userProfiles.userId))
+    .leftJoin(regions, eq(regions.id, userProfiles.regionId))
+    .where(
+      and(
+        eq(users.role, 'dprd'),
+        eq(users.isActive, true),
+        isNull(users.deletedAt),
+        isNull(userProfiles.deletedAt)
+      )
+    )
+    .orderBy(asc(userProfiles.fullName));
+
+  const dapils = dapilRows.map((d) => ({
+    id: d.id,
+    name: d.name,
+    label: `${d.name} (${(DAPIL_DISTRICTS_MAP[d.id] || []).join(', ')})`,
+    seats: '',
+    districts: DAPIL_DISTRICTS_MAP[d.id] || [],
+    description: d.description || '',
+  }));
+
+  const representatives = reps.map((r) => {
+    const dapilId = r.dapilId || 'DAPIL-TAPIN-1';
+    return {
+      id: r.id,
+      name: r.name,
+      party: r.party || '',
+      dapilId,
+      dapilName: r.dapilName || 'Dapil Tapin 1',
+      districts: DAPIL_DISTRICTS_MAP[dapilId] || [],
+      commission: r.commission || '',
+      photoUrl: r.photoUrl || '',
+    };
+  });
+
+  return { dapils, representatives };
+}
+
+export default function AspirationPage({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -57,21 +120,28 @@ export default function AspirationPage() {
     idCardPreviewUrl: '',
   });
 
-  // Step 2 (Dapil): Form Usulan Aspirasi Dapil DPRD
-  const [usulanData, setUsulanData] = useState<UsulanFormData>({
-    dapilId: 'dapil-1',
-    dapilName: 'Dapil Tapin 1',
-    representativeId: 'dewan-1',
-    representativeName: 'H. Daritaniansyah',
-    representativeParty: 'Partai Golkar',
+  // Step 2 (Dapil): Form Usulan Aspirasi Dapil DPRD (dynamically initialized from loaderData)
+  const initialRep = loaderData.representatives[0];
+  const initialDapil =
+    loaderData.dapils.find((d) => d.id === initialRep?.dapilId) || loaderData.dapils[0];
+  const initialKecamatan = initialDapil?.districts[0] || 'Tapin Utara';
+  const initialKelurahan =
+    DESA_KELURAHAN_TAPIN_MAP[initialKecamatan]?.[0] || 'Rantau Kiwa (Kelurahan)';
+
+  const [usulanData, setUsulanData] = useState<UsulanFormData>(() => ({
+    dapilId: initialDapil?.id || 'DAPIL-TAPIN-1',
+    dapilName: initialDapil?.name || 'Dapil Tapin 1',
+    representativeId: initialRep?.id || '',
+    representativeName: initialRep?.name || '',
+    representativeParty: initialRep?.party || '',
     kamusUsulan: 'Perbaikan Rumah Tidak Layak Huni (RTLH)',
     permasalahan: '',
     latitude: -2.9381,
     longitude: 115.1524,
     alamatLokasi: '',
     kabupaten: 'Kabupaten Tapin',
-    kecamatan: 'Tapin Utara',
-    kelurahan: DESA_KELURAHAN_TAPIN_MAP['Tapin Utara']?.[0] || 'Rantau Kiwa (Kelurahan)',
+    kecamatan: initialKecamatan,
+    kelurahan: initialKelurahan,
     proposalFileName: '',
     photo1PreviewUrl: '',
     photo1FileName: '',
@@ -82,7 +152,7 @@ export default function AspirationPage() {
     satisfactionRating: 5,
     satisfactionAspects: ['Kemudahan Formulir', 'Kecepatan Proses'],
     satisfactionFeedback: '',
-  });
+  }));
 
   // Step 2 (Masyarakat): Form Aduan Masyarakat ke DPRD Kabupaten Tapin
   const [complaintData, setComplaintData] = useState<PublicComplaintFormData>({
@@ -363,6 +433,8 @@ export default function AspirationPage() {
             onBack={handleBackToIdentity}
             onSubmit={handleSubmitDapil}
             isSubmitting={isSubmitting}
+            representatives={loaderData.representatives}
+            dapils={loaderData.dapils}
           />
         ) : (
           <PublicComplaintStep

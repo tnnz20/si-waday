@@ -19,10 +19,11 @@ Wadah Aspirasi & Aduan Warga.
 .
 ├── app/
 │   ├── components/        # UI components & domain presentation widgets
-│   │   ├── admin/         # Admin dashboard widgets & tab panels
+│   │   ├── dashboard/     # Dashboard domain widgets (admin overview, tabs, modal)
 │   │   ├── aspiration/    # Multi-step aspiration & complaint form wizard
 │   │   ├── home/          # Landing page sections (hero, feed, stats, faq, etc.)
 │   │   ├── layout/        # Persistent navigation chrome (navbar, footer, admin-sidebar)
+│   │   │   └── admin-sidebar/ # Modular sidebar subcomponents (header, nav, user-menu, types)
 │   │   ├── shared/        # Cross-route reusable components
 │   │   └── ui/            # shadcn/ui primitives (button, dialog, sonner, tooltip, etc.)
 │   ├── constants/         # App-wide constants & datasets (tapin.ts, admin-data.ts, etc.)
@@ -32,22 +33,29 @@ Wadah Aspirasi & Aduan Warga.
 │   │   └── index.server.ts# Drizzle DB client instance
 │   ├── hooks/             # Custom React hooks
 │   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout)
-│   ├── lib/               # Utility functions (logger, cn helper, etc.)
-│   ├── middleware/        # Server middlewares (request logger, auth, etc.)
-│   ├── routes/            # Route modules (home.tsx, aspiration.tsx, admin.tsx)
+│   ├── lib/               # Utility functions (logger, cn helper, auth, etc.)
+│   ├── middleware/        # Server middlewares (request logger, etc.)
+│   ├── routes/            # Route modules (home, aspiration, dashboard/dashboard-admin)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables
 │   ├── root.tsx           # Root layout & HTML shell
 │   └── routes.ts          # Route manifest configuration
 ├── public/                # Static public assets (icons, favicon, logos)
-├── scripts/               # Migration & SSH tunnel scripts
+├── scripts/               # Migration, seeding & utility scripts
+│   ├── data/              # Datasets for seeding (dprd-tapin-members.csv, moderators.csv)
+│   ├── csv.ts             # Native CSV parser utility
+│   ├── db.ts              # Database connection helper for standalone scripts
 │   ├── migrate.ts         # Migration runner (local & SSH)
+│   ├── seed.ts            # Master database seeder
+│   ├── seed-admin.ts      # Super admin seeder
+│   ├── seed-moderators.ts # Regional moderators seeder (CSV)
+│   ├── seed-representatives.ts # DPRD & DPR RI representatives seeder (CSV)
 │   └── tunnel.ts          # SSH port forwarder
 ├── compose.yaml           # Docker Compose (PostgreSQL 16 Alpine)
 ├── Dockerfile             # Multi-stage production container
 ├── drizzle.config.ts      # Drizzle ORM configuration
-├── Makefile               # Development command shortcuts
+├── Makefile                   # Developer task automation
 ├── package.json           # Dependencies and scripts
 └── README.md
 ```
@@ -74,7 +82,7 @@ Wadah Aspirasi & Aduan Warga.
 
 ## Prerequisites
 
-- **Node.js:** `v24.21.0` or newer
+- **Node.js:** `v24.0.0` or newer
 - **npm:** `v10` or newer
 - **Docker & Docker Compose:** For running PostgreSQL locally
 - **GNU Make:** Optional (for `make` shortcuts)
@@ -138,7 +146,20 @@ npm run db:migrate
 make db-migrate
 ```
 
-### 5. Start Development Server
+### 5. Seed Initial Data (Optional)
+
+Populate default administrative accounts, regional moderators, and legislative representatives (DPRD & DPR RI):
+
+```bash
+npm run db:seed
+# or using Makefile:
+make db-seed
+```
+
+> [!TIP]
+> You can also seed individual datasets via `make db-seed-admin`, `make db-seed-representatives`, or `make db-seed-moderators`.
+
+### 6. Start Development Server
 
 ```bash
 npm run dev
@@ -148,7 +169,7 @@ make dev
 
 Open your browser at **[http://localhost:5173](http://localhost:5173)**.
 
-### 6. Production Build & Run
+### 7. Production Build & Run
 
 To build and run in production mode:
 
@@ -282,27 +303,52 @@ make db-studio
 
 Opens Drizzle Studio at **[https://local.drizzle.studio](https://local.drizzle.studio)** connected to your local database.
 
+### 5. Database Seeding & Datasets
+
+Initial data (super admin, moderators, and legislative representatives) can be seeded into the database using TSX scripts that ingest datasets from CSV files:
+
+- **Master Seeder (All Tables):**
+  ```bash
+  npm run db:seed
+  # or using Makefile:
+  make db-seed
+  # or over remote SSH tunnel:
+  make db-seed ssh=true
+  ```
+- **Granular Seeders:**
+  ```bash
+  npm run db:seed:admin            # make db-seed-admin
+  npm run db:seed:representatives  # make db-seed-representatives
+  npm run db:seed:moderators      # make db-seed-moderators
+  ```
+
+Datasets are cleanly managed as CSV files inside [`scripts/data/`](scripts/data/) (`dprd-tapin-members.csv` and `moderators.csv`) and parsed at runtime via [`scripts/csv.ts`](scripts/csv.ts).
+
 ---
 
 ## Available Commands
 
-| Command                                         | Makefile                            | Description                                  |
-| :---------------------------------------------- | :---------------------------------- | :------------------------------------------- |
-| `npm run dev`                                   | `make dev`                          | Start development server on port 5173        |
-| `npm run build`                                 | `make build`                        | Build production client & server             |
-| `npm run start`                                 | `make start`                        | Run production server                        |
-| `npm run typecheck`                             | `make typecheck`                    | Run React Router typegen & TypeScript check  |
-| `npm run lint`                                  | `make lint`                         | Run ESLint checks                            |
-| `npm run lint:fix`                              | `make lint-fix`                     | Auto-fix ESLint issues                       |
-| `npm run format`                                | `make format`                       | Format code with Prettier                    |
-| `npm run format:check`                          | `make format-check`                 | Verify code formatting                       |
-| `podman compose up -d` / `docker compose up -d` | `make compose-up [engine=docker]`   | Start PostgreSQL container (default: podman) |
-| `podman compose down` / `docker compose down`   | `make compose-down [engine=docker]` | Stop PostgreSQL container (default: podman)  |
-| `npm run db:generate`                           | `make db-generate`                  | Generate Drizzle migration files             |
-| `npm run db:migrate`                            | `make db-migrate`                   | Apply migrations to local DB                 |
-| `npm run db:migrate -- --ssh`                   | `make db-migrate ssh=true`          | Apply migrations via SSH tunnel              |
-| `npm run db:push`                               | `make db-push`                      | Push schema directly without migration files |
-| `npm run db:studio`                             | `make db-studio`                    | Open Drizzle Studio UI                       |
+| Command                                         | Makefile                                  | Description                                  |
+| :---------------------------------------------- | :---------------------------------------- | :------------------------------------------- |
+| `npm run dev`                                   | `make dev`                                | Start development server on port 5173        |
+| `npm run build`                                 | `make build`                              | Build production client & server             |
+| `npm run start`                                 | `make start`                              | Run production server                        |
+| `npm run typecheck`                             | `make typecheck`                          | Run React Router typegen & TypeScript check  |
+| `npm run lint`                                  | `make lint`                               | Run ESLint checks                            |
+| `npm run lint:fix`                              | `make lint-fix`                           | Auto-fix ESLint issues                       |
+| `npm run format`                                | `make format`                             | Format code with Prettier                    |
+| `npm run format:check`                          | `make format-check`                       | Verify code formatting                       |
+| `podman compose up -d` / `docker compose up -d` | `make compose-up [engine=docker]`         | Start PostgreSQL container (default: podman) |
+| `podman compose down` / `docker compose down`   | `make compose-down [engine=docker]`       | Stop PostgreSQL container (default: podman)  |
+| `npm run db:generate`                           | `make db-generate`                        | Generate Drizzle migration files             |
+| `npm run db:migrate`                            | `make db-migrate`                         | Apply migrations to local DB                 |
+| `npm run db:migrate -- --ssh`                   | `make db-migrate ssh=true`                | Apply migrations via SSH tunnel              |
+| `npm run db:seed`                               | `make db-seed [ssh=true]`                 | Run full database seeding workflow           |
+| `npm run db:seed:admin`                         | `make db-seed-admin [ssh=true]`           | Seed Super Admin account from `.env`         |
+| `npm run db:seed:representatives`               | `make db-seed-representatives [ssh=true]` | Seed regions & legislators from CSV          |
+| `npm run db:seed:moderators`                    | `make db-seed-moderators [ssh=true]`      | Seed regional moderators from CSV            |
+| `npm run db:push`                               | `make db-push`                            | Push schema directly without migration files |
+| `npm run db:studio`                             | `make db-studio`                          | Open Drizzle Studio UI                       |
 
 ---
 
