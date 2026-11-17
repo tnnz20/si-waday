@@ -16,7 +16,9 @@ export default [
     route('dashboard/satisfaction', 'routes/dashboard/satisfaction.tsx'),
     ...prefix('dashboard/users', [
       route('legislators', 'routes/dashboard/users-legislators.tsx'),
+      route('legislators/:slug', 'routes/dashboard/users-legislators-detail.tsx'),
       route('moderators', 'routes/dashboard/users-moderators.tsx'),
+      route('moderators/:slug', 'routes/dashboard/users-moderators-detail.tsx'),
     ]),
   ]),
 ] satisfies RouteConfig;
