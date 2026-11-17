@@ -48,53 +48,8 @@ interface LegislatorMember {
   dapilCode: string;
   commission: string;
   gender: 'male' | 'female';
+  role?: 'dprd' | 'dpr';
 }
-
-// DPR RI Representatives (Dapil Kalsel 1)
-const DPR_RI_MEMBERS: LegislatorMember[] = [
-  {
-    name: 'Bambang Heri Purnama',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi VI (Perdagangan & BUMN)',
-    gender: 'male',
-  },
-  {
-    name: 'Sandi Fitrian Noor',
-    party: 'Partai Golkar',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi IV (Pertanian & Kelautan)',
-    gender: 'male',
-  },
-  {
-    name: 'Rifqinizamy Karsayuda',
-    party: 'Partai NasDem',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi II (Pemerintahan & Hukum)',
-    gender: 'male',
-  },
-  {
-    name: 'Habib Aboe Bakar Al-Habsyi',
-    party: 'Partai PKS',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi III (Hukum & Keamanan)',
-    gender: 'male',
-  },
-  {
-    name: 'Muhammad Rano Alfath',
-    party: 'Partai PKB',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi III (Hukum & Keamanan)',
-    gender: 'male',
-  },
-  {
-    name: 'H. Endang Agustina',
-    party: 'Partai PAN',
-    dapilCode: 'DAPIL-KALSEL-1',
-    commission: 'Komisi V (Infrastruktur & Perhubungan)',
-    gender: 'male',
-  },
-];
 
 function generateSlug(name: string): string {
   return name
@@ -219,28 +174,35 @@ export async function seedRepresentatives(context?: ScriptDb) {
     // Password for all seeded representatives
     const defaultPasswordHash = hashPassword('Dewan2026!');
 
-    // Seed DPRD members
-    console.log('👥 Seeding DPRD Kabupaten Tapin members...');
-    const dprdMembersCsvPath = path.resolve(
+    // Load all representatives (DPRD & DPR RI) from CSV
+    const csvPath = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
       'data/dprd-tapin-members.csv'
     );
-    const dprdTapinMembers = parseCsv<LegislatorMember>(dprdMembersCsvPath);
+    const allMembers = parseCsv<LegislatorMember>(csvPath);
+    const dprdMembers = allMembers.filter(
+      (m) => m.role === 'dprd' || m.dapilCode.startsWith('DAPIL-TAPIN')
+    );
+    const dprMembers = allMembers.filter(
+      (m) => m.role === 'dpr' || m.dapilCode === 'DAPIL-KALSEL-1'
+    );
 
+    // Seed DPRD members
+    console.log('👥 Seeding DPRD Kabupaten Tapin members...');
     await seedLegislators(
       db,
-      dprdTapinMembers,
+      dprdMembers,
       'dprd',
       'dprd.tapinkab.go.id',
       regionIdMap,
       defaultPasswordHash
     );
-    console.log(`✅ Seeded ${dprdTapinMembers.length} DPRD members.`);
+    console.log(`✅ Seeded ${dprdMembers.length} DPRD members.`);
 
     // Seed DPR RI members
     console.log('👥 Seeding DPR RI (Dapil Kalsel 1) members...');
-    await seedLegislators(db, DPR_RI_MEMBERS, 'dpr', 'dpr.go.id', regionIdMap, defaultPasswordHash);
-    console.log(`✅ Seeded ${DPR_RI_MEMBERS.length} DPR RI members.`);
+    await seedLegislators(db, dprMembers, 'dpr', 'dpr.go.id', regionIdMap, defaultPasswordHash);
+    console.log(`✅ Seeded ${dprMembers.length} DPR RI members.`);
   } finally {
     if (ownContext) {
       await ownContext.close();
