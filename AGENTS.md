@@ -19,6 +19,7 @@
 │   │   ├── aspiration/        # Aspiration & complaint multi-step form wizard (identity, proposal, map-picker, modals)
 │   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, etc.)
 │   │   ├── layout/            # Structural layout blocks (navbar, footer, admin-sidebar, breadcrumbs)
+│   │   │   └── admin-sidebar/ # Decomposed sidebar subcomponents (header, nav, user-menu, types)
 │   │   ├── shared/            # Reusable UI components shared across 2+ routes
 │   │   └── ui/                # shadcn/ui primitive components (button, dialog, sonner, input, avatar, tooltip, etc.)
 │   ├── constants/             # Static constants & datasets (aspirations.ts, faq.ts, navigation.ts, tapin.ts, admin-data.ts)
@@ -31,13 +32,23 @@
 │   ├── lib/                   # Utility helpers (cn(), logger.server.ts, etc.)
 │   ├── middleware/            # React Router 8 server middlewares (logger.server.ts, auth, etc.)
 │   ├── routes/                # Route modules (loaders, actions, page components)
+│   │   ├── dashboard/         # Dashboard routes (dashboard-admin.tsx)
+│   │   ├── home.tsx           # Landing page route
+│   │   └── aspiration.tsx     # Citizen aspiration wizard route
 │   ├── schema/                # Zod validation schemas
 │   ├── types/                 # Shared TypeScript interfaces & types (aspiration.ts, ui.ts)
 │   ├── app.css                # Tailwind CSS v4 imports, theme tokens & shadcn variables
 │   ├── root.tsx               # Root document layout, HTML shell, and global middleware
 │   └── routes.ts              # Route manifest & URL configuration
 ├── scripts/
+│   ├── data/                  # Source CSV datasets (dprd-tapin-members.csv, moderators.csv)
+│   ├── csv.ts                 # Native Node.js CSV parsing utility
+│   ├── db.ts                  # Database connection utility for standalone scripts
 │   ├── migrate.ts             # Programmatic migration runner (supports local & SSH tunnel)
+│   ├── seed.ts                # Master database seeder orchestrator
+│   ├── seed-admin.ts          # Super admin seeder (from .env)
+│   ├── seed-moderators.ts     # Regional moderators seeder (from CSV)
+│   ├── seed-representatives.ts# DPRD & DPR RI representatives seeder (from CSV)
 │   └── tunnel.ts              # SSH port forwarding utility (ssh2)
 ├── compose.yaml               # Container configuration for PostgreSQL
 ├── Dockerfile                 # Multi-stage production container
@@ -86,6 +97,7 @@
   - Examples: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), [`app/layouts/admin-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/admin-layout.tsx).
 - **`app/components/layout/` (Structural Layout Blocks)**:
   - Reserved for reusable visual layout blocks: `Navbar`, `Footer`, `AdminSidebar`, `Breadcrumbs`.
+  - Complex widgets decompose into subdirectories (e.g., `app/components/layout/admin-sidebar/`).
   - Consumed by route layouts across the application.
 
 ### 3. Components Organization & shadcn/ui
@@ -178,6 +190,10 @@
   - Local migration: `make db-migrate` (or `npm run db:migrate`)
   - Remote migration over SSH: `make db-migrate ssh=true` (or `npm run db:migrate -- --ssh`)
   - SSH tunnel credentials use `SSH_*` and `SSH_POSTGRES_*` variables in `.env`.
+- **Database Seeding & CSV Datasets**:
+  - Master seeder: `npm run db:seed` (`make db-seed`).
+  - Granular seeders: `npm run db:seed:admin`, `npm run db:seed:representatives`, `npm run db:seed:moderators` (all support `ssh=true`).
+  - Source data for representatives and moderators are stored as CSV files in [`scripts/data/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/data/) and parsed at runtime via [`scripts/csv.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/csv.ts). Never maintain hardcoded array constants for tabular seed data.
 
 ### 11. Containerization, Compose & CI/CD
 
