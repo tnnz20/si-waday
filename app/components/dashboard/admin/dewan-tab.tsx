@@ -403,7 +403,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(rep);
                               setIsEditDialogOpen(true);
                             }}
@@ -413,7 +413,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
                             <span>Edit Profil</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(rep);
                               setIsResetPassOpen(true);
                             }}
@@ -423,7 +423,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
                             <span>Reset Password</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(rep);
                               setIsStatusDialogOpen(true);
                             }}
@@ -434,7 +434,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(rep);
                               setIsDeleteDialogOpen(true);
                             }}
@@ -451,7 +451,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
 
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-500">
+                    <td colSpan={7} className="py-12 text-center text-slate-500">
                       Tidak ditemukan anggota dewan dengan kriteria filter tersebut.
                     </td>
                   </tr>

@@ -74,9 +74,16 @@ export function EditUserDialog({
 }: EditUserDialogProps) {
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === 'submitting';
+  const prevFetcherState = React.useRef(fetcher.state);
+
+  const [cachedUser, setCachedUser] = React.useState(user);
+  if (user && user !== cachedUser) {
+    setCachedUser(user);
+  }
+  const activeUser = user ?? cachedUser;
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
+    if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Menyimpan Data', { description: data.error });
@@ -87,9 +94,20 @@ export function EditUserDialog({
         onClose();
       }
     }
+    prevFetcherState.current = fetcher.state;
   }, [fetcher.state, fetcher.data, onClose]);
 
-  if (!user) return null;
+  // Clean up pointer-events on body when dialog closes (Radix DropdownMenu + Dialog bugfix)
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+
+  if (!activeUser) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -99,13 +117,13 @@ export function EditUserDialog({
             Edit Data Pengguna
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500 sm:text-sm">
-            Perbarui informasi profil untuk akun {user.name} ({user.email}).
+            Perbarui informasi profil untuk akun {activeUser.name} ({activeUser.email}).
           </DialogDescription>
         </DialogHeader>
 
         <fetcher.Form method="post" className="space-y-4 pt-2">
           <input type="hidden" name="intent" value="update-profile" />
-          <input type="hidden" name="userId" value={user.id} />
+          <input type="hidden" name="userId" value={activeUser.id} />
 
           {(fetcher.data as { error?: string })?.error ? (
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
@@ -121,7 +139,7 @@ export function EditUserDialog({
             <Input
               id="fullName"
               name="fullName"
-              defaultValue={user.name}
+              defaultValue={activeUser.name}
               placeholder="Masukkan nama lengkap"
               required
               className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
@@ -137,7 +155,7 @@ export function EditUserDialog({
               id="email"
               name="email"
               type="email"
-              defaultValue={user.email}
+              defaultValue={activeUser.email}
               placeholder="email@tapinkab.go.id"
               required
               className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
@@ -150,7 +168,7 @@ export function EditUserDialog({
               <label htmlFor="gender" className="text-xs font-bold text-slate-700">
                 Jenis Kelamin
               </label>
-              <Select name="gender" defaultValue={user.gender || 'male'}>
+              <Select name="gender" defaultValue={activeUser.gender || 'male'}>
                 <SelectTrigger id="gender" className="border-warm-300 rounded-xl bg-white text-xs">
                   <SelectValue placeholder="Pilih Jenis Kelamin" />
                 </SelectTrigger>
@@ -168,7 +186,7 @@ export function EditUserDialog({
               <Input
                 id="phone"
                 name="phone"
-                defaultValue={user.phone || ''}
+                defaultValue={activeUser.phone || ''}
                 placeholder="08xxxxxxxxxx"
                 className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
               />
@@ -185,7 +203,7 @@ export function EditUserDialog({
                 <Input
                   id="party"
                   name="party"
-                  defaultValue={user.party || ''}
+                  defaultValue={activeUser.party || ''}
                   placeholder="Contoh: Partai Golkar"
                   className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
                 />
@@ -198,7 +216,7 @@ export function EditUserDialog({
                 <Input
                   id="commission"
                   name="commission"
-                  defaultValue={user.commission || ''}
+                  defaultValue={activeUser.commission || ''}
                   placeholder="Contoh: Komisi I"
                   className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
                 />
@@ -211,7 +229,7 @@ export function EditUserDialog({
             <label htmlFor="dapilName" className="text-xs font-bold text-slate-700">
               Wilayah / Daerah Pemilihan (Dapil)
             </label>
-            <Select name="dapilName" defaultValue={user.dapilName || 'Dapil Tapin 1'}>
+            <Select name="dapilName" defaultValue={activeUser.dapilName || 'Dapil Tapin 1'}>
               <SelectTrigger id="dapilName" className="border-warm-300 rounded-xl bg-white text-xs">
                 <SelectValue placeholder="Pilih Dapil" />
               </SelectTrigger>
@@ -273,22 +291,40 @@ interface ResetPasswordAlertDialogProps {
 export function ResetPasswordAlertDialog({ user, isOpen, onClose }: ResetPasswordAlertDialogProps) {
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === 'submitting';
+  const prevFetcherState = React.useRef(fetcher.state);
+
+  const [cachedUser, setCachedUser] = React.useState(user);
+  if (user && user !== cachedUser) {
+    setCachedUser(user);
+  }
+  const activeUser = user ?? cachedUser;
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
+    if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Menyimpan Data', { description: data.error });
       } else if (data.success) {
         toast.success('Berhasil', {
-          description: data.message || 'Data profil berhasil diperbarui.',
+          description: data.message || 'Password berhasil direset ke default.',
         });
         onClose();
       }
     }
+    prevFetcherState.current = fetcher.state;
   }, [fetcher.state, fetcher.data, onClose]);
 
-  if (!user) return null;
+  // Clean up pointer-events on body when dialog closes (Radix DropdownMenu + Dialog bugfix)
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+
+  if (!activeUser) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -302,8 +338,9 @@ export function ResetPasswordAlertDialog({ user, isOpen, onClose }: ResetPasswor
           </AlertDialogTitle>
           <AlertDialogDescription className="text-xs text-slate-500 sm:text-sm">
             Apakah Anda yakin ingin mengatur ulang kata sandi untuk akun{' '}
-            <strong className="text-darknavy-900 font-bold">{user.name}</strong> ({user.email})?
-            Password akan diatur ulang ke password default sistem yang dikonfigurasi pada server.
+            <strong className="text-darknavy-900 font-bold">{activeUser.name}</strong> (
+            {activeUser.email})? Password akan diatur ulang ke password default sistem yang
+            dikonfigurasi pada server.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -317,7 +354,7 @@ export function ResetPasswordAlertDialog({ user, isOpen, onClose }: ResetPasswor
           </AlertDialogCancel>
           <fetcher.Form method="post">
             <input type="hidden" name="intent" value="reset-password" />
-            <input type="hidden" name="userId" value={user.id} />
+            <input type="hidden" name="userId" value={activeUser.id} />
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -354,24 +391,42 @@ interface ToggleStatusAlertDialogProps {
 export function ToggleStatusAlertDialog({ user, isOpen, onClose }: ToggleStatusAlertDialogProps) {
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === 'submitting';
+  const prevFetcherState = React.useRef(fetcher.state);
+
+  const [cachedUser, setCachedUser] = React.useState(user);
+  if (user && user !== cachedUser) {
+    setCachedUser(user);
+  }
+  const activeUser = user ?? cachedUser;
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
+    if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Menyimpan Data', { description: data.error });
       } else if (data.success) {
         toast.success('Berhasil', {
-          description: data.message || 'Data profil berhasil diperbarui.',
+          description: data.message || 'Status akun berhasil diperbarui.',
         });
         onClose();
       }
     }
+    prevFetcherState.current = fetcher.state;
   }, [fetcher.state, fetcher.data, onClose]);
 
-  if (!user) return null;
+  // Clean up pointer-events on body when dialog closes (Radix DropdownMenu + Dialog bugfix)
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
 
-  const willActivate = !user.isActive;
+  if (!activeUser) return null;
+
+  const willActivate = !activeUser.isActive;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -390,12 +445,12 @@ export function ToggleStatusAlertDialog({ user, isOpen, onClose }: ToggleStatusA
           <AlertDialogDescription className="text-xs text-slate-500 sm:text-sm">
             {willActivate ? (
               <>
-                Akun <strong className="text-darknavy-900 font-bold">{user.name}</strong> akan
+                Akun <strong className="text-darknavy-900 font-bold">{activeUser.name}</strong> akan
                 diaktifkan kembali dan dapat login mengakses sistem SI-WADAY.
               </>
             ) : (
               <>
-                Akun <strong className="text-darknavy-900 font-bold">{user.name}</strong> akan
+                Akun <strong className="text-darknavy-900 font-bold">{activeUser.name}</strong> akan
                 dinonaktifkan sementara. Pengguna tidak akan dapat login ke dashboard sampai akun
                 diaktifkan kembali.
               </>
@@ -413,7 +468,7 @@ export function ToggleStatusAlertDialog({ user, isOpen, onClose }: ToggleStatusA
           </AlertDialogCancel>
           <fetcher.Form method="post">
             <input type="hidden" name="intent" value="toggle-status" />
-            <input type="hidden" name="userId" value={user.id} />
+            <input type="hidden" name="userId" value={activeUser.id} />
             <input type="hidden" name="nextStatus" value={String(willActivate)} />
             <Button
               type="submit"
@@ -460,22 +515,40 @@ interface DeleteUserAlertDialogProps {
 export function DeleteUserAlertDialog({ user, isOpen, onClose }: DeleteUserAlertDialogProps) {
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === 'submitting';
+  const prevFetcherState = React.useRef(fetcher.state);
+
+  const [cachedUser, setCachedUser] = React.useState(user);
+  if (user && user !== cachedUser) {
+    setCachedUser(user);
+  }
+  const activeUser = user ?? cachedUser;
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
+    if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Menyimpan Data', { description: data.error });
       } else if (data.success) {
         toast.success('Berhasil', {
-          description: data.message || 'Data profil berhasil diperbarui.',
+          description: data.message || 'Akun berhasil dihapus.',
         });
         onClose();
       }
     }
+    prevFetcherState.current = fetcher.state;
   }, [fetcher.state, fetcher.data, onClose]);
 
-  if (!user) return null;
+  // Clean up pointer-events on body when dialog closes (Radix DropdownMenu + Dialog bugfix)
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+
+  if (!activeUser) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -489,9 +562,9 @@ export function DeleteUserAlertDialog({ user, isOpen, onClose }: DeleteUserAlert
           </AlertDialogTitle>
           <AlertDialogDescription className="text-xs text-slate-500 sm:text-sm">
             Apakah Anda yakin ingin menghapus akun{' '}
-            <strong className="text-darknavy-900 font-bold">{user.name}</strong> ({user.email})?
-            Akun ini akan dinonaktifkan secara permanen (*soft delete*) dan riwayat tindakannya
-            tetap tersimpan dalam audit log.
+            <strong className="text-darknavy-900 font-bold">{activeUser.name}</strong> (
+            {activeUser.email})? Akun ini akan dinonaktifkan secara permanen (*soft delete*) dan
+            riwayat tindakannya tetap tersimpan dalam audit log.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -505,7 +578,7 @@ export function DeleteUserAlertDialog({ user, isOpen, onClose }: DeleteUserAlert
           </AlertDialogCancel>
           <fetcher.Form method="post">
             <input type="hidden" name="intent" value="delete-user" />
-            <input type="hidden" name="userId" value={user.id} />
+            <input type="hidden" name="userId" value={activeUser.id} />
             <Button
               type="submit"
               variant="destructive"
@@ -544,11 +617,12 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === 'submitting';
   const isLegislator = roleType === 'legislator';
+  const prevFetcherState = React.useRef(fetcher.state);
 
   const [selectedRole, setSelectedRole] = React.useState<'dprd' | 'dpr'>('dprd');
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
+    if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Menambahkan Akun', { description: data.error });
@@ -559,7 +633,18 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
         onClose();
       }
     }
+    prevFetcherState.current = fetcher.state;
   }, [fetcher.state, fetcher.data, onClose]);
+
+  // Clean up pointer-events on body when dialog closes (Radix DropdownMenu + Dialog bugfix)
+  React.useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = '';
+    }
+    return () => {
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

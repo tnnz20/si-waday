@@ -315,7 +315,7 @@ export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(mod);
                               setIsEditDialogOpen(true);
                             }}
@@ -325,7 +325,7 @@ export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
                             <span>Edit Profil</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(mod);
                               setIsResetPassOpen(true);
                             }}
@@ -335,7 +335,7 @@ export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
                             <span>Reset Password</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(mod);
                               setIsStatusDialogOpen(true);
                             }}
@@ -346,7 +346,7 @@ export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               setSelectedUser(mod);
                               setIsDeleteDialogOpen(true);
                             }}

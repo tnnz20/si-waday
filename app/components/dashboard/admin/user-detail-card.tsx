@@ -81,6 +81,7 @@ export function UserDetailCard({
   backLabel,
 }: UserDetailCardProps) {
   const uploadFetcher = useFetcher();
+  const prevUploadState = React.useRef(uploadFetcher.state);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Dialog states
@@ -101,7 +102,11 @@ export function UserDetailCard({
   }, [previewUrl]);
 
   React.useEffect(() => {
-    if (uploadFetcher.state === 'idle' && uploadFetcher.data) {
+    if (
+      prevUploadState.current !== 'idle' &&
+      uploadFetcher.state === 'idle' &&
+      uploadFetcher.data
+    ) {
       const data = uploadFetcher.data as { success?: boolean; message?: string; error?: string };
       if (data.error) {
         toast.error('Gagal Mengunggah Foto Profil', { description: data.error });
@@ -114,6 +119,7 @@ export function UserDetailCard({
         fileInputRef.current.value = '';
       }
     }
+    prevUploadState.current = uploadFetcher.state;
   }, [uploadFetcher.state, uploadFetcher.data]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
