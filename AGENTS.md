@@ -15,12 +15,12 @@
 .
 ├── app/
 │   ├── components/
-│   │   ├── dashboard/admin/   # Admin dashboard widgets & tab views (overview, aspirations, complaints, etc.)
+│   │   ├── dashboard/admin/   # Admin dashboard widgets & tab views (overview, aspirations, complaints, user tables & modals)
 │   │   ├── aspiration/        # Aspiration & complaint multi-step form wizard (identity, proposal, map-picker, modals)
 │   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, etc.)
 │   │   ├── layout/            # Structural layout blocks (navbar, footer, admin-sidebar, breadcrumbs)
 │   │   │   └── admin-sidebar/ # Decomposed sidebar subcomponents (header, nav, user-menu, types)
-│   │   ├── shared/            # Reusable UI components shared across 2+ routes
+│   │   ├── shared/            # Reusable UI components shared across 2+ routes (table-pagination, etc.)
 │   │   └── ui/                # shadcn/ui primitive components (button, dialog, sonner, input, avatar, tooltip, etc.)
 │   ├── constants/             # Static constants & datasets (aspirations.ts, faq.ts, navigation.ts, tapin.ts, admin-data.ts)
 │   ├── db/
@@ -28,12 +28,12 @@
 │   │   ├── schema/            # Drizzle table schema definitions (*.ts)
 │   │   └── index.server.ts    # Drizzle client singleton with discrete credentials
 │   ├── hooks/                 # Custom React client hooks
-│   ├── layouts/               # Route shell layouts with <Outlet /> (home-layout.tsx, admin-layout.tsx)
-│   ├── lib/                   # Utility helpers (cn(), logger.server.ts, etc.)
+│   ├── layouts/               # Route shell layouts with <Outlet /> (home-layout.tsx, admin-layout.tsx, auth-layout.tsx)
+│   ├── lib/                   # Utility helpers (cn(), logger.server.ts, auth.server.ts, upload.server.ts, audit.server.ts)
 │   ├── middleware/            # React Router 8 server middlewares (logger.server.ts, auth, etc.)
 │   ├── routes/                # Route modules (loaders, actions, page components)
 │   │   ├── auth/              # Auth routes (login.tsx, logout.tsx)
-│   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*)
+│   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*, users-*-detail)
 │   │   ├── home.tsx           # Landing page route
 │   │   └── aspiration.tsx     # Citizen aspiration wizard route
 │   ├── schema/                # Zod validation schemas
@@ -41,6 +41,8 @@
 │   ├── app.css                # Tailwind CSS v4 imports, theme tokens & shadcn variables
 │   ├── root.tsx               # Root document layout, HTML shell, and global middleware
 │   └── routes.ts              # Route manifest & URL configuration
+├── public/
+│   └── uploads/               # User uploaded files (avatars, attachments)
 ├── scripts/
 │   ├── data/                  # Source CSV datasets (dprd-tapin-members.csv, moderators.csv)
 │   ├── csv.ts                 # Native Node.js CSV parsing utility
@@ -71,14 +73,20 @@
     index('routes/home.tsx'),
     route('aspiration', 'routes/aspiration.tsx'),
   ]),
+  layout('layouts/auth-layout.tsx', [
+    route('auth/login', 'routes/auth/login.tsx'),
+    route('auth/logout', 'routes/auth/logout.tsx'),
+  ]),
   layout('layouts/admin-layout.tsx', [
     route('dashboard', 'routes/dashboard/overview.tsx'),
     route('dashboard/complaints', 'routes/dashboard/complaints.tsx'),
     route('dashboard/aspirations', 'routes/dashboard/aspirations.tsx'),
     route('dashboard/satisfaction', 'routes/dashboard/satisfaction.tsx'),
-    prefix('dashboard/users', [
+    ...prefix('dashboard/users', [
       route('legislators', 'routes/dashboard/users-legislators.tsx'),
+      route('legislators/:slug', 'routes/dashboard/users-legislators-detail.tsx'),
       route('moderators', 'routes/dashboard/users-moderators.tsx'),
+      route('moderators/:slug', 'routes/dashboard/users-moderators-detail.tsx'),
     ]),
   ]),
   ```
@@ -102,7 +110,7 @@
   - Registered via `layout(...)` in `app/routes.ts`.
   - Must render React Router v8 `<Outlet />` to host active child routes.
   - Hosts persistent page chrome (`Navbar`, `Footer`, `AdminSidebar`) and layout-level providers (such as Sonner's `<Toaster />`).
-  - Examples: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), [`app/layouts/admin-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/admin-layout.tsx).
+  - Examples: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), [`app/layouts/admin-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/admin-layout.tsx), [`app/layouts/auth-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/auth-layout.tsx).
 - **`app/components/layout/` (Structural Layout Blocks)**:
   - Reserved for reusable visual layout blocks: `Navbar`, `Footer`, `AdminSidebar`, `Breadcrumbs`.
   - Complex widgets decompose into subdirectories (e.g., `app/components/layout/admin-sidebar/`).
@@ -110,17 +118,18 @@
 
 ### 3. Components Organization & shadcn/ui
 
-- **`app/components/ui/`**: Reserved exclusively for shadcn/ui primitives (`Button`, `Dialog`, `Accordion`, `Sonner`, `Card`, `Badge`, `Switch`, `Select`, `Input`, `Textarea`, `Avatar`, `Tooltip`).
+- **`app/components/ui/`**: Reserved exclusively for official shadcn/ui primitives (`Button`, `Dialog`, `DropdownMenu`, `Accordion`, `Sonner`, `Card`, `Badge`, `Switch`, `Select`, `Input`, `Textarea`, `Avatar`, `Tooltip`).
+  - **Official Component Documentation & Source Reference:** [shadcn/ui Components](https://ui.shadcn.com/docs/components).
+  - **Strict rule against custom primitives:** Never invent or build custom primitive components by yourself (e.g. manual dropdowns, floating menus, custom backdrops, or bespoke select boxes). Always refer to and install official shadcn/ui component specifications backed by `@radix-ui` primitives.
   - Standard shadcn primitives use `React.forwardRef` and are excluded from React 19 ref refactorings.
   - When adapting styling, use the `cn()` utility (`app/lib/utils.ts`) at the component call site or configure custom primitive defaults.
-  - **Never re-invent custom primitives** (like manual modal backdrops, dropdowns, or accordions) when a shadcn component exists in `app/components/ui/`.
 - **`app/components/<domain>/`**: Domain/page presentation widgets belong in domain folders (e.g., `app/components/home/`, `app/components/aspiration/`, `app/components/dashboard/admin/`).
 - **`app/components/shared/`**: Reusable custom components utilized by two or more distinct features/routes.
 - **`app/types/` & `app/constants/`**: Keep data structures and static mock datasets centralized in dedicated files (e.g., `app/types/aspiration.ts`, `app/constants/tapin.ts`, `app/constants/admin-data.ts`). Do not mix static content inside route component files.
 
 ### 4. Global Toast Notifications (Sonner)
 
-- Standardized on **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted inside persistent layout shells (`home-layout.tsx`, `admin-layout.tsx`).
+- Standardized on **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted inside persistent layout shells (`home-layout.tsx`, `admin-layout.tsx`, `auth-layout.tsx`).
 - Never build custom floating toast containers or pass toast state down through prop drilling.
 - Dispatch toast notifications imperatively from anywhere:
   ```typescript
@@ -141,12 +150,17 @@
   - Use project color tokens (`border-warm-200`, `bg-darknavy-900`, `text-accent-500`) instead of raw hex values (`border-[#e8dbcb]`, `bg-[#191b24]`).
 - Design tokens and shadcn custom properties are mapped in `:root` and `@theme inline` in [`app/app.css`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css).
 
-### 6. Client-Side File Uploads & Memory Management (`URL.revokeObjectURL`)
+### 6. Client-Side & Server-Side File Uploads (`URL.revokeObjectURL` & `upload.server.ts`)
 
-- When handling image/document file uploads that produce preview URLs via `URL.createObjectURL(file)`:
+- **Client-Side File Uploads & Memory Management**:
+  - When handling image/document file uploads that produce preview URLs via `URL.createObjectURL(file)`:
   - Always verify whether an existing preview URL begins with `blob:`.
   - Safely revoke obsolete URLs using `URL.revokeObjectURL(url)` before creating a new one or upon file deletion.
   - This prevents browser memory leaks when citizens repeatedly browse or swap attachments.
+- **Server-Side File Persistence (`app/lib/upload.server.ts`)**:
+  - Validates avatar uploads strictly against allowed MIME types (`image/jpeg`, `image/png`, `image/webp`) and size limits (max 2MB).
+  - Generates secure random UUID filenames to prevent collisions and path traversal attacks.
+  - Persists files directly into `public/uploads/avatars/`.
 
 ### 7. Avoid Barrel Files (`bundle-barrel-imports`)
 
@@ -202,6 +216,13 @@
   - Master seeder: `npm run db:seed` (`make db-seed`).
   - Granular seeders: `npm run db:seed:admin`, `npm run db:seed:representatives`, `npm run db:seed:moderators` (all support `ssh=true`).
   - Source data for representatives and moderators are stored as CSV files in [`scripts/data/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/data/) and parsed at runtime via [`scripts/csv.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/csv.ts). Never maintain hardcoded array constants for tabular seed data.
+- **Audit Logging Subsystem (`audit_logs`)**:
+  - Administrative operations (status toggle, password reset, profile update, user deletion, user creation, avatar upload) are tracked in the `audit_logs` table.
+  - Enumerated in `audit_action` enum: `STATUS_CHANGE`, `PASSWORD_RESET`, `PROFILE_UPDATE`, `USER_DELETE`, `USER_CREATE`, `AVATAR_UPLOAD`.
+  - Captured via `createAuditLog()` in [`app/lib/audit.server.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/lib/audit.server.ts) with JSONB `details` (before/after snapshots) wrapped in fail-safe try/catch so audit failures never break primary user actions.
+- **Default User Password Policy (`DEFAULT_USER_PASSWORD`)**:
+  - Passwords generated during user creation (`CreateUserDialog`) or password reset actions are strictly sourced from `process.env.DEFAULT_USER_PASSWORD`.
+  - Never introduce insecure fallback passwords in application code. If `DEFAULT_USER_PASSWORD` is missing in the environment, the action must fail closed and return an explicit error notification.
 
 ### 11. Containerization, Compose & CI/CD
 

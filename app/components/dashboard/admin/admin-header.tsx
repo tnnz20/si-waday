@@ -79,10 +79,37 @@ const ROUTE_HEADER_MAP: Record<string, RouteHeaderMeta> = {
   },
 };
 
+function resolveHeaderMeta(pathname: string): RouteHeaderMeta {
+  if (ROUTE_HEADER_MAP[pathname]) {
+    return ROUTE_HEADER_MAP[pathname];
+  }
+  if (pathname.startsWith('/dashboard/users/legislators/')) {
+    return {
+      ...ROUTE_HEADER_MAP['/dashboard/users/legislators'],
+      title: 'Detail Anggota Dewan Perwakilan Rakyat',
+      subtitle: 'Informasi lengkap profil, penugasan wilayah, dan rekam jejak aktivitas akun dewan',
+      label: 'Detail Dewan',
+    };
+  }
+  if (pathname.startsWith('/dashboard/users/moderators/')) {
+    return {
+      ...ROUTE_HEADER_MAP['/dashboard/users/moderators'],
+      title: 'Detail Petugas Moderator Regional',
+      subtitle:
+        'Informasi lengkap profil verifikator wilayah dan rekam jejak aktivitas akun moderator',
+      label: 'Detail Moderator',
+    };
+  }
+  return ROUTE_HEADER_MAP['/dashboard'];
+}
+
 export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
   const location = useLocation();
-  const currentTabInfo = ROUTE_HEADER_MAP[location.pathname] || ROUTE_HEADER_MAP['/dashboard'];
+  const currentTabInfo = resolveHeaderMeta(location.pathname);
   const TabIcon = currentTabInfo.icon;
+
+  const isLegislatorDetail = location.pathname.startsWith('/dashboard/users/legislators/');
+  const isModeratorDetail = location.pathname.startsWith('/dashboard/users/moderators/');
 
   return (
     <header className="border-warm-200/90 rounded-3xl border bg-white shadow-xs transition-all">
@@ -112,6 +139,20 @@ export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
             {/* Breadcrumb Navigation */}
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="hover:text-darknavy-900 transition-colors">Dashboard</span>
+              {isLegislatorDetail ? (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="hover:text-darknavy-900 transition-colors">Kelola Dewan</span>
+                </>
+              ) : null}
+              {isModeratorDetail ? (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="hover:text-darknavy-900 transition-colors">
+                    Kelola Moderator
+                  </span>
+                </>
+              ) : null}
               <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
               <Badge
                 variant="outline"

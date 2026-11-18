@@ -19,12 +19,12 @@ Wadah Aspirasi & Aduan Warga.
 .
 ├── app/
 │   ├── components/        # UI components & domain presentation widgets
-│   │   ├── dashboard/     # Dashboard domain widgets (admin overview, tabs, modal)
+│   │   ├── dashboard/     # Dashboard domain widgets (admin overview, tabs, user actions/modals)
 │   │   ├── aspiration/    # Multi-step aspiration & complaint form wizard
 │   │   ├── home/          # Landing page sections (hero, feed, stats, faq, etc.)
 │   │   ├── layout/        # Persistent navigation chrome (navbar, footer, admin-sidebar)
 │   │   │   └── admin-sidebar/ # Modular sidebar subcomponents (header, nav, user-menu, types)
-│   │   ├── shared/        # Cross-route reusable components
+│   │   ├── shared/        # Cross-route reusable components (table-pagination, etc.)
 │   │   └── ui/            # shadcn/ui primitives (button, dialog, sonner, tooltip, etc.)
 │   ├── constants/         # App-wide constants & datasets (tapin.ts, admin-data.ts, etc.)
 │   ├── db/                # Database layer (PostgreSQL + Drizzle ORM)
@@ -32,16 +32,16 @@ Wadah Aspirasi & Aduan Warga.
 │   │   ├── schema/        # Drizzle table schemas
 │   │   └── index.server.ts# Drizzle DB client instance
 │   ├── hooks/             # Custom React hooks
-│   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout)
-│   ├── lib/               # Utility functions (logger, cn helper, auth, etc.)
+│   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout, auth-layout)
+│   ├── lib/               # Utility functions (logger, cn helper, auth, upload, audit, etc.)
 │   ├── middleware/        # Server middlewares (request logger, etc.)
-│   ├── routes/            # Route modules (home, aspiration, auth/*, dashboard/*)
+│   ├── routes/            # Route modules (home, aspiration, auth/*, dashboard/*, dashboard/users/*)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables
 │   ├── root.tsx           # Root layout & HTML shell
 │   └── routes.ts          # Route manifest configuration
-├── public/                # Static public assets (icons, favicon, logos)
+├── public/                # Static public assets (icons, favicon, logos, uploads)
 ├── scripts/               # Migration, seeding & utility scripts
 │   ├── data/              # Datasets for seeding (dprd-tapin-members.csv, moderators.csv)
 │   ├── csv.ts             # Native CSV parser utility
@@ -77,6 +77,15 @@ Wadah Aspirasi & Aduan Warga.
   - Pusat kendali bento-grid untuk rekapitulasi KPI dan tren aduan warga.
   - Tabel filter dan pencarian untuk usulan Pokir dan aduan publik.
   - Modal inspeksi detail tiket, audit pergerakan status, dan analisis kepuasan masyarakat.
+- **Manajemen Pengguna Dewan & Moderator (`/dashboard/users/legislators` & `/dashboard/users/moderators`):**
+  - **Kelola Anggota Dewan:** Tabel 7 kolom terpisah (_Anggota Dewan_, _Tingkat_, _Partai_, _Dapil_, _Komisi_, _Status_, _Aksi_) lengkap dengan identitas visual resmi partai politik, badge Dapil (Tapin 1, 2, 3 & DPR RI Kalsel 1), filter komisi, dan status aktif/nonaktif.
+  - **Kelola Moderator:** Pemantauan akun moderator wilayah per kecamatan se-Kabupaten Tapin.
+  - **Tambah Pengguna Baru:** Dialog pendaftaran pengguna (`CreateUserDialog`) dengan pembuatan slug otomatis, validasi unik email, dan hashing kata sandi aman berbasis `DEFAULT_USER_PASSWORD`.
+  - **Halaman Detail Pengguna (`/dashboard/users/*/:slug`):** Formulir edit profil, unggah foto avatar server-side dengan preview dan proteksi kebocoran memori (`URL.revokeObjectURL`), reset kata sandi instan, serta riwayat audit lengkap (_audit trail_) via tabel `audit_logs`.
+  - **Kontrol Paginasi Interaktif (`TablePagination`):** Navigasi halaman tabel responsif dengan tombol numerik, ellipsis, dan indikator rentang data aktif (e.g. _Menampilkan 1-10 dari 36 dewan_).
+- **Otentikasi Administrator (`/auth/login`):**
+  - Sesi login aman berbasis JSON Web Token (JWT) dengan cookie HTTP-only secure (`si_waday_token`).
+  - Proteksi server middleware otomatis untuk seluruh rute `/dashboard/*`.
 
 ---
 
@@ -99,12 +108,23 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Review `.env` and adjust database credentials if needed:
+Review `.env` and adjust database credentials, JWT secret, and seed/default user passwords if needed:
 
 ```env
 PORT=3000
 NODE_ENV=development
 LOG_LEVEL=debug
+
+# JWT Configuration (min 32 chars)
+JWT_SECRET=super-secret-jwt-key-min-32-chars-long-siwaday-2026
+
+# Super Admin Seed Configuration
+ADMIN_EMAIL=admin@siwaday.tapinkab.go.id
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Administrator Si-Waday
+
+# Default User Password for Created & Password-Reset Accounts
+DEFAULT_USER_PASSWORD=Tapin2026!
 
 # Local PostgreSQL Configuration
 POSTGRES_HOST=localhost

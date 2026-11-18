@@ -7,3 +7,11 @@
 /build/
 /dist/
 *.log
+
+# User Uploads
+/public/uploads/*
+!/public/uploads/**/.gitkeep
+
+# Scratch files
+.agents/scratch/
+
