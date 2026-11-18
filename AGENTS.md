@@ -3,7 +3,7 @@
 ## Repository
 
 - **Project:** `si-waday` (Wadah Aspirasi & Aduan Warga).
-- **Architecture:** Full-stack React Router v8.4 in Framework Mode, powered by Vite v8, React 19, and Tailwind CSS v4.
+- **Architecture:** Full-stack React Router v8.5 in Framework Mode, powered by Vite v8, React 19, and Tailwind CSS v4.
 - **Runtime:** Node.js `>=24.0.0` (Alpine container runtime: `node:26.13.1-alpine`).
 - **Database:** PostgreSQL 16 (Alpine) via discrete credentials and Drizzle ORM (`postgres` driver).
 
@@ -66,6 +66,7 @@
 
 ### 1. Routing & Route Modules (React Router Framework Mode)
 
+- **Official Documentation & Reference:** [React Router Docs](https://reactrouter.com/home).
 - Define all routes in [`app/routes.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/routes.ts) using `@react-router/dev/routes` helpers (`index`, `route`, `layout`, `prefix`).
 - Wrap route groups inside persistent layout shells using `layout()`:
   ```tsx
