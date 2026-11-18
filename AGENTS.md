@@ -4,7 +4,7 @@
 
 - **Project:** `si-waday` (Wadah Aspirasi & Aduan Warga).
 - **Architecture:** Full-stack React Router v8.4 in Framework Mode, powered by Vite v8, React 19, and Tailwind CSS v4.
-- **Runtime:** Node.js `>=24.0.0` (Alpine container runtime: `node:24-alpine`).
+- **Runtime:** Node.js `>=24.0.0` (Alpine container runtime: `node:26.13.1-alpine`).
 - **Database:** PostgreSQL 16 (Alpine) via discrete credentials and Drizzle ORM (`postgres` driver).
 
 ---
@@ -229,7 +229,7 @@
 - Default local container engine is **Podman**.
 - `compose.yaml` services: `postgres` service on top attached to `si-waday-net` network with persistent volume `postgres-data`.
 - In repository `compose.yaml`, the `app` service is kept commented out for local database-only development, and uncommented on the VPS for full stack orchestration.
-- **Full-Stack Container Architecture:** The application image (`Dockerfile`) uses `node:24-alpine` running `react-router-serve ./build/server/index.js` on port 3000 under `NODE_ENV=production`. Node.js acts as the native web server; do not bundle Nginx inside the container.
+- **Full-Stack Container Architecture:** The application image (`Dockerfile`) uses `node:26.13.1-alpine` running `react-router-serve ./build/server/index.js` on port 3000 under `NODE_ENV=production`. Node.js acts as the native web server; do not bundle Nginx inside the container.
 - **CI/CD Deployment:** Automated GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and publishes container images to GHCR (`ghcr.io/<repo>/app`) on release tags (`v*.*.*`) or manual dispatch, and deploys via SSH using Podman.
 - Makefile supports switching engine:
   - Default: `make compose-up` / `make compose-down` (executes `podman compose`)
