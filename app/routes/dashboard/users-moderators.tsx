@@ -83,6 +83,118 @@ export async function action({ request }: Route.ActionArgs) {
 
   const formData = await request.formData();
   const intent = formData.get('intent');
+
+  // Intent: Create new moderator
+  if (intent === 'create-user') {
+    const fullName = (formData.get('fullName') as string)?.trim();
+    const email = (formData.get('email') as string)?.trim().toLowerCase();
+    const dapilName = (formData.get('dapilName') as string)?.trim();
+    const gender = (formData.get('gender') as 'male' | 'female') || 'male';
+    const phone = (formData.get('phone') as string)?.trim() || null;
+
+    if (!fullName || !email) {
+      return Response.json({ error: 'Nama lengkap dan email wajib diisi.' }, { status: 400 });
+    }
+
+    // Check if email already claimed by an active account
+    const [existingEmail] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, email), isNull(users.deletedAt)))
+      .limit(1);
+
+    if (existingEmail) {
+      return Response.json(
+        { error: 'Alamat email sudah terdaftar dan digunakan oleh akun lain.' },
+        { status: 400 }
+      );
+    }
+
+    // Get default password from environment variable
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+    if (!defaultPassword || !defaultPassword.trim()) {
+      return Response.json(
+        {
+          error:
+            'Gagal membuat akun: DEFAULT_USER_PASSWORD belum dikonfigurasi pada file environment server (.env).',
+        },
+        { status: 500 }
+      );
+    }
+
+    // Generate unique slug
+    let baseSlug = fullName
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+    if (!baseSlug) {
+      baseSlug = `moderator-${Date.now()}`;
+    }
+
+    let finalSlug = baseSlug;
+    const [existingSlug] = await db
+      .select({ id: userProfiles.id })
+      .from(userProfiles)
+      .where(eq(userProfiles.slug, finalSlug))
+      .limit(1);
+
+    if (existingSlug) {
+      finalSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
+    }
+
+    // Resolve region ID from dapilName
+    let regionId: string | null = null;
+    if (dapilName) {
+      const [matchedRegion] = await db
+        .select({ id: regions.id })
+        .from(regions)
+        .where(eq(regions.name, dapilName))
+        .limit(1);
+      if (matchedRegion) regionId = matchedRegion.id;
+    }
+
+    // Hash password & Insert user + profile
+    const passwordHash = hashPassword(defaultPassword);
+
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash,
+        role: 'moderator',
+        isActive: true,
+      })
+      .returning({ id: users.id });
+
+    await db.insert(userProfiles).values({
+      userId: newUser.id,
+      fullName,
+      slug: finalSlug,
+      gender,
+      phone,
+      regionId,
+    });
+
+    await createAuditLog({
+      actor: authResult.user,
+      action: 'USER_CREATE',
+      entityId: newUser.id,
+      targetName: fullName,
+      description: `Menambahkan petugas moderator regional baru ${fullName}`,
+      details: {
+        email,
+        dapilName,
+        gender,
+      },
+    });
+
+    return Response.json({
+      success: true,
+      message: `Akun moderator ${fullName} berhasil dibuat.`,
+    });
+  }
+
   const userId = formData.get('userId') as string;
 
   if (!userId) {

@@ -101,6 +101,7 @@ export const userProfiles = pgTable(
 // 5. Audit Action Enum & Audit Logs Table
 // ---------------------------------------------------------------------------
 export const auditActionEnum = pgEnum('audit_action', [
+  'USER_CREATE',
   'USER_LOGIN',
   'USER_LOGOUT',
   'STATUS_CHANGE',

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."audit_action" ADD VALUE 'USER_CREATE' BEFORE 'USER_LOGIN';

@@ -32,7 +32,16 @@ import {
 
 import { DAPIL_TAPIN_LIST } from '@/constants/tapin';
 
-import { KeyRound, LoaderCircle, Power, Trash2, UserCheck, UserX } from 'lucide-react';
+import {
+  Info,
+  KeyRound,
+  LoaderCircle,
+  Power,
+  Trash2,
+  UserCheck,
+  UserPlus,
+  UserX,
+} from 'lucide-react';
 
 export interface BaseUserActionItem {
   id: string;
@@ -519,5 +528,253 @@ export function DeleteUserAlertDialog({ user, isOpen, onClose }: DeleteUserAlert
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 5. Create User Modal Dialog (Legislator & Moderator)
+// ---------------------------------------------------------------------------
+export interface CreateUserDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  roleType: 'legislator' | 'moderator';
+}
+
+export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialogProps) {
+  const fetcher = useFetcher();
+  const isSubmitting = fetcher.state === 'submitting';
+  const isLegislator = roleType === 'legislator';
+
+  const [selectedRole, setSelectedRole] = React.useState<'dprd' | 'dpr'>('dprd');
+
+  React.useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data) {
+      const data = fetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Menambahkan Akun', { description: data.error });
+      } else if (data.success) {
+        toast.success('Akun Berhasil Dibuat', {
+          description: data.message || 'Pengguna baru berhasil ditambahkan.',
+        });
+        onClose();
+      }
+    }
+  }, [fetcher.state, fetcher.data, onClose]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="border-warm-200 rounded-3xl bg-white p-6 shadow-2xl sm:max-w-lg">
+        <DialogHeader className="space-y-1.5 text-left">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+            <UserPlus className="h-5 w-5" />
+          </div>
+          <DialogTitle className="text-darknavy-900 text-lg font-black sm:text-xl">
+            {isLegislator ? 'Tambah Anggota Dewan Baru' : 'Tambah Moderator Regional Baru'}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-500 sm:text-sm">
+            {isLegislator
+              ? 'Daftarkan profil perwakilan rakyat DPRD Kabupaten Tapin atau DPR RI ke sistem.'
+              : 'Daftarkan akun petugas verifikator wilayah per daerah pemilihan (Dapil).'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <fetcher.Form method="post" className="space-y-4 pt-2">
+          <input type="hidden" name="intent" value="create-user" />
+
+          {(fetcher.data as { error?: string })?.error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              {(fetcher.data as { error?: string }).error}
+            </div>
+          ) : null}
+
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label htmlFor="create-fullName" className="text-xs font-bold text-slate-700">
+              Nama Lengkap <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              id="create-fullName"
+              name="fullName"
+              placeholder={isLegislator ? 'Contoh: H. Paijan, S.E.' : 'Contoh: Ahmad Fadilah'}
+              required
+              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+            />
+          </div>
+
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label htmlFor="create-email" className="text-xs font-bold text-slate-700">
+              Alamat Email <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              id="create-email"
+              name="email"
+              type="email"
+              placeholder={isLegislator ? 'nama@dprd.tapinkab.go.id' : 'moderator@tapinkab.go.id'}
+              required
+              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+            />
+          </div>
+
+          {/* Legislator role selection (DPRD vs DPR RI) */}
+          {isLegislator ? (
+            <div className="space-y-1.5">
+              <label htmlFor="create-role" className="text-xs font-bold text-slate-700">
+                Tingkat Lembaga Perwakilan <span className="text-rose-500">*</span>
+              </label>
+              <Select
+                name="role"
+                defaultValue="dprd"
+                onValueChange={(val) => setSelectedRole(val as 'dprd' | 'dpr')}
+              >
+                <SelectTrigger
+                  id="create-role"
+                  className="border-warm-300 rounded-xl bg-white text-xs"
+                >
+                  <SelectValue placeholder="Pilih Lembaga" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="dprd">DPRD Kabupaten Tapin</SelectItem>
+                  <SelectItem value="dpr">DPR RI (Dapil Kalsel 1)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <input type="hidden" name="role" value="moderator" />
+          )}
+
+          {/* Dapil selection */}
+          <div className="space-y-1.5">
+            <label htmlFor="create-dapil" className="text-xs font-bold text-slate-700">
+              Daerah Pemilihan (Dapil) <span className="text-rose-500">*</span>
+            </label>
+            <Select
+              name="dapilName"
+              defaultValue={
+                isLegislator && selectedRole === 'dpr'
+                  ? 'Dapil Kalimantan Selatan I'
+                  : 'Dapil Tapin 1'
+              }
+            >
+              <SelectTrigger
+                id="create-dapil"
+                className="border-warm-300 rounded-xl bg-white text-xs"
+              >
+                <SelectValue placeholder="Pilih Dapil" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {DAPIL_TAPIN_LIST.map((d) => (
+                  <SelectItem key={d.id} value={d.name}>
+                    {d.name} ({d.seats})
+                  </SelectItem>
+                ))}
+                {isLegislator ? (
+                  <SelectItem value="Dapil Kalimantan Selatan I">
+                    DPR RI (Dapil Kalimantan Selatan I)
+                  </SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Legislator: Party & Commission */}
+          {isLegislator ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="create-party" className="text-xs font-bold text-slate-700">
+                  Partai Politik
+                </label>
+                <Input
+                  id="create-party"
+                  name="party"
+                  placeholder="Contoh: Partai Golkar"
+                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="create-commission" className="text-xs font-bold text-slate-700">
+                  Komisi / Bidang
+                </label>
+                <Input
+                  id="create-commission"
+                  name="commission"
+                  placeholder="Contoh: Komisi I"
+                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {/* Gender & Phone */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="create-gender" className="text-xs font-bold text-slate-700">
+                Jenis Kelamin
+              </label>
+              <Select name="gender" defaultValue="male">
+                <SelectTrigger
+                  id="create-gender"
+                  className="border-warm-300 rounded-xl bg-white text-xs"
+                >
+                  <SelectValue placeholder="Pilih Jenis Kelamin" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="male">Laki-laki</SelectItem>
+                  <SelectItem value="female">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="create-phone" className="text-xs font-bold text-slate-700">
+                Nomor Telepon / WA
+              </label>
+              <Input
+                id="create-phone"
+                name="phone"
+                placeholder="08xxxxxxxxxx"
+                className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Password info notice */}
+          <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-800">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <p>
+              Password akun akan otomatis diatur menggunakan default sistem. Pengguna atau admin
+              dapat mereset atau memperbarui kata sandi sewaktu-waktu.
+            </p>
+          </div>
+
+          <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="border-warm-200 rounded-xl text-xs font-bold"
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-accent-500 hover:bg-accent-600 rounded-xl text-xs font-bold text-white shadow-xs"
+            >
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                'Buat Akun'
+              )}
+            </Button>
+          </DialogFooter>
+        </fetcher.Form>
+      </DialogContent>
+    </Dialog>
   );
 }

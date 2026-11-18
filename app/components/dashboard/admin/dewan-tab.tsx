@@ -34,6 +34,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  UserPlus,
   Users,
 } from 'lucide-react';
 
@@ -41,6 +42,7 @@ import { DapilBadge } from './dapil-badge';
 import { PartyBadge } from './party-badge';
 import {
   type BaseUserActionItem,
+  CreateUserDialog,
   DeleteUserAlertDialog,
   EditUserDialog,
   ResetPasswordAlertDialog,
@@ -82,6 +84,7 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
 
   // Dialog State
   const [selectedUser, setSelectedUser] = React.useState<BaseUserActionItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isResetPassOpen, setIsResetPassOpen] = React.useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = React.useState(false);
@@ -209,16 +212,28 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
               </CardDescription>
             </div>
 
-            {/* Quick Search */}
-            <div className="relative w-full sm:w-64">
-              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="Cari dewan, partai, dapil..."
-                value={effectiveSearch}
-                onChange={(e) => setInternalSearch(e.target.value)}
-                className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
-              />
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              {/* Quick Search */}
+              <div className="relative w-full sm:w-64">
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Cari dewan, partai, dapil..."
+                  value={effectiveSearch}
+                  onChange={(e) => setInternalSearch(e.target.value)}
+                  className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
+                />
+              </div>
+
+              {/* Add Legislator Button */}
+              <Button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="bg-accent-500 hover:bg-accent-600 h-10 rounded-2xl text-xs font-bold text-white shadow-xs sm:text-sm"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" />
+                <span>Tambah Dewan</span>
+              </Button>
             </div>
           </div>
 
@@ -448,6 +463,12 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
       </Card>
 
       {/* Action Dialogs */}
+      <CreateUserDialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        roleType="legislator"
+      />
+
       <EditUserDialog
         user={selectedUser}
         isOpen={isEditDialogOpen}
