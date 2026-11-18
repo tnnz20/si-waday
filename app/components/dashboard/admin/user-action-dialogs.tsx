@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { useFetcher } from 'react-router';
+import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -66,8 +67,16 @@ export function EditUserDialog({
   const isSubmitting = fetcher.state === 'submitting';
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !(fetcher.data as { error?: string })?.error) {
-      onClose();
+    if (fetcher.state === 'idle' && fetcher.data) {
+      const data = fetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Menyimpan Data', { description: data.error });
+      } else if (data.success) {
+        toast.success('Berhasil', {
+          description: data.message || 'Data profil berhasil diperbarui.',
+        });
+        onClose();
+      }
     }
   }, [fetcher.state, fetcher.data, onClose]);
 
@@ -88,6 +97,12 @@ export function EditUserDialog({
         <fetcher.Form method="post" className="space-y-4 pt-2">
           <input type="hidden" name="intent" value="update-profile" />
           <input type="hidden" name="userId" value={user.id} />
+
+          {(fetcher.data as { error?: string })?.error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              {(fetcher.data as { error?: string }).error}
+            </div>
+          ) : null}
 
           {/* Full Name */}
           <div className="space-y-1.5">
@@ -251,8 +266,16 @@ export function ResetPasswordAlertDialog({ user, isOpen, onClose }: ResetPasswor
   const isSubmitting = fetcher.state === 'submitting';
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !(fetcher.data as { error?: string })?.error) {
-      onClose();
+    if (fetcher.state === 'idle' && fetcher.data) {
+      const data = fetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Menyimpan Data', { description: data.error });
+      } else if (data.success) {
+        toast.success('Berhasil', {
+          description: data.message || 'Data profil berhasil diperbarui.',
+        });
+        onClose();
+      }
     }
   }, [fetcher.state, fetcher.data, onClose]);
 
@@ -324,8 +347,16 @@ export function ToggleStatusAlertDialog({ user, isOpen, onClose }: ToggleStatusA
   const isSubmitting = fetcher.state === 'submitting';
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !(fetcher.data as { error?: string })?.error) {
-      onClose();
+    if (fetcher.state === 'idle' && fetcher.data) {
+      const data = fetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Menyimpan Data', { description: data.error });
+      } else if (data.success) {
+        toast.success('Berhasil', {
+          description: data.message || 'Data profil berhasil diperbarui.',
+        });
+        onClose();
+      }
     }
   }, [fetcher.state, fetcher.data, onClose]);
 
@@ -422,8 +453,16 @@ export function DeleteUserAlertDialog({ user, isOpen, onClose }: DeleteUserAlert
   const isSubmitting = fetcher.state === 'submitting';
 
   React.useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !(fetcher.data as { error?: string })?.error) {
-      onClose();
+    if (fetcher.state === 'idle' && fetcher.data) {
+      const data = fetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Menyimpan Data', { description: data.error });
+      } else if (data.success) {
+        toast.success('Berhasil', {
+          description: data.message || 'Data profil berhasil diperbarui.',
+        });
+        onClose();
+      }
     }
   }, [fetcher.state, fetcher.data, onClose]);
 

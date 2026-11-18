@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { Link, useFetcher } from 'react-router';
+import { toast } from 'sonner';
 
 import { getInitials } from '@/lib/utils';
 
@@ -98,6 +99,22 @@ export function UserDetailCard({
       }
     };
   }, [previewUrl]);
+
+  React.useEffect(() => {
+    if (uploadFetcher.state === 'idle' && uploadFetcher.data) {
+      const data = uploadFetcher.data as { success?: boolean; message?: string; error?: string };
+      if (data.error) {
+        toast.error('Gagal Mengunggah Foto Profil', { description: data.error });
+      } else if (data.success) {
+        toast.success('Foto Profil Diperbarui', {
+          description: data.message || 'Foto profil berhasil disimpan.',
+        });
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [uploadFetcher.state, uploadFetcher.data]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -213,7 +230,11 @@ export function UserDetailCard({
               <div className="relative">
                 <Avatar className="border-warm-200 h-24 w-24 rounded-3xl border-2 shadow-md sm:h-28 sm:w-28">
                   <AvatarImage
-                    src={previewUrl || user.avatarUrl || undefined}
+                    src={
+                      (uploadFetcher.data as { error?: string })?.error
+                        ? user.avatarUrl || undefined
+                        : previewUrl || user.avatarUrl || undefined
+                    }
                     alt={user.name}
                     className="object-cover"
                   />

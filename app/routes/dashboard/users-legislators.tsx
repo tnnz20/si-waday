@@ -1,6 +1,6 @@
 import { db } from '@/db/index.server';
 import { regions, userProfiles, users } from '@/db/schema/schema';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne } from 'drizzle-orm';
 import { redirect } from 'react-router';
 
 import { createAuditLog } from '@/lib/audit.server';
@@ -199,6 +199,20 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (!fullName || !email) {
       return Response.json({ error: 'Nama dan email wajib diisi.' }, { status: 400 });
+    }
+
+    // Check if email already claimed by another active user
+    const [existingEmailUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, email), ne(users.id, userId), isNull(users.deletedAt)))
+      .limit(1);
+
+    if (existingEmailUser) {
+      return Response.json(
+        { error: 'Alamat email sudah terdaftar dan digunakan oleh akun lain.' },
+        { status: 400 }
+      );
     }
 
     // Lookup region id if dapilName provided
