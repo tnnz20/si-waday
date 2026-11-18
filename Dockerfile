@@ -1,7 +1,10 @@
 # Stage 1: Dependencies & Build
-FROM node:24-alpine AS builder
+FROM node:26.13.1-alpine AS builder
 
 WORKDIR /app
+
+# Patch OS packages to remediate Alpine/musl/busybox CVEs
+RUN apk update && apk upgrade --no-cache
 
 COPY package*.json ./
 RUN npm ci
@@ -13,9 +16,12 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # Stage 2: Production Runner
-FROM node:24-alpine AS runner
+FROM node:26.13.1-alpine AS runner
 
 WORKDIR /app
+
+# Patch OS packages in the final minimal runtime
+RUN apk update && apk upgrade --no-cache
 
 ENV NODE_ENV=production
 ENV PORT=3000
