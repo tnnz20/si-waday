@@ -318,8 +318,9 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
               <thead className="border-warm-200 bg-warm-50/60 border-y text-slate-500 uppercase">
                 <tr>
                   <th className="px-6 py-3 font-extrabold tracking-wider">Anggota Dewan</th>
+                  <th className="px-4 py-3 font-extrabold tracking-wider">Tingkat</th>
                   <th className="px-4 py-3 font-extrabold tracking-wider">Partai</th>
-                  <th className="px-4 py-3 font-extrabold tracking-wider">Tingkat & Dapil</th>
+                  <th className="px-4 py-3 font-extrabold tracking-wider">Dapil</th>
                   <th className="px-4 py-3 font-extrabold tracking-wider">Komisi</th>
                   <th className="px-4 py-3 text-center font-extrabold tracking-wider">Status</th>
                   <th className="px-4 py-3 text-center font-extrabold tracking-wider">Aksi</th>
@@ -347,13 +348,21 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
+                      <span
+                        className={`text-2xs inline-flex items-center rounded-lg px-2.5 py-1 font-bold ${
+                          rep.role === 'DPRD Tapin'
+                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+                            : 'border border-blue-200 bg-blue-50 text-blue-800'
+                        }`}
+                      >
+                        {rep.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
                       <PartyBadge party={rep.party} />
                     </td>
                     <td className="px-4 py-3.5">
-                      <p className="text-darknavy-900 font-bold">{rep.role}</p>
-                      <div className="mt-1">
-                        <DapilBadge dapil={rep.dapilName} />
-                      </div>
+                      <DapilBadge dapil={rep.dapilName} />
                     </td>
                     <td className="px-4 py-3.5">
                       <p className="font-medium text-slate-700">{rep.commission}</p>
