@@ -253,6 +253,18 @@
 - Imperative mood, ≤50-72 characters, no trailing period.
 - No AI attribution, no filler. Body only for breaking changes or non-obvious rationale.
 
+### 14. Form Validation & Zod Schemas (`app/schema/`)
+
+- **Mandatory Zod Validation**: All application forms (authentication, user creation/modification, citizen aspirations, complaints) MUST be strictly validated using Zod schemas located in `app/schema/` (e.g., `app/schema/auth.ts`, `app/schema/user.ts`).
+- **End-to-End Validation**:
+  - **Server-Side**: Route `action` functions must validate raw `FormData` via `schema.safeParse()`. If invalid, return HTTP status 400 with structured `fieldErrors` (`{ [fieldName]: errorMessage }`).
+  - **Client-Side**: Forms must validate on submit with `schema.safeParse()` for instant feedback and clear errors on input change.
+- **Field-Level Error Rendering**:
+  - Always render error messages directly at the bottom of the corresponding input field using `text-2xs font-semibold text-rose-500` (or `text-red-500`).
+  - Highlight the input border when an error exists: `border-rose-500 focus-visible:ring-rose-500`.
+  - Set `aria-invalid="true"` and `aria-describedby="<field>-error"` for accessibility.
+  - Never rely solely on generic top banners or browser native tooltips (`noValidate` attribute recommended on `<Form>`).
+
 ---
 
 ## Verification & Quality Gates

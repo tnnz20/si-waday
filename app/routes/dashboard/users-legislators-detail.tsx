@@ -1,5 +1,6 @@
 import { db } from '@/db/index.server';
 import { auditLogs, regions, userProfiles, users } from '@/db/schema/schema';
+import { updateUserSchema } from '@/schema/user';
 import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 import { redirect } from 'react-router';
 
@@ -267,17 +268,41 @@ export async function action({ request }: Route.ActionArgs) {
 
   // Intent: Update profile information
   if (intent === 'update-profile') {
-    const fullName = (formData.get('fullName') as string)?.trim();
-    const email = (formData.get('email') as string)?.trim().toLowerCase();
-    const gender = (formData.get('gender') as 'male' | 'female') || 'male';
-    const phone = (formData.get('phone') as string)?.trim() || null;
-    const party = (formData.get('party') as string)?.trim() || null;
-    const commission = (formData.get('commission') as string)?.trim() || null;
-    const dapilName = (formData.get('dapilName') as string)?.trim();
+    const validation = updateUserSchema.safeParse({
+      userId,
+      fullName: formData.get('fullName'),
+      email: formData.get('email'),
+      gender: formData.get('gender') || 'male',
+      phone: formData.get('phone') || '',
+      party: formData.get('party') || '',
+      commission: formData.get('commission') || '',
+      dapilName: formData.get('dapilName') || '',
+    });
 
-    if (!fullName || !email) {
-      return Response.json({ error: 'Nama dan email wajib diisi.' }, { status: 400 });
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of validation.error.issues) {
+        const field = issue.path[0] as string;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = issue.message;
+        }
+      }
+      return Response.json(
+        { error: 'Mohon periksa kembali isian formulir Anda.', fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const {
+      fullName,
+      email: rawEmail,
+      gender,
+      phone,
+      party,
+      commission,
+      dapilName,
+    } = validation.data;
+    const email = rawEmail.toLowerCase();
 
     // Check if email already claimed by another active user
     const [existingEmailUser] = await db
@@ -288,7 +313,12 @@ export async function action({ request }: Route.ActionArgs) {
 
     if (existingEmailUser) {
       return Response.json(
-        { error: 'Alamat email sudah terdaftar dan digunakan oleh akun lain.' },
+        {
+          error: 'Alamat email sudah terdaftar dan digunakan oleh akun lain.',
+          fieldErrors: {
+            email: 'Alamat email sudah terdaftar dan digunakan oleh akun lain.',
+          },
+        },
         { status: 400 }
       );
     }

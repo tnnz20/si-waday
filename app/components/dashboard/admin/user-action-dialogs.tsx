@@ -1,7 +1,10 @@
 import * as React from 'react';
 
+import { createUserSchema, updateUserSchema } from '@/schema/user';
 import { useFetcher } from 'react-router';
 import { toast } from 'sonner';
+
+import { cn } from '@/lib/utils';
 
 import {
   AlertDialog,
@@ -82,6 +85,11 @@ export function EditUserDialog({
   }
   const activeUser = user ?? cachedUser;
 
+  const serverFieldErrors = (fetcher.data as { fieldErrors?: Record<string, string> } | undefined)
+    ?.fieldErrors;
+  const [clientErrors, setClientErrors] = React.useState<Record<string, string>>({});
+  const [clearedServerFields, setClearedServerFields] = React.useState<Record<string, boolean>>({});
+
   React.useEffect(() => {
     if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
@@ -109,6 +117,65 @@ export function EditUserDialog({
 
   if (!activeUser) return null;
 
+  const handleFieldChange = (field: string) => {
+    if (clientErrors[field]) {
+      setClientErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+    if (serverFieldErrors?.[field] && !clearedServerFields[field]) {
+      setClearedServerFields((prev) => ({ ...prev, [field]: true }));
+    }
+  };
+
+  const getFieldError = (field: string): string | undefined => {
+    if (clientErrors[field]) return clientErrors[field];
+    if (clearedServerFields[field]) return undefined;
+    return serverFieldErrors?.[field];
+  };
+
+  const fullNameError = getFieldError('fullName');
+  const emailError = getFieldError('email');
+  const genderError = getFieldError('gender');
+  const phoneError = getFieldError('phone');
+  const partyError = getFieldError('party');
+  const commissionError = getFieldError('commission');
+  const dapilNameError = getFieldError('dapilName');
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    setClearedServerFields({});
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const parsedData = {
+      userId: String(formData.get('userId') || activeUser.id),
+      fullName: String(formData.get('fullName') || ''),
+      email: String(formData.get('email') || ''),
+      gender: String(formData.get('gender') || 'male'),
+      phone: formData.get('phone') ? String(formData.get('phone')) : '',
+      party: formData.get('party') ? String(formData.get('party')) : '',
+      commission: formData.get('commission') ? String(formData.get('commission')) : '',
+      dapilName: formData.get('dapilName') ? String(formData.get('dapilName')) : '',
+    };
+
+    const result = updateUserSchema.safeParse(parsedData);
+    if (!result.success) {
+      e.preventDefault();
+      const newErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!newErrors[field]) {
+          newErrors[field] = issue.message;
+        }
+      }
+      setClientErrors(newErrors);
+      return;
+    }
+
+    setClientErrors({});
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="border-warm-200 rounded-3xl bg-white p-6 shadow-2xl sm:max-w-lg">
@@ -121,7 +188,13 @@ export function EditUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <fetcher.Form method="post" className="space-y-4 pt-2">
+        <fetcher.Form
+          key={isOpen ? activeUser.id : 'closed'}
+          method="post"
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4 pt-2"
+        >
           <input type="hidden" name="intent" value="update-profile" />
           <input type="hidden" name="userId" value={activeUser.id} />
 
@@ -133,43 +206,70 @@ export function EditUserDialog({
 
           {/* Full Name */}
           <div className="space-y-1.5">
-            <label htmlFor="fullName" className="text-xs font-bold text-slate-700">
-              Nama Lengkap
+            <label htmlFor="edit-fullName" className="text-xs font-bold text-slate-700">
+              Nama Lengkap <span className="text-rose-500">*</span>
             </label>
             <Input
-              id="fullName"
+              id="edit-fullName"
               name="fullName"
               defaultValue={activeUser.name}
               placeholder="Masukkan nama lengkap"
-              required
-              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+              onInput={() => handleFieldChange('fullName')}
+              aria-invalid={fullNameError ? 'true' : 'false'}
+              aria-describedby={fullNameError ? 'edit-fullName-error' : undefined}
+              className={cn(
+                'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                fullNameError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+              )}
             />
+            {fullNameError ? (
+              <p id="edit-fullName-error" className="text-2xs font-semibold text-rose-500">
+                {fullNameError}
+              </p>
+            ) : null}
           </div>
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-xs font-bold text-slate-700">
-              Alamat Email
+            <label htmlFor="edit-email" className="text-xs font-bold text-slate-700">
+              Alamat Email <span className="text-rose-500">*</span>
             </label>
             <Input
-              id="email"
+              id="edit-email"
               name="email"
               type="email"
               defaultValue={activeUser.email}
               placeholder="email@tapinkab.go.id"
-              required
-              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+              onInput={() => handleFieldChange('email')}
+              aria-invalid={emailError ? 'true' : 'false'}
+              aria-describedby={emailError ? 'edit-email-error' : undefined}
+              className={cn(
+                'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                emailError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+              )}
             />
+            {emailError ? (
+              <p id="edit-email-error" className="text-2xs font-semibold text-rose-500">
+                {emailError}
+              </p>
+            ) : null}
           </div>
 
           {/* Gender & Phone */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label htmlFor="gender" className="text-xs font-bold text-slate-700">
+              <label htmlFor="edit-gender" className="text-xs font-bold text-slate-700">
                 Jenis Kelamin
               </label>
-              <Select name="gender" defaultValue={activeUser.gender || 'male'}>
-                <SelectTrigger id="gender" className="border-warm-300 rounded-xl bg-white text-xs">
+              <Select
+                name="gender"
+                defaultValue={activeUser.gender || 'male'}
+                onValueChange={() => handleFieldChange('gender')}
+              >
+                <SelectTrigger
+                  id="edit-gender"
+                  className="border-warm-300 rounded-xl bg-white text-xs"
+                >
                   <SelectValue placeholder="Pilih Jenis Kelamin" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -177,19 +277,35 @@ export function EditUserDialog({
                   <SelectItem value="female">Perempuan</SelectItem>
                 </SelectContent>
               </Select>
+              {genderError ? (
+                <p id="edit-gender-error" className="text-2xs font-semibold text-rose-500">
+                  {genderError}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="phone" className="text-xs font-bold text-slate-700">
+              <label htmlFor="edit-phone" className="text-xs font-bold text-slate-700">
                 Nomor Telepon / WhatsApp
               </label>
               <Input
-                id="phone"
+                id="edit-phone"
                 name="phone"
                 defaultValue={activeUser.phone || ''}
                 placeholder="08xxxxxxxxxx"
-                className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                onInput={() => handleFieldChange('phone')}
+                aria-invalid={phoneError ? 'true' : 'false'}
+                aria-describedby={phoneError ? 'edit-phone-error' : undefined}
+                className={cn(
+                  'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                  phoneError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                )}
               />
+              {phoneError ? (
+                <p id="edit-phone-error" className="text-2xs font-semibold text-rose-500">
+                  {phoneError}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -197,40 +313,69 @@ export function EditUserDialog({
           {isLegislator ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="party" className="text-xs font-bold text-slate-700">
+                <label htmlFor="edit-party" className="text-xs font-bold text-slate-700">
                   Partai Politik
                 </label>
                 <Input
-                  id="party"
+                  id="edit-party"
                   name="party"
                   defaultValue={activeUser.party || ''}
                   placeholder="Contoh: Partai Golkar"
-                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                  onInput={() => handleFieldChange('party')}
+                  aria-invalid={partyError ? 'true' : 'false'}
+                  aria-describedby={partyError ? 'edit-party-error' : undefined}
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                    partyError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 />
+                {partyError ? (
+                  <p id="edit-party-error" className="text-2xs font-semibold text-rose-500">
+                    {partyError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="commission" className="text-xs font-bold text-slate-700">
+                <label htmlFor="edit-commission" className="text-xs font-bold text-slate-700">
                   Komisi / Bidang
                 </label>
                 <Input
-                  id="commission"
+                  id="edit-commission"
                   name="commission"
                   defaultValue={activeUser.commission || ''}
                   placeholder="Contoh: Komisi I"
-                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                  onInput={() => handleFieldChange('commission')}
+                  aria-invalid={commissionError ? 'true' : 'false'}
+                  aria-describedby={commissionError ? 'edit-commission-error' : undefined}
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                    commissionError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 />
+                {commissionError ? (
+                  <p id="edit-commission-error" className="text-2xs font-semibold text-rose-500">
+                    {commissionError}
+                  </p>
+                ) : null}
               </div>
             </div>
           ) : null}
 
           {/* Dapil Assignment */}
           <div className="space-y-1.5">
-            <label htmlFor="dapilName" className="text-xs font-bold text-slate-700">
+            <label htmlFor="edit-dapilName" className="text-xs font-bold text-slate-700">
               Wilayah / Daerah Pemilihan (Dapil)
             </label>
-            <Select name="dapilName" defaultValue={activeUser.dapilName || 'Dapil Tapin 1'}>
-              <SelectTrigger id="dapilName" className="border-warm-300 rounded-xl bg-white text-xs">
+            <Select
+              name="dapilName"
+              defaultValue={activeUser.dapilName || 'Dapil Tapin 1'}
+              onValueChange={() => handleFieldChange('dapilName')}
+            >
+              <SelectTrigger
+                id="edit-dapilName"
+                className="border-warm-300 rounded-xl bg-white text-xs"
+              >
                 <SelectValue placeholder="Pilih Dapil" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -246,6 +391,11 @@ export function EditUserDialog({
                 ) : null}
               </SelectContent>
             </Select>
+            {dapilNameError ? (
+              <p id="edit-dapilName-error" className="text-2xs font-semibold text-rose-500">
+                {dapilNameError}
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -621,6 +771,11 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
 
   const [selectedRole, setSelectedRole] = React.useState<'dprd' | 'dpr'>('dprd');
 
+  const serverFieldErrors = (fetcher.data as { fieldErrors?: Record<string, string> } | undefined)
+    ?.fieldErrors;
+  const [clientErrors, setClientErrors] = React.useState<Record<string, string>>({});
+  const [clearedServerFields, setClearedServerFields] = React.useState<Record<string, boolean>>({});
+
   React.useEffect(() => {
     if (prevFetcherState.current !== 'idle' && fetcher.state === 'idle' && fetcher.data) {
       const data = fetcher.data as { success?: boolean; message?: string; error?: string };
@@ -646,6 +801,66 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
     };
   }, [isOpen]);
 
+  const handleFieldChange = (field: string) => {
+    if (clientErrors[field]) {
+      setClientErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+    if (serverFieldErrors?.[field] && !clearedServerFields[field]) {
+      setClearedServerFields((prev) => ({ ...prev, [field]: true }));
+    }
+  };
+
+  const getFieldError = (field: string): string | undefined => {
+    if (clientErrors[field]) return clientErrors[field];
+    if (clearedServerFields[field]) return undefined;
+    return serverFieldErrors?.[field];
+  };
+
+  const fullNameError = getFieldError('fullName');
+  const emailError = getFieldError('email');
+  const roleError = getFieldError('role');
+  const dapilNameError = getFieldError('dapilName');
+  const partyError = getFieldError('party');
+  const commissionError = getFieldError('commission');
+  const genderError = getFieldError('gender');
+  const phoneError = getFieldError('phone');
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    setClearedServerFields({});
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const parsedData = {
+      fullName: String(formData.get('fullName') || ''),
+      email: String(formData.get('email') || ''),
+      role: String(formData.get('role') || (isLegislator ? selectedRole : 'moderator')),
+      dapilName: String(formData.get('dapilName') || ''),
+      gender: String(formData.get('gender') || 'male'),
+      phone: formData.get('phone') ? String(formData.get('phone')) : '',
+      party: formData.get('party') ? String(formData.get('party')) : '',
+      commission: formData.get('commission') ? String(formData.get('commission')) : '',
+    };
+
+    const result = createUserSchema.safeParse(parsedData);
+    if (!result.success) {
+      e.preventDefault();
+      const newErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!newErrors[field]) {
+          newErrors[field] = issue.message;
+        }
+      }
+      setClientErrors(newErrors);
+      return;
+    }
+
+    setClientErrors({});
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="border-warm-200 rounded-3xl bg-white p-6 shadow-2xl sm:max-w-lg">
@@ -663,7 +878,13 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
           </DialogDescription>
         </DialogHeader>
 
-        <fetcher.Form method="post" className="space-y-4 pt-2">
+        <fetcher.Form
+          key={isOpen ? 'open' : 'closed'}
+          method="post"
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-4 pt-2"
+        >
           <input type="hidden" name="intent" value="create-user" />
 
           {(fetcher.data as { error?: string })?.error ? (
@@ -681,9 +902,19 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
               id="create-fullName"
               name="fullName"
               placeholder={isLegislator ? 'Contoh: H. Paijan, S.E.' : 'Contoh: Ahmad Fadilah'}
-              required
-              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+              onInput={() => handleFieldChange('fullName')}
+              aria-invalid={fullNameError ? 'true' : 'false'}
+              aria-describedby={fullNameError ? 'create-fullName-error' : undefined}
+              className={cn(
+                'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                fullNameError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+              )}
             />
+            {fullNameError ? (
+              <p id="create-fullName-error" className="text-2xs font-semibold text-rose-500">
+                {fullNameError}
+              </p>
+            ) : null}
           </div>
 
           {/* Email */}
@@ -696,9 +927,19 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
               name="email"
               type="email"
               placeholder={isLegislator ? 'nama@dprd.tapinkab.go.id' : 'moderator@tapinkab.go.id'}
-              required
-              className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+              onInput={() => handleFieldChange('email')}
+              aria-invalid={emailError ? 'true' : 'false'}
+              aria-describedby={emailError ? 'create-email-error' : undefined}
+              className={cn(
+                'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                emailError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+              )}
             />
+            {emailError ? (
+              <p id="create-email-error" className="text-2xs font-semibold text-rose-500">
+                {emailError}
+              </p>
+            ) : null}
           </div>
 
           {/* Legislator role selection (DPRD vs DPR RI) */}
@@ -710,11 +951,17 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
               <Select
                 name="role"
                 defaultValue="dprd"
-                onValueChange={(val) => setSelectedRole(val as 'dprd' | 'dpr')}
+                onValueChange={(val) => {
+                  setSelectedRole(val as 'dprd' | 'dpr');
+                  handleFieldChange('role');
+                }}
               >
                 <SelectTrigger
                   id="create-role"
-                  className="border-warm-300 rounded-xl bg-white text-xs"
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs',
+                    roleError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 >
                   <SelectValue placeholder="Pilih Lembaga" />
                 </SelectTrigger>
@@ -723,6 +970,11 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                   <SelectItem value="dpr">DPR RI (Dapil Kalsel 1)</SelectItem>
                 </SelectContent>
               </Select>
+              {roleError ? (
+                <p id="create-role-error" className="text-2xs font-semibold text-rose-500">
+                  {roleError}
+                </p>
+              ) : null}
             </div>
           ) : (
             <input type="hidden" name="role" value="moderator" />
@@ -740,10 +992,14 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                   ? 'Dapil Kalimantan Selatan I'
                   : 'Dapil Tapin 1'
               }
+              onValueChange={() => handleFieldChange('dapilName')}
             >
               <SelectTrigger
                 id="create-dapil"
-                className="border-warm-300 rounded-xl bg-white text-xs"
+                className={cn(
+                  'border-warm-300 rounded-xl bg-white text-xs',
+                  dapilNameError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                )}
               >
                 <SelectValue placeholder="Pilih Dapil" />
               </SelectTrigger>
@@ -760,6 +1016,11 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                 ) : null}
               </SelectContent>
             </Select>
+            {dapilNameError ? (
+              <p id="create-dapil-error" className="text-2xs font-semibold text-rose-500">
+                {dapilNameError}
+              </p>
+            ) : null}
           </div>
 
           {/* Legislator: Party & Commission */}
@@ -773,8 +1034,19 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                   id="create-party"
                   name="party"
                   placeholder="Contoh: Partai Golkar"
-                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                  onInput={() => handleFieldChange('party')}
+                  aria-invalid={partyError ? 'true' : 'false'}
+                  aria-describedby={partyError ? 'create-party-error' : undefined}
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                    partyError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 />
+                {partyError ? (
+                  <p id="create-party-error" className="text-2xs font-semibold text-rose-500">
+                    {partyError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5">
@@ -785,8 +1057,19 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                   id="create-commission"
                   name="commission"
                   placeholder="Contoh: Komisi I"
-                  className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                  onInput={() => handleFieldChange('commission')}
+                  aria-invalid={commissionError ? 'true' : 'false'}
+                  aria-describedby={commissionError ? 'create-commission-error' : undefined}
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                    commissionError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 />
+                {commissionError ? (
+                  <p id="create-commission-error" className="text-2xs font-semibold text-rose-500">
+                    {commissionError}
+                  </p>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -797,10 +1080,17 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
               <label htmlFor="create-gender" className="text-xs font-bold text-slate-700">
                 Jenis Kelamin
               </label>
-              <Select name="gender" defaultValue="male">
+              <Select
+                name="gender"
+                defaultValue="male"
+                onValueChange={() => handleFieldChange('gender')}
+              >
                 <SelectTrigger
                   id="create-gender"
-                  className="border-warm-300 rounded-xl bg-white text-xs"
+                  className={cn(
+                    'border-warm-300 rounded-xl bg-white text-xs',
+                    genderError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  )}
                 >
                   <SelectValue placeholder="Pilih Jenis Kelamin" />
                 </SelectTrigger>
@@ -809,6 +1099,11 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                   <SelectItem value="female">Perempuan</SelectItem>
                 </SelectContent>
               </Select>
+              {genderError ? (
+                <p id="create-gender-error" className="text-2xs font-semibold text-rose-500">
+                  {genderError}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-1.5">
@@ -819,8 +1114,19 @@ export function CreateUserDialog({ isOpen, onClose, roleType }: CreateUserDialog
                 id="create-phone"
                 name="phone"
                 placeholder="08xxxxxxxxxx"
-                className="border-warm-300 rounded-xl bg-white text-xs sm:text-sm"
+                onInput={() => handleFieldChange('phone')}
+                aria-invalid={phoneError ? 'true' : 'false'}
+                aria-describedby={phoneError ? 'create-phone-error' : undefined}
+                className={cn(
+                  'border-warm-300 rounded-xl bg-white text-xs sm:text-sm',
+                  phoneError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                )}
               />
+              {phoneError ? (
+                <p id="create-phone-error" className="text-2xs font-semibold text-rose-500">
+                  {phoneError}
+                </p>
+              ) : null}
             </div>
           </div>
 

@@ -4,17 +4,63 @@ import { Form } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
+import { cn } from '~/lib/utils';
+import { loginSchema } from '~/schema/auth';
 
 import { Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck } from 'lucide-react';
 
 export interface LoginCardProps {
   redirectTo: string;
   error?: string;
+  fieldErrors?: {
+    identifier?: string;
+    password?: string;
+  };
   isSubmitting?: boolean;
 }
 
-export function LoginCard({ redirectTo, error, isSubmitting = false }: LoginCardProps) {
+export function LoginCard({
+  redirectTo,
+  error,
+  fieldErrors,
+  isSubmitting = false,
+}: LoginCardProps) {
   const [showPassword, setShowPassword] = React.useState(false);
+  const [identifier, setIdentifier] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [clientErrors, setClientErrors] = React.useState<{
+    identifier?: string;
+    password?: string;
+  }>({});
+
+  const identifierError = clientErrors.identifier ?? fieldErrors?.identifier;
+  const passwordError = clientErrors.password ?? fieldErrors?.password;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const result = loginSchema.safeParse({
+      identifier,
+      password,
+      redirectTo,
+    });
+
+    if (!result.success) {
+      e.preventDefault();
+      const newErrors: { identifier?: string; password?: string } = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0];
+        if (field === 'identifier' && !newErrors.identifier) {
+          newErrors.identifier = issue.message;
+        }
+        if (field === 'password' && !newErrors.password) {
+          newErrors.password = issue.message;
+        }
+      }
+      setClientErrors(newErrors);
+      return;
+    }
+
+    setClientErrors({});
+  };
 
   return (
     <Card className="border-warm-200 rounded-3xl bg-white/95 p-2 shadow-xl backdrop-blur-md sm:p-4">
@@ -31,7 +77,7 @@ export function LoginCard({ redirectTo, error, isSubmitting = false }: LoginCard
       </CardHeader>
 
       <CardContent>
-        <Form method="post" className="space-y-4">
+        <Form method="post" noValidate onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           {/* Error Notification Banner */}
@@ -57,12 +103,28 @@ export function LoginCard({ redirectTo, error, isSubmitting = false }: LoginCard
                 id="identifier"
                 name="identifier"
                 type="text"
-                required
                 autoComplete="username"
+                value={identifier}
+                onChange={(e) => {
+                  setIdentifier(e.target.value);
+                  if (clientErrors.identifier) {
+                    setClientErrors((prev) => ({ ...prev, identifier: undefined }));
+                  }
+                }}
                 placeholder="admin atau nama@siwaday.tapinkab.go.id"
-                className="border-warm-200 bg-warm-50 h-11 text-sm transition-all focus-visible:ring-emerald-500"
+                aria-invalid={identifierError ? 'true' : 'false'}
+                aria-describedby={identifierError ? 'identifier-error' : undefined}
+                className={cn(
+                  'border-warm-200 bg-warm-50 h-11 text-sm transition-all focus-visible:ring-emerald-500',
+                  identifierError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                )}
               />
             </div>
+            {identifierError ? (
+              <p id="identifier-error" className="text-2xs font-semibold text-rose-500">
+                {identifierError}
+              </p>
+            ) : null}
           </div>
 
           {/* Password Field with Show/Hide Toggle */}
@@ -80,10 +142,21 @@ export function LoginCard({ redirectTo, error, isSubmitting = false }: LoginCard
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                required
                 autoComplete="current-password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (clientErrors.password) {
+                    setClientErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
                 placeholder="••••••••"
-                className="border-warm-200 bg-warm-50 h-11 pr-10 text-sm transition-all focus-visible:ring-emerald-500"
+                aria-invalid={passwordError ? 'true' : 'false'}
+                aria-describedby={passwordError ? 'password-error' : undefined}
+                className={cn(
+                  'border-warm-200 bg-warm-50 h-11 pr-10 text-sm transition-all focus-visible:ring-emerald-500',
+                  passwordError ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                )}
               />
               <button
                 type="button"
@@ -94,6 +167,11 @@ export function LoginCard({ redirectTo, error, isSubmitting = false }: LoginCard
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {passwordError ? (
+              <p id="password-error" className="text-2xs font-semibold text-rose-500">
+                {passwordError}
+              </p>
+            ) : null}
           </div>
 
           {/* Submit Button */}
