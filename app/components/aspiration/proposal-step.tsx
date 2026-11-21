@@ -4,7 +4,7 @@ import { getInitials } from '@/lib/utils';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +39,6 @@ import {
   ChevronDown,
   Eye,
   FileText,
-  FileUp,
   HelpCircle,
   Image as ImageIcon,
   Landmark,
@@ -240,36 +239,6 @@ export function ProposalStep({
   return (
     <TooltipProvider delayDuration={150}>
       <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
-        {/* Header section */}
-        <CardHeader className="bg-darknavy-900 p-6 text-white sm:p-8">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg">
-                <FileUp className="h-6 w-6" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xs rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2.5 py-0.5 font-extrabold tracking-wider text-emerald-400 uppercase">
-                    Langkah 2 dari 2
-                  </span>
-                  <span className="text-xs text-slate-400">Pokir DPRD Kab. Tapin</span>
-                </div>
-                <CardTitle className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                  FORM USULAN ASPIRASI DAPIL
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-300">
-                  Penyampaian usulan resmi langsung ke perwakilan anggota DPRD Kabupaten Tapin
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="border-darknavy-800 bg-darknavy-800/80 text-2xs flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-slate-300">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-              <span>25 Anggota Dewan Siap Menampung</span>
-            </div>
-          </div>
-        </CardHeader>
-
         <CardContent className="p-6 sm:p-8">
           <form onSubmit={handleValidateSubmit} className="space-y-7">
             {/* FIELD 1: TUJUAN DAPIL (LIST NAMA & FOTO DUMMY ANGGOTA DPRD) */}

@@ -119,7 +119,7 @@ export function Navbar() {
                   <div className="mt-2 space-y-1.5">
                     {/* Option 1: Aduan Masyarakat */}
                     <Link
-                      to="/aspiration?type=masyarakat"
+                      to="/form/complaint"
                       onClick={() => setAspirationDropdownOpen(false)}
                       className="hover:border-accent-200 hover:bg-accent-50/70 group flex items-start gap-3.5 rounded-2xl border border-transparent p-3 transition-all"
                     >
@@ -144,7 +144,7 @@ export function Navbar() {
 
                     {/* Option 2: Aduan Penyampaian Aspirasi Dapil */}
                     <Link
-                      to="/aspiration?type=dapil"
+                      to="/form/aspiration"
                       onClick={() => setAspirationDropdownOpen(false)}
                       className="group flex items-start gap-3.5 rounded-2xl border border-transparent p-3 transition-all hover:border-emerald-200 hover:bg-emerald-50/70"
                     >
@@ -214,7 +214,7 @@ export function Navbar() {
 
             {/* Mobile: Pilihan 1 Aduan Masyarakat */}
             <Link
-              to="/aspiration?type=masyarakat"
+              to="/form/complaint"
               onClick={closeMobileMenu}
               className="border-accent-200 bg-accent-50/50 text-darknavy-900 flex w-full items-center justify-between gap-2 rounded-2xl border p-3 text-xs font-bold shadow-xs"
             >
@@ -234,7 +234,7 @@ export function Navbar() {
 
             {/* Mobile: Pilihan 2 Aduan Penyampaian Aspirasi Dapil */}
             <Link
-              to="/aspiration?type=dapil"
+              to="/form/aspiration"
               onClick={closeMobileMenu}
               className="text-darknavy-900 flex w-full items-center justify-between gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3 text-xs font-bold shadow-xs"
             >
