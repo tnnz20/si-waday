@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -24,7 +24,6 @@ import {
   Lock,
   Mail,
   Phone,
-  ShieldCheck,
   Trash2,
   UploadCloud,
   User,
@@ -137,41 +136,6 @@ export function IdentityStep({
 
   return (
     <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
-      {/* Step Header */}
-      <CardHeader className="bg-darknavy-900 p-6 text-white sm:p-8">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-accent-500 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg">
-              <IdCard className="h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-accent-500/20 text-accent-500 border-accent-500/40 text-2xs rounded-full border px-2.5 py-0.5 font-extrabold tracking-wider uppercase">
-                  Langkah 1 dari 2
-                </span>
-                <span className="text-xs text-slate-400">
-                  {isDapil ? 'Verifikasi Pengusul Dapil' : 'Verifikasi Pelapor Masyarakat'}
-                </span>
-              </div>
-              <CardTitle className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                Data Diri & Kartu Tanda Pengenal
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-300">
-                {isDapil
-                  ? 'Verifikasi keabsahan warga pengusul oleh Sekretariat DPRD Kabupaten Tapin.'
-                  : 'Verifikasi identitas resmi pelapor aduan masyarakat DPRD Kabupaten Tapin.'}
-              </CardDescription>
-            </div>
-          </div>
-
-          {/* Privacy & Legitimacy Security Badge */}
-          <div className="border-darknavy-800 bg-darknavy-800/80 text-2xs flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-slate-300">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-            <span>Identitas Terverifikasi Resmi</span>
-          </div>
-        </div>
-      </CardHeader>
-
       <CardContent className="p-6 sm:p-8">
         <form onSubmit={validateAndProceed} className="space-y-6">
           {/* Identity Requirement Notification Banner */}

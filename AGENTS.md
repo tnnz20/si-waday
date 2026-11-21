@@ -34,8 +34,8 @@
 │   ├── routes/                # Route modules (loaders, actions, page components)
 │   │   ├── auth/              # Auth routes (login.tsx, logout.tsx)
 │   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*, users-*-detail)
-│   │   ├── home.tsx           # Landing page route
-│   │   └── aspiration.tsx     # Citizen aspiration wizard route
+│   │   ├── form/              # Dedicated public form routes (aspiration.tsx, complaint.tsx)
+│   │   └── home.tsx           # Landing page route
 │   ├── schema/                # Zod validation schemas
 │   ├── types/                 # Shared TypeScript interfaces & types (aspiration.ts, ui.ts)
 │   ├── app.css                # Tailwind CSS v4 imports, theme tokens & shadcn variables
@@ -72,7 +72,12 @@
   ```tsx
   layout('layouts/home-layout.tsx', [
     index('routes/home.tsx'),
-    route('aspiration', 'routes/aspiration.tsx'),
+  ]),
+  layout('layouts/form-layout.tsx', [
+    ...prefix('form', [
+      route('aspiration', 'routes/form/aspiration.tsx'),
+      route('complaint', 'routes/form/complaint.tsx'),
+    ]),
   ]),
   layout('layouts/auth-layout.tsx', [
     route('auth/login', 'routes/auth/login.tsx'),
@@ -111,7 +116,7 @@
   - Registered via `layout(...)` in `app/routes.ts`.
   - Must render React Router v8 `<Outlet />` to host active child routes.
   - Hosts persistent page chrome (`Navbar`, `Footer`, `AdminSidebar`) and layout-level providers (such as Sonner's `<Toaster />`).
-  - Examples: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), [`app/layouts/admin-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/admin-layout.tsx), [`app/layouts/auth-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/auth-layout.tsx).
+  - Examples: [`app/layouts/home-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/home-layout.tsx), [`app/layouts/form-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/form-layout.tsx), [`app/layouts/admin-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/admin-layout.tsx), [`app/layouts/auth-layout.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/layouts/auth-layout.tsx).
 - **`app/components/layout/` (Structural Layout Blocks)**:
   - Reserved for reusable visual layout blocks: `Navbar`, `Footer`, `AdminSidebar`, `Breadcrumbs`.
   - Complex widgets decompose into subdirectories (e.g., `app/components/layout/admin-sidebar/`).

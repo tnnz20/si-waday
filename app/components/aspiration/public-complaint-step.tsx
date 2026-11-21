@@ -2,7 +2,7 @@ import { useId, useRef, useState } from 'react';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -19,16 +19,7 @@ import type { PublicComplaintFormData } from '@/types/aspiration';
 import { CATEGORIES, EXTENDED_AGENCIES } from '@/constants/aspirations';
 import { DESA_KELURAHAN_TAPIN_MAP, KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
 
-import {
-  ArrowLeft,
-  CheckCircle2,
-  FileText,
-  HelpCircle,
-  Image as ImageIcon,
-  Megaphone,
-  Send,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, FileText, HelpCircle, Image as ImageIcon, Send, Trash2 } from 'lucide-react';
 
 interface PublicComplaintStepProps {
   data: PublicComplaintFormData;
@@ -169,36 +160,6 @@ export function PublicComplaintStep({
   return (
     <TooltipProvider delayDuration={150}>
       <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
-        {/* Header section */}
-        <CardHeader className="bg-darknavy-900 p-6 text-white sm:p-8">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <div className="bg-accent-500 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg">
-                <Megaphone className="h-6 w-6" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-accent-500/20 text-accent-500 border-accent-500/40 text-2xs rounded-full border px-2.5 py-0.5 font-extrabold tracking-wider uppercase">
-                    Langkah 2 dari 2
-                  </span>
-                  <span className="text-xs text-slate-400">Pengawasan DPRD Kab. Tapin</span>
-                </div>
-                <CardTitle className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                  FORMULIR ADUAN MASYARAKAT
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-300">
-                  Penyampaian keluhan fasilitas publik, jalan rusak, sampah, dan ketertiban kota
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="border-darknavy-800 bg-darknavy-800/80 text-2xs flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-slate-300">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-              <span>SLA Tindak Lanjut &lt; 24 Jam</span>
-            </div>
-          </div>
-        </CardHeader>
-
         <CardContent className="p-6 sm:p-8">
           <form onSubmit={handleValidateSubmit} className="space-y-7">
             {/* FIELD 1: KOMISI DPRD & KATEGORI */}

@@ -32,10 +32,10 @@ Wadah Aspirasi & Aduan Warga.
 │   │   ├── schema/        # Drizzle table schemas
 │   │   └── index.server.ts# Drizzle DB client instance
 │   ├── hooks/             # Custom React hooks
-│   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, admin-layout, auth-layout)
+│   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, form-layout, admin-layout, auth-layout)
 │   ├── lib/               # Utility functions (logger, cn helper, auth, upload, audit, etc.)
 │   ├── middleware/        # Server middlewares (request logger, etc.)
-│   ├── routes/            # Route modules (home, aspiration, auth/*, dashboard/*, dashboard/users/*)
+│   ├── routes/            # Route modules (home, form/*, auth/*, dashboard/*, dashboard/users/*)
 │   ├── schema/            # Zod validation schemas
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables
@@ -68,11 +68,14 @@ Wadah Aspirasi & Aduan Warga.
   - Hero banner with quick navigation to citizen forms and ticket tracking.
   - Interactive ticket tracking section (`/#lacak-tiket`).
   - Recent public aspiration feed, real-time activity metrics, and FAQ accordion.
-- **Formulir Aspirasi & Aduan Warga (`/aspiration`):**
+- **Formulir Aspirasi Dapil DPRD (`/form/aspiration`):**
   - **Langkah 1:** Validasi data pelapor dengan unggah bukti e-KTP.
-  - **Langkah 2A (Aspirasi Dapil):** Pemilihan daerah pemilihan (Dapil), profil & foto anggota dewan DPRD Tapin, kamus usulan Pokir, alamat, dan penanda peta koordinat GPS.
-  - **Langkah 2B (Aduan Masyarakat):** Laporan keluhan fasilitas umum dengan routing pengawasan Komisi DPRD dan bukti foto pendukung.
-  - **Pasca-Kirim:** Survei Indeks Kepuasan Masyarakat (IKM) dan dialog bukti penerimaan tiket resmi.
+  - **Langkah 2:** Pemilihan daerah pemilihan (Dapil), profil & foto anggota dewan DPRD Tapin, kamus usulan Pokir, alamat, dan penanda peta koordinat GPS.
+  - **Pasca-Kirim:** Penerbitan tiket `ASP-2026-XXXX`, survei Indeks Kepuasan Masyarakat (IKM), dan dialog bukti penerimaan tiket resmi.
+- **Formulir Aduan Masyarakat (`/form/complaint`):**
+  - **Langkah 1:** Validasi data pelapor dengan unggah bukti e-KTP.
+  - **Langkah 2:** Laporan keluhan fasilitas umum dengan routing pengawasan Komisi DPRD, penanda peta GPS, dan bukti foto/dokumen pendukung.
+  - **Pasca-Kirim:** Penerbitan tiket `ADU-2026-XXXX`, survei IKM, dan tanda terima resmi.
 - **Dashboard Admin & Statistik (`/dashboard`):**
   - Pusat kendali bento-grid untuk rekapitulasi KPI dan tren aduan warga.
   - Tabel filter dan pencarian untuk usulan Pokir dan aduan publik.

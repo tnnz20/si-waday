@@ -75,7 +75,7 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
                 </button>
               ) : (
                 <Link
-                  to="/aspiration"
+                  to="/form/aspiration"
                   className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
                 >
                   <span>Sampaikan Aspirasi</span>
