@@ -21,16 +21,6 @@ export interface Aspiration {
   voted: boolean;
 }
 
-export interface NewAspirationInput {
-  author: string;
-  location: string;
-  category: Category;
-  agency: string;
-  title: string;
-  content: string;
-  isAnonymous: boolean;
-}
-
 export interface IdentityFormData {
   nik: string;
   fullName: string;

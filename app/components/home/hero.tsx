@@ -11,11 +11,7 @@ import {
   PlayCircle,
 } from 'lucide-react';
 
-interface HeroProps {
-  onOpenAspirationModal?: () => void;
-}
-
-export function Hero({ onOpenAspirationModal }: HeroProps) {
+export function Hero() {
   return (
     <section id="beranda" className="relative overflow-hidden pt-8 pb-20 md:pt-16 md:pb-28">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -61,30 +57,16 @@ export function Hero({ onOpenAspirationModal }: HeroProps) {
 
             {/* CTAs */}
             <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row lg:justify-start">
-              {onOpenAspirationModal ? (
-                <button
-                  type="button"
-                  onClick={onOpenAspirationModal}
-                  className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
-                >
-                  <span>Sampaikan Aspirasi</span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                    aria-hidden="true"
-                  />
-                </button>
-              ) : (
-                <Link
-                  to="/form/aspiration"
-                  className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
-                >
-                  <span>Sampaikan Aspirasi</span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                    aria-hidden="true"
-                  />
-                </Link>
-              )}
+              <Link
+                to="/form/aspiration"
+                className="bg-accent-500 hover:bg-accent-600 coral-glow group flex w-full items-center justify-center gap-3 rounded-full px-8 py-4 text-sm font-bold text-white transition-all duration-300 sm:w-auto"
+              >
+                <span>Sampaikan Aspirasi</span>
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                  aria-hidden="true"
+                />
+              </Link>
               <a
                 href="/#keunggulan"
                 className="border-warm-300 text-darknavy-900 hover:bg-warm-100 flex w-full items-center justify-center gap-2 rounded-full border bg-white px-7 py-4 text-sm font-bold transition-all sm:w-auto"
