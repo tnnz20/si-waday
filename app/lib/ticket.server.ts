@@ -1,11 +1,14 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { db } from '~/db/index.server';
 import {
+  type FeedbackType,
   type NewTicket,
   type Ticket,
   type TicketDbStatus,
+  type TicketFeedback,
   type TicketType,
+  ticketFeedbacks,
   tickets,
 } from '~/db/schema/schema';
 import { surveySchema } from '~/schema/form';
@@ -98,25 +101,127 @@ export async function getTicketByNumber(ticketNumber: string) {
   });
 }
 
+export interface CsatAspectStat {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CsatDistributionStat {
+  star: number;
+  count: number;
+  percentage: number;
+}
+
+export interface CsatAnalyticsResult {
+  averageRating: number;
+  totalReviews: number;
+  distribution: CsatDistributionStat[];
+  aspectRatings: CsatAspectStat[];
+}
+
 /**
  * Submit citizen satisfaction survey (Indeks Kepuasan Masyarakat) for a ticket.
  */
 export async function submitTicketSatisfaction(
   ticketNumber: string,
-  survey: AppSatisfactionRating
-): Promise<Ticket | null> {
-  const [updated] = await db
-    .update(tickets)
-    .set({
-      satisfactionRating: survey.rating,
-      satisfactionAspects: survey.aspects,
-      satisfactionFeedback: survey.feedback,
-      updatedAt: new Date(),
+  survey: AppSatisfactionRating,
+  type: FeedbackType = 'submission'
+): Promise<TicketFeedback> {
+  const ticket = await getTicketByNumber(ticketNumber);
+  if (!ticket) {
+    throw new Error(`Tiket dengan nomor ${ticketNumber} tidak ditemukan.`);
+  }
+
+  const [feedback] = await db
+    .insert(ticketFeedbacks)
+    .values({
+      ticketId: ticket.id,
+      type,
+      rating: survey.rating,
+      aspects: survey.aspects,
+      feedback: survey.feedback || null,
     })
-    .where(eq(tickets.ticketNumber, ticketNumber))
     .returning();
 
-  return updated ?? null;
+  return feedback;
+}
+
+/**
+ * Retrieve all feedback reviews for a specific ticket.
+ */
+export async function getTicketFeedbacks(ticketId: string): Promise<TicketFeedback[]> {
+  return await db
+    .select()
+    .from(ticketFeedbacks)
+    .where(eq(ticketFeedbacks.ticketId, ticketId))
+    .orderBy(desc(ticketFeedbacks.createdAt));
+}
+
+/**
+ * Aggregate CSAT analytics (average score, star distribution, and popular aspects).
+ */
+export async function getCsatAnalytics(): Promise<CsatAnalyticsResult> {
+  const allReviews = await db
+    .select({
+      rating: ticketFeedbacks.rating,
+      aspects: ticketFeedbacks.aspects,
+    })
+    .from(ticketFeedbacks);
+
+  const totalReviews = allReviews.length;
+  if (totalReviews === 0) {
+    return {
+      averageRating: 0,
+      totalReviews: 0,
+      distribution: [5, 4, 3, 2, 1].map((star) => ({ star, count: 0, percentage: 0 })),
+      aspectRatings: [],
+    };
+  }
+
+  // 1. Average Rating
+  const sum = allReviews.reduce((acc, curr) => acc + curr.rating, 0);
+  const averageRating = Number((sum / totalReviews).toFixed(1));
+
+  // 2. Star Distribution (5 down to 1)
+  const starCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const r of allReviews) {
+    if (starCounts[r.rating] !== undefined) {
+      starCounts[r.rating]++;
+    }
+  }
+
+  const distribution: CsatDistributionStat[] = [5, 4, 3, 2, 1].map((star) => {
+    const count = starCounts[star] || 0;
+    return {
+      star,
+      count,
+      percentage: Math.round((count / totalReviews) * 100),
+    };
+  });
+
+  // 3. Aspect frequencies
+  const aspectCounts: Record<string, number> = {};
+  for (const r of allReviews) {
+    for (const a of r.aspects) {
+      aspectCounts[a] = (aspectCounts[a] || 0) + 1;
+    }
+  }
+
+  const aspectRatings: CsatAspectStat[] = Object.entries(aspectCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: Math.round((count / totalReviews) * 100),
+    }));
+
+  return {
+    averageRating,
+    totalReviews,
+    distribution,
+    aspectRatings,
+  };
 }
 
 /**

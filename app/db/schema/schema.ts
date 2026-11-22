@@ -32,11 +32,7 @@ export const ticketStatusEnum = pgEnum('ticket_status', [
   'selesai',
   'ditolak',
 ]);
-export const feedbackTypeEnum = pgEnum('feedback_type', [
-  'submission',
-  'resolution',
-  'general',
-]);
+export const feedbackTypeEnum = pgEnum('feedback_type', ['submission', 'resolution', 'general']);
 
 // ---------------------------------------------------------------------------
 // 2. Regions (Wilayah) Table

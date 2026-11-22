@@ -143,12 +143,8 @@
           "name": "audit_logs_actor_id_users_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "actor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -217,9 +213,7 @@
         "regions_code_unique": {
           "name": "regions_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -352,12 +346,8 @@
           "name": "ticket_feedbacks_ticket_id_tickets_id_fk",
           "tableFrom": "ticket_feedbacks",
           "tableTo": "tickets",
-          "columnsFrom": [
-            "ticket_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ticket_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -648,12 +638,8 @@
           "name": "tickets_representative_id_user_profiles_id_fk",
           "tableFrom": "tickets",
           "tableTo": "user_profiles",
-          "columnsFrom": [
-            "representative_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["representative_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -661,12 +647,8 @@
           "name": "tickets_assigned_to_user_id_users_id_fk",
           "tableFrom": "tickets",
           "tableTo": "users",
-          "columnsFrom": [
-            "assigned_to_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_to_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -676,9 +658,7 @@
         "tickets_ticket_number_unique": {
           "name": "tickets_ticket_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "ticket_number"
-          ]
+          "columns": ["ticket_number"]
         }
       },
       "policies": {},
@@ -807,12 +787,8 @@
           "name": "user_profiles_user_id_users_id_fk",
           "tableFrom": "user_profiles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -820,12 +796,8 @@
           "name": "user_profiles_region_id_regions_id_fk",
           "tableFrom": "user_profiles",
           "tableTo": "regions",
-          "columnsFrom": [
-            "region_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["region_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -835,9 +807,7 @@
         "user_profiles_user_id_unique": {
           "name": "user_profiles_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "policies": {},
@@ -954,58 +924,32 @@
     "public.feedback_type": {
       "name": "feedback_type",
       "schema": "public",
-      "values": [
-        "submission",
-        "resolution",
-        "general"
-      ]
+      "values": ["submission", "resolution", "general"]
     },
     "public.gender": {
       "name": "gender",
       "schema": "public",
-      "values": [
-        "male",
-        "female"
-      ]
+      "values": ["male", "female"]
     },
     "public.region_type": {
       "name": "region_type",
       "schema": "public",
-      "values": [
-        "kabupaten",
-        "kecamatan",
-        "dapil_dprd",
-        "dapil_dpr"
-      ]
+      "values": ["kabupaten", "kecamatan", "dapil_dprd", "dapil_dpr"]
     },
     "public.ticket_status": {
       "name": "ticket_status",
       "schema": "public",
-      "values": [
-        "menunggu_verifikasi",
-        "terverifikasi",
-        "sedang_diproses",
-        "selesai",
-        "ditolak"
-      ]
+      "values": ["menunggu_verifikasi", "terverifikasi", "sedang_diproses", "selesai", "ditolak"]
     },
     "public.ticket_type": {
       "name": "ticket_type",
       "schema": "public",
-      "values": [
-        "dapil",
-        "masyarakat"
-      ]
+      "values": ["dapil", "masyarakat"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "moderator",
-        "dprd",
-        "dpr"
-      ]
+      "values": ["admin", "moderator", "dprd", "dpr"]
     }
   },
   "schemas": {},

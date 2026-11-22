@@ -50,7 +50,8 @@ test('createTicket, getTicketByNumber, and submitTicketSatisfaction work end-to-
     feedback: 'Pelayanan responsif dan sangat membantu',
   });
   assert.ok(surveyed);
-  assert.equal(surveyed.satisfactionRating, 5);
-  assert.deepEqual(surveyed.satisfactionAspects, ['Kecepatan Respon', 'Kemudahan Sistem']);
+  assert.equal(surveyed.rating, 5);
+  assert.deepEqual(surveyed.aspects, ['Kecepatan Respon', 'Kemudahan Sistem']);
+  assert.equal(surveyed.type, 'submission');
   process.exit(0);
 });
