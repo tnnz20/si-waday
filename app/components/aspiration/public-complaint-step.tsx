@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react';
 import { complaintStepSchema } from '~/schema/form';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
+import { PhotoDropzone } from '@/components/aspiration/photo-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,7 @@ import type { PublicComplaintFormData } from '@/types/aspiration';
 import { CATEGORIES, EXTENDED_AGENCIES } from '@/constants/aspirations';
 import { DESA_KELURAHAN_TAPIN_MAP, KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
 
-import { ArrowLeft, FileText, HelpCircle, Image as ImageIcon, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, HelpCircle, Send, Trash2 } from 'lucide-react';
 
 interface PublicComplaintStepProps {
   data: PublicComplaintFormData;
@@ -41,9 +42,6 @@ export function PublicComplaintStep({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const documentInputRef = useRef<HTMLInputElement | null>(null);
-  const photo1InputRef = useRef<HTMLInputElement | null>(null);
-  const photo2InputRef = useRef<HTMLInputElement | null>(null);
-  const photo3InputRef = useRef<HTMLInputElement | null>(null);
 
   const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
 
@@ -65,54 +63,6 @@ export function PublicComplaintStep({
     }
     onChange({ documentFileName: file.name, documentFile: file });
     if (errors.document) setErrors((prev) => ({ ...prev, document: '' }));
-  };
-
-  const handlePhotoUpload = (index: 1 | 2 | 3, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, [`photo${index}`]: 'Ukuran foto maksimal 8MB.' }));
-      return;
-    }
-
-    if (index === 1 && data.photo1PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo1PreviewUrl);
-    } else if (index === 2 && data.photo2PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo2PreviewUrl);
-    } else if (index === 3 && data.photo3PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo3PreviewUrl);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    if (index === 1) {
-      onChange({ photo1FileName: file.name, photo1PreviewUrl: previewUrl, photo1File: file });
-    } else if (index === 2) {
-      onChange({ photo2FileName: file.name, photo2PreviewUrl: previewUrl, photo2File: file });
-    } else {
-      onChange({ photo3FileName: file.name, photo3PreviewUrl: previewUrl, photo3File: file });
-    }
-  };
-
-  const handleRemovePhoto = (index: 1 | 2 | 3) => {
-    if (index === 1) {
-      if (data.photo1PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo1PreviewUrl);
-      }
-      onChange({ photo1FileName: '', photo1PreviewUrl: '', photo1File: null });
-      if (photo1InputRef.current) photo1InputRef.current.value = '';
-    } else if (index === 2) {
-      if (data.photo2PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo2PreviewUrl);
-      }
-      onChange({ photo2FileName: '', photo2PreviewUrl: '', photo2File: null });
-      if (photo2InputRef.current) photo2InputRef.current.value = '';
-    } else {
-      if (data.photo3PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo3PreviewUrl);
-      }
-      onChange({ photo3FileName: '', photo3PreviewUrl: '', photo3File: null });
-      if (photo3InputRef.current) photo3InputRef.current.value = '';
-    }
   };
 
   const handleValidateSubmit = (e: React.FormEvent) => {
@@ -609,159 +559,15 @@ export function PublicComplaintStep({
                 className="hidden"
                 onChange={handleDocumentUpload}
               />
-              <input
-                type="file"
-                ref={photo1InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(1, e)}
-              />
-              <input
-                type="file"
-                ref={photo2InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(2, e)}
-              />
-              <input
-                type="file"
-                ref={photo3InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(3, e)}
-              />
 
-              {/* Foto Bukti 1-3 Grid */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {/* Foto 1 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Bukti 1 <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo1InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo1PreviewUrl ? (
-                        <img
-                          src={data.photo1PreviewUrl}
-                          alt="Foto Bukti 1"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo1FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo1PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(1)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Foto 2 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Bukti 2 (opsional)
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo2InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo2PreviewUrl ? (
-                        <img
-                          src={data.photo2PreviewUrl}
-                          alt="Foto Bukti 2"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo2FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo2PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(2)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Foto 3 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Bukti 3 (opsional)
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo3InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo3PreviewUrl ? (
-                        <img
-                          src={data.photo3PreviewUrl}
-                          alt="Foto Bukti 3"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo3FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo3PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(3)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
+              {/* Foto Bukti Kejadian Dropzone */}
+              <PhotoDropzone
+                photos={data.photos || []}
+                onChange={(photos) => onChange({ photos })}
+                error={errors.photos}
+                label="Foto Bukti Kejadian"
+                helperText="Format: JPG, PNG, atau WebP. Maksimal 3 foto (kompresi otomatis)."
+              />
 
               {/* Surat / Dokumen Pendukung */}
               <div className="space-y-1 pt-1">

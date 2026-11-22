@@ -75,14 +75,19 @@ export async function action({ request }: Route.ActionArgs) {
     const rawComplaint = complaintData as PublicComplaintFormData;
     const rawIdentity = identityData as IdentityFormData;
 
+    const fallbackPhotoUrls =
+      rawComplaint.photos && rawComplaint.photos.length > 0
+        ? rawComplaint.photos.map((p) => p.previewUrl)
+        : [
+            rawComplaint.photo1PreviewUrl,
+            rawComplaint.photo2PreviewUrl,
+            rawComplaint.photo3PreviewUrl,
+          ];
+
     const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
       idCardUrl: rawIdentity.idCardPreviewUrl,
       documentUrl: rawComplaint.documentFileName,
-      photoUrls: [
-        rawComplaint.photo1PreviewUrl,
-        rawComplaint.photo2PreviewUrl,
-        rawComplaint.photo3PreviewUrl,
-      ],
+      photoUrls: fallbackPhotoUrls,
     });
 
     const newTicket = await createTicket({
@@ -152,6 +157,7 @@ export default function FormComplaintPage() {
     kabupaten: 'Kabupaten Tapin',
     kecamatan: 'Tapin Utara',
     kelurahan: DESA_KELURAHAN_TAPIN_MAP['Tapin Utara']?.[0] || 'Rantau Kiwa (Kelurahan)',
+    photos: [],
     photo1PreviewUrl: '',
     photo1FileName: '',
     photo2PreviewUrl: '',
@@ -217,9 +223,15 @@ export default function FormComplaintPage() {
     if (complaintData.documentFile) {
       payload.append('documentFile', complaintData.documentFile);
     }
-    if (complaintData.photo1File) payload.append('photo1', complaintData.photo1File);
-    if (complaintData.photo2File) payload.append('photo2', complaintData.photo2File);
-    if (complaintData.photo3File) payload.append('photo3', complaintData.photo3File);
+    if (complaintData.photos && complaintData.photos.length > 0) {
+      for (const item of complaintData.photos) {
+        if (item.file) payload.append('photos', item.file);
+      }
+    } else {
+      if (complaintData.photo1File) payload.append('photo1', complaintData.photo1File);
+      if (complaintData.photo2File) payload.append('photo2', complaintData.photo2File);
+      if (complaintData.photo3File) payload.append('photo3', complaintData.photo3File);
+    }
 
     submitFetcher.submit(payload, {
       method: 'post',
