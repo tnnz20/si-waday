@@ -6,6 +6,7 @@ export default [
     ...prefix('form', [
       route('aspiration', 'routes/form/aspiration.tsx'),
       route('complaint', 'routes/form/complaint.tsx'),
+      route('success/:ticketNumber', 'routes/form/success.tsx'),
     ]),
   ]),
   layout('layouts/auth-layout.tsx', [
