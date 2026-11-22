@@ -60,3 +60,64 @@ export async function saveAvatarFile(file: File): Promise<UploadResult> {
     return { success: false, error: 'Terjadi kesalahan saat menyimpan file gambar pada server.' };
   }
 }
+
+export async function saveAttachmentFile(
+  file: File,
+  category: 'ktp' | 'photo' | 'document'
+): Promise<UploadResult> {
+  if (!file || file.size === 0) {
+    return { success: false, error: 'Tidak ada file yang dipilih.' };
+  }
+
+  const limits = {
+    ktp: {
+      maxSize: 5 * 1024 * 1024,
+      allowedExts: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
+      dir: 'ktp',
+    },
+    photo: {
+      maxSize: 5 * 1024 * 1024,
+      allowedExts: ['.jpg', '.jpeg', '.png', '.webp'],
+      dir: 'photos',
+    },
+    document: {
+      maxSize: 10 * 1024 * 1024,
+      allowedExts: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp'],
+      dir: 'documents',
+    },
+  };
+
+  const config = limits[category];
+  if (file.size > config.maxSize) {
+    const mb = config.maxSize / (1024 * 1024);
+    return {
+      success: false,
+      error: `Ukuran file melebihi batas maksimal ${mb} MB.`,
+    };
+  }
+
+  const ext = path.extname(file.name).toLowerCase();
+  if (!config.allowedExts.includes(ext)) {
+    return {
+      success: false,
+      error: `Format file tidak didukung (${ext || 'tanpa ekstensi'}).`,
+    };
+  }
+
+  try {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', config.dir);
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const safeFilename = `${crypto.randomUUID()}${ext}`;
+    const destinationPath = path.join(uploadDir, safeFilename);
+
+    const arrayBuffer = await file.arrayBuffer();
+    await fs.writeFile(destinationPath, Buffer.from(arrayBuffer));
+
+    const publicUrl = `/uploads/${config.dir}/${safeFilename}`;
+    return { success: true, url: publicUrl };
+  } catch (error) {
+    console.error(`Failed to save attachment file (${category}):`, error);
+    return { success: false, error: 'Terjadi kesalahan saat menyimpan file pada server.' };
+  }
+}

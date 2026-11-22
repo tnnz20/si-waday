@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { Link, useNavigate } from 'react-router';
+import { Link, useFetcher, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { db } from '~/db/index.server';
 import { regions, userProfiles, users } from '~/db/schema/schema';
+import { createTicket, submitTicketSatisfaction } from '~/lib/ticket.server';
+import { aspirationStepSchema, identityStepSchema } from '~/schema/form';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { ProposalStep } from '@/components/aspiration/proposal-step';
@@ -89,8 +91,120 @@ export async function loader() {
   return { dapils, representatives };
 }
 
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  if (intent === 'submit_survey') {
+    const ticketNumber = String(formData.get('ticketNumber') || '');
+    const rating = Number(formData.get('rating') || 5);
+    const feedback = String(formData.get('feedback') || '');
+    let aspects: string[];
+    try {
+      aspects = JSON.parse(String(formData.get('aspects') || '[]'));
+    } catch {
+      aspects = [];
+    }
+
+    if (!ticketNumber) {
+      return Response.json({ success: false, error: 'Nomor tiket tidak valid.' }, { status: 400 });
+    }
+
+    await submitTicketSatisfaction(ticketNumber, { rating, aspects, feedback });
+    return Response.json({ success: true });
+  }
+
+  // Primary action: Create aspiration ticket
+  let identityData: unknown;
+  let usulanData: unknown;
+
+  try {
+    identityData = JSON.parse(String(formData.get('identityData') || '{}'));
+    usulanData = JSON.parse(String(formData.get('usulanData') || '{}'));
+  } catch {
+    return Response.json(
+      { success: false, error: 'Format data formulir tidak valid.' },
+      { status: 400 }
+    );
+  }
+
+  const identityParsed = identityStepSchema.safeParse(identityData);
+  if (!identityParsed.success) {
+    const fieldErrors = identityParsed.error.flatten().fieldErrors;
+    return Response.json(
+      { success: false, error: 'Data identitas pelapor tidak valid.', fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const usulanParsed = aspirationStepSchema.safeParse(usulanData);
+  if (!usulanParsed.success) {
+    const fieldErrors = usulanParsed.error.flatten().fieldErrors;
+    return Response.json(
+      { success: false, error: 'Data usulan aspirasi tidak valid.', fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const rawUsulan = usulanData as UsulanFormData;
+    const rawIdentity = identityData as IdentityFormData;
+
+    const photos = [
+      rawUsulan.photo1PreviewUrl,
+      rawUsulan.photo2PreviewUrl,
+      rawUsulan.photo3PreviewUrl,
+    ].filter(Boolean);
+
+    const newTicket = await createTicket({
+      type: 'dapil',
+      reporterNik: identityParsed.data.nik,
+      reporterName: identityParsed.data.fullName,
+      reporterPhone: identityParsed.data.phone,
+      reporterEmail: identityParsed.data.email || null,
+      reporterAddress: identityParsed.data.ktpAddress,
+      idCardUrl: rawIdentity.idCardPreviewUrl || null,
+      kabupaten: 'KABUPATEN TAPIN',
+      kecamatan: usulanParsed.data.kecamatan,
+      kelurahan: usulanParsed.data.kelurahan,
+      alamatLokasi: usulanParsed.data.alamatLokasi,
+      latitude: usulanParsed.data.latitude,
+      longitude: usulanParsed.data.longitude,
+      title: usulanParsed.data.kamusUsulan,
+      description: usulanParsed.data.permasalahan,
+      representativeId: usulanParsed.data.representativeId || null,
+      dapilId: usulanParsed.data.dapilId,
+      kamusUsulan: usulanParsed.data.kamusUsulan,
+      photos,
+      documentUrl: rawUsulan.proposalFileName || null,
+    });
+
+    return Response.json({
+      success: true,
+      ticketNumber: newTicket.ticketNumber,
+      ticket: newTicket,
+    });
+  } catch (error) {
+    console.error('Failed to register aspiration ticket:', error);
+    return Response.json(
+      {
+        success: false,
+        error: 'Terjadi kesalahan sistem saat menyimpan tiket aspirasi. Silakan coba lagi.',
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export default function FormAspirationPage({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
+  const submitFetcher = useFetcher<{
+    success: boolean;
+    ticketNumber?: string;
+    error?: string;
+    fieldErrors?: Record<string, string[]>;
+  }>();
+  const surveyFetcher = useFetcher<{ success: boolean }>();
 
   // Wizard Step: 1 = Identitas & KTP, 2 = Form Usulan
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -141,10 +255,23 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     satisfactionFeedback: '',
   }));
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedTicketId, setSubmittedTicketId] = useState('');
-  const [isSatisfactionModalOpen, setIsSatisfactionModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSatisfactionDismissed, setIsSatisfactionDismissed] = useState(false);
+  const [isSuccessDismissed, setIsSuccessDismissed] = useState(false);
+
+  const isSubmitting = submitFetcher.state === 'submitting';
+  const ticketNumber = submitFetcher.data?.ticketNumber || '';
+  const isSatisfactionModalOpen = Boolean(ticketNumber && !isSatisfactionDismissed);
+  const isSuccessModalOpen = Boolean(
+    ticketNumber && isSatisfactionDismissed && !isSuccessDismissed
+  );
+
+  useEffect(() => {
+    if (submitFetcher.data && !submitFetcher.data.success && submitFetcher.data.error) {
+      toast.error('Gagal Mengirim Aspirasi', {
+        description: submitFetcher.data.error,
+      });
+    }
+  }, [submitFetcher.data]);
 
   const handleIdentityChange = (updates: Partial<IdentityFormData>) => {
     setIdentityData((prev) => ({ ...prev, ...updates }));
@@ -169,24 +296,34 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
 
   const handleSubmitDapil = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newTicketId = `ASP-2026-${randomSuffix}`;
-    setSubmittedTicketId(newTicketId);
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSatisfactionModalOpen(true);
-    }, 400);
+    submitFetcher.submit(
+      {
+        intent: 'create_aspiration',
+        identityData: JSON.stringify(identityData),
+        usulanData: JSON.stringify(usulanData),
+      },
+      { method: 'post' }
+    );
   };
 
   const handleFinalizeSubmission = (withSurvey: boolean) => {
-    setIsSatisfactionModalOpen(false);
-    setIsSuccessModalOpen(true);
+    setIsSatisfactionDismissed(true);
+
+    if (withSurvey && ticketNumber) {
+      surveyFetcher.submit(
+        {
+          intent: 'submit_survey',
+          ticketNumber,
+          rating: String(usulanData.satisfactionRating),
+          aspects: JSON.stringify(usulanData.satisfactionAspects),
+          feedback: usulanData.satisfactionFeedback,
+        },
+        { method: 'post' }
+      );
+    }
 
     toast.success('Aspirasi Dapil Berhasil Dikirim!', {
-      description: `Nomor Tiket: ${submittedTicketId}. Terindeks untuk ${usulanData.dapilName}.`,
+      description: `Nomor Tiket: ${ticketNumber}. Terindeks untuk ${usulanData.dapilName}.`,
     });
 
     if (withSurvey) {
@@ -197,12 +334,12 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
   };
 
   const handleCloseSuccess = () => {
-    setIsSuccessModalOpen(false);
+    setIsSuccessDismissed(true);
     navigate('/');
   };
 
   const handleTrackTicket = () => {
-    setIsSuccessModalOpen(false);
+    setIsSuccessDismissed(true);
     navigate('/#lacak-tiket');
   };
 
@@ -362,7 +499,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
         <SuccessModal
           isOpen={isSuccessModalOpen}
           onClose={handleCloseSuccess}
-          ticketId={submittedTicketId}
+          ticketId={ticketNumber}
           aspirationType="dapil"
           author={identityData.fullName || 'Warga Tapin'}
           targetDestination={usulanData.dapilName}

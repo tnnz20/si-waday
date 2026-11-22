@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Link, useNavigate } from 'react-router';
+import { Link, useFetcher, useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { createTicket, submitTicketSatisfaction } from '~/lib/ticket.server';
+import { complaintStepSchema, identityStepSchema } from '~/schema/form';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { PublicComplaintStep } from '@/components/aspiration/public-complaint-step';
@@ -27,8 +29,119 @@ export const meta: Route.MetaFunction = () => [
   },
 ];
 
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  if (intent === 'submit_survey') {
+    const ticketNumber = String(formData.get('ticketNumber') || '');
+    const rating = Number(formData.get('rating') || 5);
+    const feedback = String(formData.get('feedback') || '');
+    let aspects: string[];
+    try {
+      aspects = JSON.parse(String(formData.get('aspects') || '[]'));
+    } catch {
+      aspects = [];
+    }
+
+    if (!ticketNumber) {
+      return Response.json({ success: false, error: 'Nomor tiket tidak valid.' }, { status: 400 });
+    }
+
+    await submitTicketSatisfaction(ticketNumber, { rating, aspects, feedback });
+    return Response.json({ success: true });
+  }
+
+  // Primary action: Create public complaint ticket
+  let identityData: unknown;
+  let complaintData: unknown;
+
+  try {
+    identityData = JSON.parse(String(formData.get('identityData') || '{}'));
+    complaintData = JSON.parse(String(formData.get('complaintData') || '{}'));
+  } catch {
+    return Response.json(
+      { success: false, error: 'Format data formulir tidak valid.' },
+      { status: 400 }
+    );
+  }
+
+  const identityParsed = identityStepSchema.safeParse(identityData);
+  if (!identityParsed.success) {
+    const fieldErrors = identityParsed.error.flatten().fieldErrors;
+    return Response.json(
+      { success: false, error: 'Data identitas pelapor tidak valid.', fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const complaintParsed = complaintStepSchema.safeParse(complaintData);
+  if (!complaintParsed.success) {
+    const fieldErrors = complaintParsed.error.flatten().fieldErrors;
+    return Response.json(
+      { success: false, error: 'Data keluhan aduan tidak valid.', fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const rawComplaint = complaintData as PublicComplaintFormData;
+    const rawIdentity = identityData as IdentityFormData;
+
+    const photos = [
+      rawComplaint.photo1PreviewUrl,
+      rawComplaint.photo2PreviewUrl,
+      rawComplaint.photo3PreviewUrl,
+    ].filter(Boolean);
+
+    const newTicket = await createTicket({
+      type: 'masyarakat',
+      reporterNik: identityParsed.data.nik,
+      reporterName: identityParsed.data.fullName,
+      reporterPhone: identityParsed.data.phone,
+      reporterEmail: identityParsed.data.email || null,
+      reporterAddress: identityParsed.data.ktpAddress,
+      idCardUrl: rawIdentity.idCardPreviewUrl || null,
+      kabupaten: 'KABUPATEN TAPIN',
+      kecamatan: complaintParsed.data.kecamatan,
+      kelurahan: complaintParsed.data.kelurahan,
+      alamatLokasi: complaintParsed.data.alamatLokasi,
+      latitude: complaintParsed.data.latitude,
+      longitude: complaintParsed.data.longitude,
+      title: complaintParsed.data.title,
+      description: complaintParsed.data.content,
+      agency: complaintParsed.data.agency,
+      category: complaintParsed.data.category,
+      photos,
+      documentUrl: rawComplaint.documentFileName || null,
+    });
+
+    return Response.json({
+      success: true,
+      ticketNumber: newTicket.ticketNumber,
+      ticket: newTicket,
+    });
+  } catch (error) {
+    console.error('Failed to register complaint ticket:', error);
+    return Response.json(
+      {
+        success: false,
+        error: 'Terjadi kesalahan sistem saat menyimpan tiket aduan. Silakan coba lagi.',
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export default function FormComplaintPage() {
   const navigate = useNavigate();
+  const submitFetcher = useFetcher<{
+    success: boolean;
+    ticketNumber?: string;
+    error?: string;
+    fieldErrors?: Record<string, string[]>;
+  }>();
+  const surveyFetcher = useFetcher<{ success: boolean }>();
 
   // Wizard Step: 1 = Identitas & KTP, 2 = Form Aduan
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -69,10 +182,23 @@ export default function FormComplaintPage() {
     satisfactionFeedback: '',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedTicketId, setSubmittedTicketId] = useState('');
-  const [isSatisfactionModalOpen, setIsSatisfactionModalOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSatisfactionDismissed, setIsSatisfactionDismissed] = useState(false);
+  const [isSuccessDismissed, setIsSuccessDismissed] = useState(false);
+
+  const isSubmitting = submitFetcher.state === 'submitting';
+  const ticketNumber = submitFetcher.data?.ticketNumber || '';
+  const isSatisfactionModalOpen = Boolean(ticketNumber && !isSatisfactionDismissed);
+  const isSuccessModalOpen = Boolean(
+    ticketNumber && isSatisfactionDismissed && !isSuccessDismissed
+  );
+
+  useEffect(() => {
+    if (submitFetcher.data && !submitFetcher.data.success && submitFetcher.data.error) {
+      toast.error('Gagal Mengirim Aduan', {
+        description: submitFetcher.data.error,
+      });
+    }
+  }, [submitFetcher.data]);
 
   const handleIdentityChange = (updates: Partial<IdentityFormData>) => {
     setIdentityData((prev) => ({ ...prev, ...updates }));
@@ -98,24 +224,34 @@ export default function FormComplaintPage() {
 
   const handleSubmitMasyarakat = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newTicketId = `ADU-2026-${randomSuffix}`;
-    setSubmittedTicketId(newTicketId);
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSatisfactionModalOpen(true);
-    }, 400);
+    submitFetcher.submit(
+      {
+        intent: 'create_complaint',
+        identityData: JSON.stringify(identityData),
+        complaintData: JSON.stringify(complaintData),
+      },
+      { method: 'post' }
+    );
   };
 
   const handleFinalizeSubmission = (withSurvey: boolean) => {
-    setIsSatisfactionModalOpen(false);
-    setIsSuccessModalOpen(true);
+    setIsSatisfactionDismissed(true);
+
+    if (withSurvey && ticketNumber) {
+      surveyFetcher.submit(
+        {
+          intent: 'submit_survey',
+          ticketNumber,
+          rating: String(complaintData.satisfactionRating),
+          aspects: JSON.stringify(complaintData.satisfactionAspects),
+          feedback: complaintData.satisfactionFeedback,
+        },
+        { method: 'post' }
+      );
+    }
 
     toast.success('Aduan Masyarakat Berhasil Dikirim!', {
-      description: `Nomor Tiket: ${submittedTicketId}. Diteruskan ke ${complaintData.agency}.`,
+      description: `Nomor Tiket: ${ticketNumber}. Diteruskan ke ${complaintData.agency}.`,
     });
 
     if (withSurvey) {
@@ -126,12 +262,12 @@ export default function FormComplaintPage() {
   };
 
   const handleCloseSuccess = () => {
-    setIsSuccessModalOpen(false);
+    setIsSuccessDismissed(true);
     navigate('/');
   };
 
   const handleTrackTicket = () => {
-    setIsSuccessModalOpen(false);
+    setIsSuccessDismissed(true);
     navigate('/#lacak-tiket');
   };
 
@@ -293,7 +429,7 @@ export default function FormComplaintPage() {
         <SuccessModal
           isOpen={isSuccessModalOpen}
           onClose={handleCloseSuccess}
-          ticketId={submittedTicketId}
+          ticketId={ticketNumber}
           aspirationType="masyarakat"
           author={identityData.fullName || 'Warga Tapin'}
           targetDestination={complaintData.agency}
