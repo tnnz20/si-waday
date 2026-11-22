@@ -102,6 +102,25 @@ export const complaintStepSchema = z.object({
   longitude: z.number({ message: 'Titik koordinat peta wajib ditentukan.' }),
 });
 
+export const surveySchema = z.object({
+  ticketNumber: z.string().min(1, 'Nomor tiket wajib diisi.'),
+  rating: z.coerce.number().min(1).max(5).default(5),
+  aspects: z.array(z.string()).default([]),
+  feedback: z.string().optional().default(''),
+});
+
+export const INITIAL_IDENTITY_DATA = {
+  nik: '',
+  fullName: '',
+  phone: '',
+  email: '',
+  ktpAddress: '',
+  identityType: 'e-KTP (Kartu Tanda Penduduk)',
+  idCardFileName: '',
+  idCardPreviewUrl: '',
+};
+
 export type IdentityStepInput = z.infer<typeof identityStepSchema>;
 export type AspirationStepInput = z.infer<typeof aspirationStepSchema>;
 export type ComplaintStepInput = z.infer<typeof complaintStepSchema>;
+export type SurveyInput = z.infer<typeof surveySchema>;

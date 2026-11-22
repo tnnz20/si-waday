@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 
 import { Link, useFetcher, useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { createTicket, submitTicketSatisfaction } from '~/lib/ticket.server';
-import { saveAttachmentFile } from '~/lib/upload.server';
-import { complaintStepSchema, identityStepSchema } from '~/schema/form';
+import { createTicket, handleSurveyAction } from '~/lib/ticket.server';
+import { extractTicketAttachments } from '~/lib/upload.server';
+import { INITIAL_IDENTITY_DATA, complaintStepSchema, identityStepSchema } from '~/schema/form';
 
+import { FormStepper } from '@/components/aspiration/form-stepper';
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { PublicComplaintStep } from '@/components/aspiration/public-complaint-step';
 import { SatisfactionModal } from '@/components/aspiration/satisfaction-modal';
@@ -17,7 +18,7 @@ import { AGENCIES, CATEGORIES } from '@/constants/aspirations';
 import { APP_NAME } from '@/constants/index';
 import { DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
 
-import { ArrowLeft, Check, IdCard, Landmark, Send } from 'lucide-react';
+import { ArrowLeft, Landmark } from 'lucide-react';
 
 import type { Route } from './+types/complaint';
 
@@ -35,22 +36,7 @@ export async function action({ request }: Route.ActionArgs) {
   const intent = formData.get('intent');
 
   if (intent === 'submit_survey') {
-    const ticketNumber = String(formData.get('ticketNumber') || '');
-    const rating = Number(formData.get('rating') || 5);
-    const feedback = String(formData.get('feedback') || '');
-    let aspects: string[];
-    try {
-      aspects = JSON.parse(String(formData.get('aspects') || '[]'));
-    } catch {
-      aspects = [];
-    }
-
-    if (!ticketNumber) {
-      return Response.json({ success: false, error: 'Nomor tiket tidak valid.' }, { status: 400 });
-    }
-
-    await submitTicketSatisfaction(ticketNumber, { rating, aspects, feedback });
-    return Response.json({ success: true });
+    return handleSurveyAction(formData);
   }
 
   // Primary action: Create public complaint ticket
@@ -89,44 +75,15 @@ export async function action({ request }: Route.ActionArgs) {
     const rawComplaint = complaintData as PublicComplaintFormData;
     const rawIdentity = identityData as IdentityFormData;
 
-    // Handle physical file uploads
-    let idCardUrl = rawIdentity.idCardPreviewUrl || null;
-    const idCardFile = formData.get('idCardFile');
-    if (idCardFile instanceof File && idCardFile.size > 0) {
-      const uploadRes = await saveAttachmentFile(idCardFile, 'ktp');
-      if (uploadRes.success && uploadRes.url) {
-        idCardUrl = uploadRes.url;
-      }
-    }
-
-    let documentUrl = rawComplaint.documentFileName || null;
-    const documentFile = formData.get('documentFile');
-    if (documentFile instanceof File && documentFile.size > 0) {
-      const uploadRes = await saveAttachmentFile(documentFile, 'document');
-      if (uploadRes.success && uploadRes.url) {
-        documentUrl = uploadRes.url;
-      }
-    }
-
-    const uploadedPhotos: string[] = [];
-    for (const key of ['photo1', 'photo2', 'photo3']) {
-      const photoFile = formData.get(key);
-      if (photoFile instanceof File && photoFile.size > 0) {
-        const uploadRes = await saveAttachmentFile(photoFile, 'photo');
-        if (uploadRes.success && uploadRes.url) {
-          uploadedPhotos.push(uploadRes.url);
-        }
-      }
-    }
-
-    const photos =
-      uploadedPhotos.length > 0
-        ? uploadedPhotos
-        : [
-            rawComplaint.photo1PreviewUrl,
-            rawComplaint.photo2PreviewUrl,
-            rawComplaint.photo3PreviewUrl,
-          ].filter(Boolean);
+    const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
+      idCardUrl: rawIdentity.idCardPreviewUrl,
+      documentUrl: rawComplaint.documentFileName,
+      photoUrls: [
+        rawComplaint.photo1PreviewUrl,
+        rawComplaint.photo2PreviewUrl,
+        rawComplaint.photo3PreviewUrl,
+      ],
+    });
 
     const newTicket = await createTicket({
       type: 'masyarakat',
@@ -181,16 +138,7 @@ export default function FormComplaintPage() {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
   // Step 1: Data Diri & Tanda Pengenal (KTP)
-  const [identityData, setIdentityData] = useState<IdentityFormData>({
-    nik: '',
-    fullName: '',
-    phone: '',
-    email: '',
-    ktpAddress: '',
-    identityType: 'e-KTP (Kartu Tanda Penduduk)',
-    idCardFileName: '',
-    idCardPreviewUrl: '',
-  });
+  const [identityData, setIdentityData] = useState<IdentityFormData>(INITIAL_IDENTITY_DATA);
 
   // Step 2: Form Aduan Masyarakat ke DPRD Kabupaten Tapin
   const [complaintData, setComplaintData] = useState<PublicComplaintFormData>({
@@ -343,91 +291,17 @@ export default function FormComplaintPage() {
         </div>
 
         {/* Stepper Progress Bar */}
-        <div className="border-warm-200 mb-8 rounded-3xl border bg-white p-4 shadow-xs sm:p-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Step 1 Pill */}
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              className={`flex items-center gap-3.5 rounded-2xl p-3 text-left transition-all ${
-                currentStep === 1
-                  ? 'bg-darknavy-900 text-white shadow-md'
-                  : currentStep > 1
-                    ? 'border border-emerald-200 bg-emerald-50/70 text-emerald-900 hover:bg-emerald-100/70'
-                    : 'bg-warm-100 text-slate-500'
-              }`}
-            >
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold transition-colors ${
-                  currentStep === 1
-                    ? 'bg-accent-500 text-white'
-                    : currentStep > 1
-                      ? 'bg-emerald-500 text-white'
-                      : 'text-darknavy-900 bg-white'
-                }`}
-              >
-                {currentStep > 1 ? (
-                  <Check className="h-5 w-5" aria-hidden="true" />
-                ) : (
-                  <IdCard className="h-5 w-5" aria-hidden="true" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xs font-extrabold tracking-wider uppercase opacity-80">
-                    Langkah 1
-                  </span>
-                  {currentStep > 1 ? (
-                    <span className="text-2xs rounded-full bg-emerald-200/60 px-1.5 py-0.5 font-bold text-emerald-800">
-                      Selesai
-                    </span>
-                  ) : null}
-                </div>
-                <p className="truncate text-xs font-extrabold sm:text-sm">
-                  Data Diri &amp; Kartu Tanda Pengenal
-                </p>
-                <p className="text-2xs truncate opacity-75">
-                  {identityData.fullName ? identityData.fullName : 'e-KTP Pelapor'}
-                </p>
-              </div>
-            </button>
-
-            {/* Step 2 Pill */}
-            <button
-              type="button"
-              onClick={() => {
-                if (identityData.fullName && identityData.nik) {
-                  setCurrentStep(2);
-                }
-              }}
-              disabled={!identityData.fullName || !identityData.nik}
-              className={`flex items-center gap-3.5 rounded-2xl p-3 text-left transition-all ${
-                currentStep === 2
-                  ? 'bg-darknavy-900 text-white shadow-md'
-                  : 'bg-warm-100 hover:bg-warm-200 text-slate-500'
-              } ${!identityData.fullName || !identityData.nik ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-            >
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold transition-colors ${
-                  currentStep === 2 ? 'bg-accent-500 text-white' : 'bg-white text-slate-400'
-                }`}
-              >
-                <Send className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-2xs font-extrabold tracking-wider uppercase opacity-80">
-                  Langkah 2
-                </span>
-                <p className="truncate text-xs font-extrabold sm:text-sm">
-                  Formulir Aduan Masyarakat
-                </p>
-                <p className="text-2xs truncate opacity-75">
-                  Tujuan Komisi &amp; Pengawasan DPRD Tapin
-                </p>
-              </div>
-            </button>
-          </div>
-        </div>
+        <FormStepper
+          currentStep={currentStep}
+          onStepClick={(step) => {
+            if (step === 1) handleBackToIdentity();
+            else handleGoToStepTwo();
+          }}
+          reporterName={identityData.fullName}
+          canGoToStepTwo={Boolean(identityData.fullName && identityData.nik)}
+          stepTwoTitle="Formulir Aduan Masyarakat"
+          stepTwoSubtitle="Tujuan Komisi & Pengawasan DPRD Tapin"
+        />
 
         {/* Dynamic Step View */}
         {currentStep === 1 ? (

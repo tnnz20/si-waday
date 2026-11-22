@@ -8,6 +8,7 @@ import {
   type TicketType,
   tickets,
 } from '~/db/schema/schema';
+import { surveySchema } from '~/schema/form';
 import type { AppSatisfactionRating } from '~/types/aspiration';
 
 /**
@@ -151,4 +152,35 @@ export async function updateTicketStatus(
     .returning();
 
   return updated ?? null;
+}
+
+/**
+ * Handle citizen satisfaction survey action directly from FormData.
+ */
+export async function handleSurveyAction(formData: FormData): Promise<Response> {
+  const ticketNumber = String(formData.get('ticketNumber') || '');
+  const rating = Number(formData.get('rating') || 5);
+  const feedback = String(formData.get('feedback') || '');
+  let aspects: string[];
+  try {
+    aspects = JSON.parse(String(formData.get('aspects') || '[]'));
+  } catch {
+    aspects = [];
+  }
+
+  const parsed = surveySchema.safeParse({ ticketNumber, rating, aspects, feedback });
+  if (!parsed.success) {
+    return Response.json(
+      { success: false, error: 'Data survei kepuasan tidak valid.' },
+      { status: 400 }
+    );
+  }
+
+  await submitTicketSatisfaction(parsed.data.ticketNumber, {
+    rating: parsed.data.rating,
+    aspects: parsed.data.aspects,
+    feedback: parsed.data.feedback || '',
+  });
+
+  return Response.json({ success: true });
 }

@@ -121,3 +121,59 @@ export async function saveAttachmentFile(
     return { success: false, error: 'Terjadi kesalahan saat menyimpan file pada server.' };
   }
 }
+
+export interface ExtractedAttachments {
+  idCardUrl: string | null;
+  documentUrl: string | null;
+  photos: string[];
+}
+
+/**
+ * Extracts and saves citizen file attachments (KTP, proposal/doc, photos) from FormData,
+ * with graceful fallback to provided client preview URLs.
+ */
+export async function extractTicketAttachments(
+  formData: FormData,
+  fallbacks: {
+    idCardUrl?: string | null;
+    documentUrl?: string | null;
+    photoUrls?: string[];
+  }
+): Promise<ExtractedAttachments> {
+  // 1. KTP
+  let idCardUrl = fallbacks.idCardUrl || null;
+  const idCardFile = formData.get('idCardFile');
+  if (idCardFile instanceof File && idCardFile.size > 0) {
+    const uploadRes = await saveAttachmentFile(idCardFile, 'ktp');
+    if (uploadRes.success && uploadRes.url) {
+      idCardUrl = uploadRes.url;
+    }
+  }
+
+  // 2. Proposal / Complaint Document
+  let documentUrl = fallbacks.documentUrl || null;
+  const docFile = formData.get('proposalFile') || formData.get('documentFile');
+  if (docFile instanceof File && docFile.size > 0) {
+    const uploadRes = await saveAttachmentFile(docFile, 'document');
+    if (uploadRes.success && uploadRes.url) {
+      documentUrl = uploadRes.url;
+    }
+  }
+
+  // 3. Evidence Photos (photo1, photo2, photo3)
+  const uploadedPhotos: string[] = [];
+  for (const key of ['photo1', 'photo2', 'photo3']) {
+    const photoFile = formData.get(key);
+    if (photoFile instanceof File && photoFile.size > 0) {
+      const uploadRes = await saveAttachmentFile(photoFile, 'photo');
+      if (uploadRes.success && uploadRes.url) {
+        uploadedPhotos.push(uploadRes.url);
+      }
+    }
+  }
+
+  const photos =
+    uploadedPhotos.length > 0 ? uploadedPhotos : (fallbacks.photoUrls || []).filter(Boolean);
+
+  return { idCardUrl, documentUrl, photos };
+}
