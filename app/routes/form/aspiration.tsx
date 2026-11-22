@@ -9,11 +9,10 @@ import { createTicket, handleSurveyAction } from '~/lib/ticket.server';
 import { extractTicketAttachments } from '~/lib/upload.server';
 import { INITIAL_IDENTITY_DATA, aspirationStepSchema, identityStepSchema } from '~/schema/form';
 
+import { FeedbackAlertDialog } from '@/components/aspiration/feedback-alert-dialog';
 import { FormStepper } from '@/components/aspiration/form-stepper';
 import { IdentityStep } from '@/components/aspiration/identity-step';
 import { ProposalStep } from '@/components/aspiration/proposal-step';
-import { SatisfactionModal } from '@/components/aspiration/satisfaction-modal';
-import { SuccessModal } from '@/components/aspiration/success-modal';
 
 import type { IdentityFormData, UsulanFormData } from '@/types/aspiration';
 
@@ -239,15 +238,16 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     satisfactionFeedback: '',
   }));
 
-  const [isSatisfactionDismissed, setIsSatisfactionDismissed] = useState(false);
-  const [isSuccessDismissed, setIsSuccessDismissed] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackAspects, setFeedbackAspects] = useState<string[]>([
+    'Formulir Mudah Dipahami',
+    'Kecepatan Akses Lancar',
+  ]);
+  const [feedbackComment, setFeedbackComment] = useState('');
 
   const isSubmitting = submitFetcher.state === 'submitting';
   const ticketNumber = submitFetcher.data?.ticketNumber || '';
-  const isSatisfactionModalOpen = Boolean(ticketNumber && !isSatisfactionDismissed);
-  const isSuccessModalOpen = Boolean(
-    ticketNumber && isSatisfactionDismissed && !isSuccessDismissed
-  );
+  const isFeedbackDialogOpen = Boolean(ticketNumber);
 
   useEffect(() => {
     if (submitFetcher.data && !submitFetcher.data.success && submitFetcher.data.error) {
@@ -307,41 +307,37 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     });
   };
 
-  const handleFinalizeSubmission = (withSurvey: boolean) => {
-    setIsSatisfactionDismissed(true);
+  const handleFeedbackSubmit = () => {
+    if (!ticketNumber) return;
 
-    if (withSurvey && ticketNumber) {
-      surveyFetcher.submit(
-        {
-          intent: 'submit_survey',
-          ticketNumber,
-          rating: String(usulanData.satisfactionRating),
-          aspects: JSON.stringify(usulanData.satisfactionAspects),
-          feedback: usulanData.satisfactionFeedback,
-        },
-        { method: 'post' }
-      );
+    surveyFetcher.submit(
+      {
+        intent: 'submit_survey',
+        ticketNumber,
+        rating: String(feedbackRating),
+        aspects: JSON.stringify(feedbackAspects),
+        feedback: feedbackComment,
+      },
+      { method: 'post' }
+    );
+
+    // Clean up local blob object URLs to prevent memory leaks
+    if (identityData.idCardPreviewUrl && identityData.idCardPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(identityData.idCardPreviewUrl);
+    }
+    if (usulanData.photos) {
+      for (const p of usulanData.photos) {
+        if (p.previewUrl && p.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(p.previewUrl);
+        }
+      }
     }
 
-    toast.success('Aspirasi Dapil Berhasil Dikirim!', {
-      description: `Nomor Tiket: ${ticketNumber}. Terindeks untuk ${usulanData.dapilName}.`,
+    toast.success('Ulasan Berhasil Dikirim!', {
+      description: 'Mengarahkan ke bukti registrasi resmi tiket...',
     });
 
-    if (withSurvey) {
-      toast.info('Terima kasih atas ulasan kepuasan Anda!', {
-        description: 'Penilaian Anda membantu kami terus menyempurnakan aplikasi SI-WADAY.',
-      });
-    }
-  };
-
-  const handleCloseSuccess = () => {
-    setIsSuccessDismissed(true);
-    navigate('/');
-  };
-
-  const handleTrackTicket = () => {
-    setIsSuccessDismissed(true);
-    navigate('/#lacak-tiket');
+    navigate(`/form/success/${ticketNumber}`);
   };
 
   return (
@@ -403,40 +399,21 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
           />
         )}
 
-        {/* Post-Form Satisfaction Survey Modal */}
-        <SatisfactionModal
-          isOpen={isSatisfactionModalOpen}
-          onClose={() => handleFinalizeSubmission(false)}
-          rating={usulanData.satisfactionRating}
-          aspects={usulanData.satisfactionAspects}
-          feedback={usulanData.satisfactionFeedback}
-          onChange={(updates) => {
-            handleUsulanChange({
-              satisfactionRating:
-                updates.rating !== undefined ? updates.rating : usulanData.satisfactionRating,
-              satisfactionAspects:
-                updates.aspects !== undefined ? updates.aspects : usulanData.satisfactionAspects,
-              satisfactionFeedback:
-                updates.feedback !== undefined ? updates.feedback : usulanData.satisfactionFeedback,
-            });
-          }}
-          onSubmit={() => handleFinalizeSubmission(true)}
-          onSkip={() => handleFinalizeSubmission(false)}
-        />
-
-        {/* Success Modal / Ticket Receipt */}
-        <SuccessModal
-          isOpen={isSuccessModalOpen}
-          onClose={handleCloseSuccess}
-          ticketId={ticketNumber}
+        {/* Post-Form Mandatory Feedback Alert Dialog */}
+        <FeedbackAlertDialog
+          isOpen={isFeedbackDialogOpen}
+          ticketNumber={ticketNumber}
           aspirationType="dapil"
-          author={identityData.fullName || 'Warga Tapin'}
-          targetDestination={usulanData.dapilName}
-          summaryTitle={usulanData.kamusUsulan}
-          kecamatan={usulanData.kecamatan}
-          kelurahan={usulanData.kelurahan}
-          satisfactionRating={usulanData.satisfactionRating}
-          onTrackTicket={handleTrackTicket}
+          rating={feedbackRating}
+          aspects={feedbackAspects}
+          feedback={feedbackComment}
+          isSubmitting={surveyFetcher.state === 'submitting'}
+          onChange={(updates) => {
+            if (updates.rating !== undefined) setFeedbackRating(updates.rating);
+            if (updates.aspects !== undefined) setFeedbackAspects(updates.aspects);
+            if (updates.feedback !== undefined) setFeedbackComment(updates.feedback);
+          }}
+          onSubmit={handleFeedbackSubmit}
         />
       </div>
     </div>
