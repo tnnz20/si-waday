@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { db } from '~/db/index.server';
 import { regions, userProfiles, users } from '~/db/schema/schema';
 import { createTicket, submitTicketSatisfaction } from '~/lib/ticket.server';
+import { saveAttachmentFile } from '~/lib/upload.server';
 import { aspirationStepSchema, identityStepSchema } from '~/schema/form';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
@@ -150,11 +151,44 @@ export async function action({ request }: Route.ActionArgs) {
     const rawUsulan = usulanData as UsulanFormData;
     const rawIdentity = identityData as IdentityFormData;
 
-    const photos = [
-      rawUsulan.photo1PreviewUrl,
-      rawUsulan.photo2PreviewUrl,
-      rawUsulan.photo3PreviewUrl,
-    ].filter(Boolean);
+    // Handle physical file uploads
+    let idCardUrl = rawIdentity.idCardPreviewUrl || null;
+    const idCardFile = formData.get('idCardFile');
+    if (idCardFile instanceof File && idCardFile.size > 0) {
+      const uploadRes = await saveAttachmentFile(idCardFile, 'ktp');
+      if (uploadRes.success && uploadRes.url) {
+        idCardUrl = uploadRes.url;
+      }
+    }
+
+    let documentUrl = rawUsulan.proposalFileName || null;
+    const proposalFile = formData.get('proposalFile');
+    if (proposalFile instanceof File && proposalFile.size > 0) {
+      const uploadRes = await saveAttachmentFile(proposalFile, 'document');
+      if (uploadRes.success && uploadRes.url) {
+        documentUrl = uploadRes.url;
+      }
+    }
+
+    const uploadedPhotos: string[] = [];
+    for (const key of ['photo1', 'photo2', 'photo3']) {
+      const photoFile = formData.get(key);
+      if (photoFile instanceof File && photoFile.size > 0) {
+        const uploadRes = await saveAttachmentFile(photoFile, 'photo');
+        if (uploadRes.success && uploadRes.url) {
+          uploadedPhotos.push(uploadRes.url);
+        }
+      }
+    }
+
+    const photos =
+      uploadedPhotos.length > 0
+        ? uploadedPhotos
+        : [
+            rawUsulan.photo1PreviewUrl,
+            rawUsulan.photo2PreviewUrl,
+            rawUsulan.photo3PreviewUrl,
+          ].filter(Boolean);
 
     const newTicket = await createTicket({
       type: 'dapil',
@@ -163,7 +197,7 @@ export async function action({ request }: Route.ActionArgs) {
       reporterPhone: identityParsed.data.phone,
       reporterEmail: identityParsed.data.email || null,
       reporterAddress: identityParsed.data.ktpAddress,
-      idCardUrl: rawIdentity.idCardPreviewUrl || null,
+      idCardUrl,
       kabupaten: 'KABUPATEN TAPIN',
       kecamatan: usulanParsed.data.kecamatan,
       kelurahan: usulanParsed.data.kelurahan,
@@ -176,7 +210,7 @@ export async function action({ request }: Route.ActionArgs) {
       dapilId: usulanParsed.data.dapilId,
       kamusUsulan: usulanParsed.data.kamusUsulan,
       photos,
-      documentUrl: rawUsulan.proposalFileName || null,
+      documentUrl,
     });
 
     return Response.json({
@@ -296,14 +330,25 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
 
   const handleSubmitDapil = (e: React.FormEvent) => {
     e.preventDefault();
-    submitFetcher.submit(
-      {
-        intent: 'create_aspiration',
-        identityData: JSON.stringify(identityData),
-        usulanData: JSON.stringify(usulanData),
-      },
-      { method: 'post' }
-    );
+    const payload = new FormData();
+    payload.append('intent', 'create_aspiration');
+    payload.append('identityData', JSON.stringify(identityData));
+    payload.append('usulanData', JSON.stringify(usulanData));
+
+    if (identityData.idCardFile) {
+      payload.append('idCardFile', identityData.idCardFile);
+    }
+    if (usulanData.proposalFile) {
+      payload.append('proposalFile', usulanData.proposalFile);
+    }
+    if (usulanData.photo1File) payload.append('photo1', usulanData.photo1File);
+    if (usulanData.photo2File) payload.append('photo2', usulanData.photo2File);
+    if (usulanData.photo3File) payload.append('photo3', usulanData.photo3File);
+
+    submitFetcher.submit(payload, {
+      method: 'post',
+      encType: 'multipart/form-data',
+    });
   };
 
   const handleFinalizeSubmission = (withSurvey: boolean) => {

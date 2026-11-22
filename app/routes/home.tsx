@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { getTicketByNumber } from '~/lib/ticket.server';
+
 import { CtaTracking } from '@/components/home/cta-tracking';
 import { Faq } from '@/components/home/faq';
 import { Features } from '@/components/home/features';
@@ -23,6 +25,28 @@ export const meta: Route.MetaFunction = () => [
       'Platform independen aspirasi & pengaduan publik untuk mewujudkan kota yang transparan, responsif, dan inklusif.',
   },
 ];
+
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const ticketNumber = String(formData.get('ticketNumber') || '').trim();
+
+  if (!ticketNumber) {
+    return Response.json({ success: false, error: 'Nomor tiket wajib diisi.' }, { status: 400 });
+  }
+
+  const ticket = await getTicketByNumber(ticketNumber);
+  if (!ticket) {
+    return Response.json(
+      {
+        success: false,
+        error: `Tiket dengan kode "${ticketNumber}" belum terdaftar di database.`,
+      },
+      { status: 404 }
+    );
+  }
+
+  return Response.json({ success: true, ticket });
+}
 
 export default function Home() {
   const [aspirations, setAspirations] = useState<Aspiration[]>(INITIAL_ASPIRATIONS);

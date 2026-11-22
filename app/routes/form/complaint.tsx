@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useFetcher, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { createTicket, submitTicketSatisfaction } from '~/lib/ticket.server';
+import { saveAttachmentFile } from '~/lib/upload.server';
 import { complaintStepSchema, identityStepSchema } from '~/schema/form';
 
 import { IdentityStep } from '@/components/aspiration/identity-step';
@@ -88,11 +89,44 @@ export async function action({ request }: Route.ActionArgs) {
     const rawComplaint = complaintData as PublicComplaintFormData;
     const rawIdentity = identityData as IdentityFormData;
 
-    const photos = [
-      rawComplaint.photo1PreviewUrl,
-      rawComplaint.photo2PreviewUrl,
-      rawComplaint.photo3PreviewUrl,
-    ].filter(Boolean);
+    // Handle physical file uploads
+    let idCardUrl = rawIdentity.idCardPreviewUrl || null;
+    const idCardFile = formData.get('idCardFile');
+    if (idCardFile instanceof File && idCardFile.size > 0) {
+      const uploadRes = await saveAttachmentFile(idCardFile, 'ktp');
+      if (uploadRes.success && uploadRes.url) {
+        idCardUrl = uploadRes.url;
+      }
+    }
+
+    let documentUrl = rawComplaint.documentFileName || null;
+    const documentFile = formData.get('documentFile');
+    if (documentFile instanceof File && documentFile.size > 0) {
+      const uploadRes = await saveAttachmentFile(documentFile, 'document');
+      if (uploadRes.success && uploadRes.url) {
+        documentUrl = uploadRes.url;
+      }
+    }
+
+    const uploadedPhotos: string[] = [];
+    for (const key of ['photo1', 'photo2', 'photo3']) {
+      const photoFile = formData.get(key);
+      if (photoFile instanceof File && photoFile.size > 0) {
+        const uploadRes = await saveAttachmentFile(photoFile, 'photo');
+        if (uploadRes.success && uploadRes.url) {
+          uploadedPhotos.push(uploadRes.url);
+        }
+      }
+    }
+
+    const photos =
+      uploadedPhotos.length > 0
+        ? uploadedPhotos
+        : [
+            rawComplaint.photo1PreviewUrl,
+            rawComplaint.photo2PreviewUrl,
+            rawComplaint.photo3PreviewUrl,
+          ].filter(Boolean);
 
     const newTicket = await createTicket({
       type: 'masyarakat',
@@ -101,7 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
       reporterPhone: identityParsed.data.phone,
       reporterEmail: identityParsed.data.email || null,
       reporterAddress: identityParsed.data.ktpAddress,
-      idCardUrl: rawIdentity.idCardPreviewUrl || null,
+      idCardUrl,
       kabupaten: 'KABUPATEN TAPIN',
       kecamatan: complaintParsed.data.kecamatan,
       kelurahan: complaintParsed.data.kelurahan,
@@ -113,7 +147,7 @@ export async function action({ request }: Route.ActionArgs) {
       agency: complaintParsed.data.agency,
       category: complaintParsed.data.category,
       photos,
-      documentUrl: rawComplaint.documentFileName || null,
+      documentUrl,
     });
 
     return Response.json({
@@ -224,14 +258,25 @@ export default function FormComplaintPage() {
 
   const handleSubmitMasyarakat = (e: React.FormEvent) => {
     e.preventDefault();
-    submitFetcher.submit(
-      {
-        intent: 'create_complaint',
-        identityData: JSON.stringify(identityData),
-        complaintData: JSON.stringify(complaintData),
-      },
-      { method: 'post' }
-    );
+    const payload = new FormData();
+    payload.append('intent', 'create_complaint');
+    payload.append('identityData', JSON.stringify(identityData));
+    payload.append('complaintData', JSON.stringify(complaintData));
+
+    if (identityData.idCardFile) {
+      payload.append('idCardFile', identityData.idCardFile);
+    }
+    if (complaintData.documentFile) {
+      payload.append('documentFile', complaintData.documentFile);
+    }
+    if (complaintData.photo1File) payload.append('photo1', complaintData.photo1File);
+    if (complaintData.photo2File) payload.append('photo2', complaintData.photo2File);
+    if (complaintData.photo3File) payload.append('photo3', complaintData.photo3File);
+
+    submitFetcher.submit(payload, {
+      method: 'post',
+      encType: 'multipart/form-data',
+    });
   };
 
   const handleFinalizeSubmission = (withSurvey: boolean) => {

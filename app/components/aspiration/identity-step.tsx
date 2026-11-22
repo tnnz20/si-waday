@@ -77,6 +77,7 @@ export function IdentityStep({
     onChange({
       idCardFileName: file.name,
       idCardPreviewUrl: previewUrl,
+      idCardFile: file,
     });
 
     if (errors.idCard) {
@@ -91,6 +92,7 @@ export function IdentityStep({
     onChange({
       idCardFileName: '',
       idCardPreviewUrl: '',
+      idCardFile: null,
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

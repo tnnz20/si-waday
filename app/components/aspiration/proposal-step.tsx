@@ -145,7 +145,7 @@ export function ProposalStep({
       setErrors((prev) => ({ ...prev, proposal: 'Ukuran proposal maksimal 10MB.' }));
       return;
     }
-    onChange({ proposalFileName: file.name });
+    onChange({ proposalFileName: file.name, proposalFile: file });
     if (errors.proposal) setErrors((prev) => ({ ...prev, proposal: '' }));
   };
 
@@ -168,11 +168,11 @@ export function ProposalStep({
 
     const previewUrl = URL.createObjectURL(file);
     if (index === 1) {
-      onChange({ photo1FileName: file.name, photo1PreviewUrl: previewUrl });
+      onChange({ photo1FileName: file.name, photo1PreviewUrl: previewUrl, photo1File: file });
     } else if (index === 2) {
-      onChange({ photo2FileName: file.name, photo2PreviewUrl: previewUrl });
+      onChange({ photo2FileName: file.name, photo2PreviewUrl: previewUrl, photo2File: file });
     } else {
-      onChange({ photo3FileName: file.name, photo3PreviewUrl: previewUrl });
+      onChange({ photo3FileName: file.name, photo3PreviewUrl: previewUrl, photo3File: file });
     }
   };
 
@@ -181,19 +181,19 @@ export function ProposalStep({
       if (data.photo1PreviewUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(data.photo1PreviewUrl);
       }
-      onChange({ photo1FileName: '', photo1PreviewUrl: '' });
+      onChange({ photo1FileName: '', photo1PreviewUrl: '', photo1File: null });
       if (photo1InputRef.current) photo1InputRef.current.value = '';
     } else if (index === 2) {
       if (data.photo2PreviewUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(data.photo2PreviewUrl);
       }
-      onChange({ photo2FileName: '', photo2PreviewUrl: '' });
+      onChange({ photo2FileName: '', photo2PreviewUrl: '', photo2File: null });
       if (photo2InputRef.current) photo2InputRef.current.value = '';
     } else {
       if (data.photo3PreviewUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(data.photo3PreviewUrl);
       }
-      onChange({ photo3FileName: '', photo3PreviewUrl: '' });
+      onChange({ photo3FileName: '', photo3PreviewUrl: '', photo3File: null });
       if (photo3InputRef.current) photo3InputRef.current.value = '';
     }
   };
