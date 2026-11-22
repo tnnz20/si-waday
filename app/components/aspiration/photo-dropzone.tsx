@@ -192,7 +192,7 @@ export function PhotoDropzone({
           onDrop={handleDrop}
           className={`focus:ring-accent-500/40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all focus:ring-2 focus:outline-none ${
             isDragging
-              ? 'border-accent-500 bg-accent-50/50 scale-[0.99]'
+              ? 'border-accent-500 bg-accent-50/50 scale-95'
               : 'border-warm-300 hover:border-accent-500/80 bg-warm-50/50 hover:bg-accent-50/20'
           } ${disabled || isCompressing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
         >
