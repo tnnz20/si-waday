@@ -137,14 +137,19 @@ export async function action({ request }: Route.ActionArgs) {
     const rawUsulan = usulanData as UsulanFormData;
     const rawIdentity = identityData as IdentityFormData;
 
+    const fallbackPhotoUrls =
+      rawUsulan.photos && rawUsulan.photos.length > 0
+        ? rawUsulan.photos.map((p) => p.previewUrl)
+        : [
+            rawUsulan.photo1PreviewUrl,
+            rawUsulan.photo2PreviewUrl,
+            rawUsulan.photo3PreviewUrl,
+          ];
+
     const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
       idCardUrl: rawIdentity.idCardPreviewUrl,
       documentUrl: rawUsulan.proposalFileName,
-      photoUrls: [
-        rawUsulan.photo1PreviewUrl,
-        rawUsulan.photo2PreviewUrl,
-        rawUsulan.photo3PreviewUrl,
-      ],
+      photoUrls: fallbackPhotoUrls,
     });
 
     const newTicket = await createTicket({
@@ -226,6 +231,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     kecamatan: initialKecamatan,
     kelurahan: initialKelurahan,
     proposalFileName: '',
+    photos: [],
     photo1PreviewUrl: '',
     photo1FileName: '',
     photo2PreviewUrl: '',
@@ -289,9 +295,15 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     if (usulanData.proposalFile) {
       payload.append('proposalFile', usulanData.proposalFile);
     }
-    if (usulanData.photo1File) payload.append('photo1', usulanData.photo1File);
-    if (usulanData.photo2File) payload.append('photo2', usulanData.photo2File);
-    if (usulanData.photo3File) payload.append('photo3', usulanData.photo3File);
+    if (usulanData.photos && usulanData.photos.length > 0) {
+      for (const item of usulanData.photos) {
+        if (item.file) payload.append('photos', item.file);
+      }
+    } else {
+      if (usulanData.photo1File) payload.append('photo1', usulanData.photo1File);
+      if (usulanData.photo2File) payload.append('photo2', usulanData.photo2File);
+      if (usulanData.photo3File) payload.append('photo3', usulanData.photo3File);
+    }
 
     submitFetcher.submit(payload, {
       method: 'post',
