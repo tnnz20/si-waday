@@ -36,6 +36,13 @@
       "when": 1795309893950,
       "tag": "0004_regular_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795318877064,
+      "tag": "0005_lonely_thanos",
+      "breakpoints": true
     }
   ]
 }

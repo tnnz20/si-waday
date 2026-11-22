@@ -32,6 +32,11 @@ export const ticketStatusEnum = pgEnum('ticket_status', [
   'selesai',
   'ditolak',
 ]);
+export const feedbackTypeEnum = pgEnum('feedback_type', [
+  'submission',
+  'resolution',
+  'general',
+]);
 
 // ---------------------------------------------------------------------------
 // 2. Regions (Wilayah) Table
@@ -203,11 +208,6 @@ export const tickets = pgTable(
       onDelete: 'set null',
     }),
 
-    // Survei Kepuasan Warga (IKM)
-    satisfactionRating: integer('satisfaction_rating'),
-    satisfactionAspects: jsonb('satisfaction_aspects').$type<string[]>(),
-    satisfactionFeedback: text('satisfaction_feedback'),
-
     // Timestamps
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -223,7 +223,30 @@ export const tickets = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// 7. Relations
+// 7. Ticket Feedbacks Table (Decoupled Citizen Satisfaction / IKM Surveys)
+// ---------------------------------------------------------------------------
+export const ticketFeedbacks = pgTable(
+  'ticket_feedbacks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ticketId: uuid('ticket_id').references(() => tickets.id, { onDelete: 'cascade' }),
+    type: feedbackTypeEnum('type').default('submission').notNull(),
+    rating: integer('rating').notNull(),
+    aspects: jsonb('aspects').$type<string[]>().default([]).notNull(),
+    feedback: text('feedback'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('ticket_feedbacks_ticket_id_idx').on(table.ticketId),
+    index('ticket_feedbacks_type_idx').on(table.type),
+    index('ticket_feedbacks_rating_idx').on(table.rating),
+    index('ticket_feedbacks_created_at_idx').on(table.createdAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// 8. Relations
 // ---------------------------------------------------------------------------
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -257,7 +280,7 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
-export const ticketsRelations = relations(tickets, ({ one }) => ({
+export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   representative: one(userProfiles, {
     fields: [tickets.representativeId],
     references: [userProfiles.id],
@@ -266,10 +289,18 @@ export const ticketsRelations = relations(tickets, ({ one }) => ({
     fields: [tickets.assignedToUserId],
     references: [users.id],
   }),
+  feedbacks: many(ticketFeedbacks),
+}));
+
+export const ticketFeedbacksRelations = relations(ticketFeedbacks, ({ one }) => ({
+  ticket: one(tickets, {
+    fields: [ticketFeedbacks.ticketId],
+    references: [tickets.id],
+  }),
 }));
 
 // ---------------------------------------------------------------------------
-// 8. Inferred TypeScript Types
+// 9. Inferred TypeScript Types
 // ---------------------------------------------------------------------------
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type Gender = (typeof genderEnum.enumValues)[number];
@@ -277,6 +308,7 @@ export type RegionType = (typeof regionTypeEnum.enumValues)[number];
 export type AuditAction = (typeof auditActionEnum.enumValues)[number];
 export type TicketType = (typeof ticketTypeEnum.enumValues)[number];
 export type TicketDbStatus = (typeof ticketStatusEnum.enumValues)[number];
+export type FeedbackType = (typeof feedbackTypeEnum.enumValues)[number];
 
 export type Region = typeof regions.$inferSelect;
 export type NewRegion = typeof regions.$inferInsert;
@@ -292,3 +324,6 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 
 export type Ticket = typeof tickets.$inferSelect;
 export type NewTicket = typeof tickets.$inferInsert;
+
+export type TicketFeedback = typeof ticketFeedbacks.$inferSelect;
+export type NewTicketFeedback = typeof ticketFeedbacks.$inferInsert;
