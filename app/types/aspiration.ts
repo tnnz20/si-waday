@@ -43,6 +43,15 @@ export interface IdentityFormData {
   idCardFile?: File | null;
 }
 
+export interface FormPhotoItem {
+  id: string;
+  file: File;
+  fileName: string;
+  previewUrl: string;
+  originalSize: number;
+  compressedSize: number;
+}
+
 export interface UsulanFormData {
   dapilId: string;
   dapilName: string;
@@ -59,14 +68,15 @@ export interface UsulanFormData {
   kelurahan: string;
   proposalFileName: string;
   proposalFile?: File | null;
-  photo1PreviewUrl: string;
-  photo1FileName: string;
+  photos?: FormPhotoItem[];
+  photo1PreviewUrl?: string;
+  photo1FileName?: string;
   photo1File?: File | null;
-  photo2PreviewUrl: string;
-  photo2FileName: string;
+  photo2PreviewUrl?: string;
+  photo2FileName?: string;
   photo2File?: File | null;
-  photo3PreviewUrl: string;
-  photo3FileName: string;
+  photo3PreviewUrl?: string;
+  photo3FileName?: string;
   photo3File?: File | null;
   satisfactionRating: number;
   satisfactionAspects: string[];
@@ -84,14 +94,15 @@ export interface PublicComplaintFormData {
   kabupaten: string;
   kecamatan: string;
   kelurahan: string;
-  photo1PreviewUrl: string;
-  photo1FileName: string;
+  photos?: FormPhotoItem[];
+  photo1PreviewUrl?: string;
+  photo1FileName?: string;
   photo1File?: File | null;
-  photo2PreviewUrl: string;
-  photo2FileName: string;
+  photo2PreviewUrl?: string;
+  photo2FileName?: string;
   photo2File?: File | null;
-  photo3PreviewUrl: string;
-  photo3FileName: string;
+  photo3PreviewUrl?: string;
+  photo3FileName?: string;
   photo3File?: File | null;
   documentFileName: string;
   documentFile?: File | null;

@@ -137,7 +137,7 @@ export async function extractTicketAttachments(
   fallbacks: {
     idCardUrl?: string | null;
     documentUrl?: string | null;
-    photoUrls?: string[];
+    photoUrls?: (string | undefined | null)[];
   }
 ): Promise<ExtractedAttachments> {
   // 1. KTP
@@ -160,20 +160,37 @@ export async function extractTicketAttachments(
     }
   }
 
-  // 3. Evidence Photos (photo1, photo2, photo3)
+  // 3. Evidence Photos (support both 'photos' multi-entry and legacy 'photo1', 'photo2', 'photo3')
   const uploadedPhotos: string[] = [];
-  for (const key of ['photo1', 'photo2', 'photo3']) {
-    const photoFile = formData.get(key);
-    if (photoFile instanceof File && photoFile.size > 0) {
-      const uploadRes = await saveAttachmentFile(photoFile, 'photo');
-      if (uploadRes.success && uploadRes.url) {
-        uploadedPhotos.push(uploadRes.url);
+  const multiPhotos = formData.getAll('photos');
+  const candidateFiles: File[] = [];
+
+  if (multiPhotos.length > 0) {
+    for (const item of multiPhotos) {
+      if (item instanceof File && item.size > 0) {
+        candidateFiles.push(item);
+      }
+    }
+  } else {
+    for (const key of ['photo1', 'photo2', 'photo3']) {
+      const file = formData.get(key);
+      if (file instanceof File && file.size > 0) {
+        candidateFiles.push(file);
       }
     }
   }
 
+  for (const photoFile of candidateFiles.slice(0, 3)) {
+    const uploadRes = await saveAttachmentFile(photoFile, 'photo');
+    if (uploadRes.success && uploadRes.url) {
+      uploadedPhotos.push(uploadRes.url);
+    }
+  }
+
   const photos =
-    uploadedPhotos.length > 0 ? uploadedPhotos : (fallbacks.photoUrls || []).filter(Boolean);
+    uploadedPhotos.length > 0
+      ? uploadedPhotos
+      : (fallbacks.photoUrls || []).filter((url): url is string => Boolean(url));
 
   return { idCardUrl, documentUrl, photos };
 }
