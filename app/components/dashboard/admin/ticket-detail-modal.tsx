@@ -381,8 +381,57 @@ function TicketDetailDialog({
             </div>
           </div>
 
-          {/* Section 3: Penilaian Kepuasan Aplikasi (CSAT Warga) - Redesigned to match Screenshot 2 */}
-          {ticket.satisfaction ? (
+          {/* Section 3: Penilaian Kepuasan Aplikasi (CSAT Warga) - Multi-stage Feedbacks */}
+          {ticket.feedbacks && ticket.feedbacks.length > 0 ? (
+            <div className="space-y-3">
+              {ticket.feedbacks.map((fb) => (
+                <div
+                  key={fb.id}
+                  className="border-accent-200 bg-accent-50/40 space-y-3.5 rounded-2xl border p-4 sm:p-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                      <h4 className="text-darknavy-900 text-xs font-extrabold tracking-wider uppercase sm:text-sm">
+                        {fb.type === 'resolution'
+                          ? 'Survei Penyelesaian Aduan Warga'
+                          : 'Survei Kemudahan Formulir Aplikasi'}
+                      </h4>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="text-darknavy-900 border-accent-300 bg-white px-3 py-1 text-xs font-bold shadow-2xs"
+                    >
+                      Rating: {fb.rating}/5 ★
+                    </Badge>
+                  </div>
+
+                  {/* Aspect Pills */}
+                  {fb.aspects && fb.aspects.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {fb.aspects.map((aspect) => (
+                        <span
+                          key={aspect}
+                          className="border-warm-200/90 text-darknavy-900 inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-semibold shadow-2xs"
+                        >
+                          <Check className="text-accent-500 h-3.5 w-3.5 stroke-2" />
+                          <span>{aspect}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {fb.feedback ? (
+                    <div className="border-warm-200 rounded-xl border bg-white/90 p-3.5">
+                      <p className="text-xs leading-relaxed text-slate-700 italic sm:text-sm">
+                        "{fb.feedback}"
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : ticket.satisfaction ? (
             <div className="border-accent-200 bg-accent-50/40 space-y-3.5 rounded-2xl border p-4 sm:p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -406,7 +455,7 @@ function TicketDetailDialog({
                     key={aspect}
                     className="border-warm-200/90 text-darknavy-900 inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-semibold shadow-2xs"
                   >
-                    <Check className="text-accent-500 h-3.5 w-3.5 stroke-[2.5]" />
+                    <Check className="text-accent-500 h-3.5 w-3.5 stroke-2" />
                     <span>{aspect}</span>
                   </span>
                 ))}

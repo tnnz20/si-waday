@@ -30,6 +30,15 @@ export interface AdminSatisfactionReview {
   submittedAt: string;
 }
 
+export interface AdminFeedbackItem {
+  id: string;
+  type: string;
+  rating: number;
+  aspects: string[];
+  feedback: string | null;
+  createdAt?: string;
+}
+
 export interface AdminTicketItem {
   id: string;
   type: AdminTicketType;
@@ -50,6 +59,7 @@ export interface AdminTicketItem {
   updatedAt: string;
   slaHoursRemaining: number;
   satisfaction?: AdminSatisfactionReview;
+  feedbacks?: AdminFeedbackItem[];
   adminNotes: string;
   assignedTo?: string;
 }

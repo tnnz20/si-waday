@@ -1,20 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
-import {
-  type FeedbackType,
-  ticketFeedbacks,
-  tickets,
-  userProfiles,
-  users,
-} from '../app/db/schema/schema';
+import { ticketFeedbacks, tickets, userProfiles, users } from '../app/db/schema/schema';
 import { type ScriptDb, getScriptDb } from './db';
-
-interface SeedFeedbackItem {
-  type: FeedbackType;
-  rating: number;
-  aspects: string[];
-  feedback: string;
-}
 
 export async function seedTickets(context?: ScriptDb) {
   const ownContext = !context ? await getScriptDb() : null;
@@ -251,8 +238,7 @@ export async function seedTickets(context?: ScriptDb) {
             type: 'submission' as const,
             rating: 4,
             aspects: ['Kemudahan Formulir'],
-            feedback:
-              'Semoga segera ada tindak lanjut untuk pelayanan puskesmas pembantu.',
+            feedback: 'Semoga segera ada tindak lanjut untuk pelayanan puskesmas pembantu.',
           },
         ],
       },
@@ -331,12 +317,7 @@ export async function seedTickets(context?: ScriptDb) {
         const [existingFb] = await db
           .select({ id: ticketFeedbacks.id })
           .from(ticketFeedbacks)
-          .where(
-            and(
-              eq(ticketFeedbacks.ticketId, ticketId),
-              eq(ticketFeedbacks.type, fb.type)
-            )
-          )
+          .where(and(eq(ticketFeedbacks.ticketId, ticketId), eq(ticketFeedbacks.type, fb.type)))
           .limit(1);
 
         if (existingFb) {
