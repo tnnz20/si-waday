@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+
 import { getTicketByNumber, getTicketFeedbacks } from '../app/lib/ticket.server';
 
 test('success receipt workflow resolves ticket and feedbacks without throwing', async () => {
