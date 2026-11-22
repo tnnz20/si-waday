@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from 'react';
 
+import { aspirationStepSchema } from '~/schema/form';
+
 import { getInitials } from '@/lib/utils';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
@@ -198,29 +200,17 @@ export function ProposalStep({
 
   const handleValidateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
+    const result = aspirationStepSchema.safeParse(data);
 
-    if (!data.dapilId || !data.representativeName) {
-      newErrors.dapil = 'Silakan pilih anggota dewan / perwakilan Dapil tujuan usulan.';
-    }
-    if (!data.kamusUsulan) {
-      newErrors.kamusUsulan = 'Kamus usulan wajib dipilih.';
-    }
-    if (!data.permasalahan.trim()) {
-      newErrors.permasalahan = 'Deskripsi permasalahan dan rincian usulan wajib diisi.';
-    }
-    if (!data.alamatLokasi.trim()) {
-      newErrors.alamatLokasi = 'Alamat lokasi usulan wajib diisi secara rinci.';
-    }
-    if (!data.kecamatan) {
-      newErrors.kecamatan = 'Kecamatan wajib dipilih.';
-    }
-    if (!data.kelurahan) {
-      newErrors.kelurahan = 'Kelurahan / Desa wajib dipilih.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+      const mappedErrors: Record<string, string> = {};
+      for (const [key, messages] of Object.entries(fieldErrors)) {
+        if (messages && messages.length > 0) {
+          mappedErrors[key] = messages[0];
+        }
+      }
+      setErrors(mappedErrors);
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
     }

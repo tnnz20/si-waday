@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 
+import { identityStepSchema } from '~/schema/form';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -97,33 +99,17 @@ export function IdentityStep({
 
   const validateAndProceed = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
+    const result = identityStepSchema.safeParse(data);
 
-    if (!data.fullName.trim()) {
-      newErrors.fullName = 'Nama lengkap wajib diisi sesuai kartu identitas resmi.';
-    }
-
-    if (!data.nik.trim()) {
-      newErrors.nik = 'Nomor NIK 16 digit wajib diisi.';
-    } else if (data.nik.length !== 16) {
-      newErrors.nik = 'NIK harus tepat 16 digit angka.';
-    }
-
-    if (!data.phone.trim()) {
-      newErrors.phone = 'Nomor WhatsApp / HP wajib diisi untuk konfirmasi status tindak lanjut.';
-    }
-
-    if (!data.ktpAddress.trim()) {
-      newErrors.ktpAddress = 'Alamat tempat tinggal / domisili KTP wajib diisi.';
-    }
-
-    if (!data.idCardPreviewUrl && !data.idCardFileName) {
-      newErrors.idCard =
-        'Foto Kartu Tanda Pengenal (KTP) wajib diunggah untuk verifikasi keabsahan warga.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+      const mappedErrors: Record<string, string> = {};
+      for (const [key, messages] of Object.entries(fieldErrors)) {
+        if (messages && messages.length > 0) {
+          mappedErrors[key] = messages[0];
+        }
+      }
+      setErrors(mappedErrors);
       window.scrollTo({ top: 180, behavior: 'smooth' });
       return;
     }
@@ -310,11 +296,19 @@ export function IdentityStep({
                   id="email-input"
                   type="email"
                   value={data.email}
-                  onChange={(e) => onChange({ email: e.target.value })}
+                  onChange={(e) => {
+                    onChange({ email: e.target.value });
+                    if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+                  }}
                   placeholder="Contoh: warga.tapin@gmail.com"
-                  className="border-warm-200 bg-white pl-9"
+                  className={`border-warm-200 bg-white pl-9 ${
+                    errors.email ? 'border-rose-400 focus:ring-rose-400' : ''
+                  }`}
                 />
               </div>
+              {errors.email ? (
+                <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.email}</p>
+              ) : null}
             </div>
 
             {/* Alamat Domisili KTP */}

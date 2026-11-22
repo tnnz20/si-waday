@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from 'react';
 
+import { complaintStepSchema } from '~/schema/form';
+
 import { MapPicker } from '@/components/aspiration/map-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -115,32 +117,17 @@ export function PublicComplaintStep({
 
   const handleValidateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
+    const result = complaintStepSchema.safeParse(data);
 
-    if (!data.agency) {
-      newErrors.agency = 'Tujuan komisi / bidang pengawasan DPRD wajib dipilih.';
-    }
-    if (!data.category) {
-      newErrors.category = 'Kategori aduan wajib dipilih.';
-    }
-    if (!data.title.trim()) {
-      newErrors.title = 'Judul keluhan / aduan wajib diisi.';
-    }
-    if (!data.content.trim()) {
-      newErrors.content = 'Rincian aduan wajib dijelaskan secara jelas.';
-    }
-    if (!data.alamatLokasi.trim()) {
-      newErrors.alamatLokasi = 'Alamat spesifik lokasi kejadian wajib diisi.';
-    }
-    if (!data.kecamatan) {
-      newErrors.kecamatan = 'Kecamatan wajib dipilih.';
-    }
-    if (!data.kelurahan) {
-      newErrors.kelurahan = 'Kelurahan / Desa wajib dipilih.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+      const mappedErrors: Record<string, string> = {};
+      for (const [key, messages] of Object.entries(fieldErrors)) {
+        if (messages && messages.length > 0) {
+          mappedErrors[key] = messages[0];
+        }
+      }
+      setErrors(mappedErrors);
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
     }
