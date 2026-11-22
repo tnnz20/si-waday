@@ -140,11 +140,7 @@ export async function action({ request }: Route.ActionArgs) {
     const fallbackPhotoUrls =
       rawUsulan.photos && rawUsulan.photos.length > 0
         ? rawUsulan.photos.map((p) => p.previewUrl)
-        : [
-            rawUsulan.photo1PreviewUrl,
-            rawUsulan.photo2PreviewUrl,
-            rawUsulan.photo3PreviewUrl,
-          ];
+        : [rawUsulan.photo1PreviewUrl, rawUsulan.photo2PreviewUrl, rawUsulan.photo3PreviewUrl];
 
     const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
       idCardUrl: rawIdentity.idCardPreviewUrl,

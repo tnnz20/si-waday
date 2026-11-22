@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 
+import { compressImageFile } from '~/lib/image-compressor';
 import { identityStepSchema } from '~/schema/form';
 
 import { Button } from '@/components/ui/button';
@@ -59,18 +60,42 @@ export function IdentityStep({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, idCard: 'Ukuran file foto KTP maksimal 5MB.' }));
+    // Check size before compression (max 15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, idCard: 'Ukuran file foto KTP maksimal 15MB.' }));
       return;
     }
 
     if (data.idCardPreviewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(data.idCardPreviewUrl);
+    }
+
+    // Compress image if it is an image file
+    if (file.type.startsWith('image/')) {
+      try {
+        const compressed = await compressImageFile(file, {
+          maxDimension: 1600,
+          quality: 0.85,
+          mimeType: 'image/webp',
+        });
+
+        onChange({
+          idCardFileName: compressed.file.name,
+          idCardPreviewUrl: compressed.previewUrl,
+          idCardFile: compressed.file,
+        });
+
+        if (errors.idCard) {
+          setErrors((prev) => ({ ...prev, idCard: '' }));
+        }
+        return;
+      } catch (err) {
+        console.warn('KTP compression fallback:', err);
+      }
     }
 
     const previewUrl = URL.createObjectURL(file);
