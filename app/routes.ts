@@ -15,8 +15,14 @@ export default [
   ]),
   layout('layouts/admin-layout.tsx', [
     route('dashboard', 'routes/dashboard/overview.tsx'),
-    route('dashboard/complaints', 'routes/dashboard/complaints.tsx'),
-    route('dashboard/aspirations', 'routes/dashboard/aspirations.tsx'),
+    ...prefix('dashboard/complaints', [
+      index('routes/dashboard/complaints.tsx'),
+      route(':ticketNumber', 'routes/dashboard/complaints-detail.tsx'),
+    ]),
+    ...prefix('dashboard/aspirations', [
+      index('routes/dashboard/aspirations.tsx'),
+      route(':ticketNumber', 'routes/dashboard/aspirations-detail.tsx'),
+    ]),
     route('dashboard/satisfaction', 'routes/dashboard/satisfaction.tsx'),
     ...prefix('dashboard/users', [
       route('legislators', 'routes/dashboard/users-legislators.tsx'),

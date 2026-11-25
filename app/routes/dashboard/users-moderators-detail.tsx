@@ -9,6 +9,7 @@ import { hashPassword } from '@/lib/auth.server';
 import { requireAuth } from '@/lib/session.server';
 import { saveAvatarFile } from '@/lib/upload.server';
 
+import { DetailPageSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 import {
   type AuditLogItem,
   UserDetailCard,
@@ -346,6 +347,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   return Response.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });
+}
+
+export function HydrateFallback() {
+  return <DetailPageSkeleton />;
 }
 
 export default function ModeratorDetailPage({ loaderData }: Route.ComponentProps) {

@@ -44,7 +44,7 @@ export async function seedTickets(context?: ScriptDb) {
           reporterPhone: '081250112233',
           reporterEmail: 'arsyad.tapin@gmail.com',
           reporterAddress: 'Jl. Brigjend H. Hasan Basry No. 45, Rantau',
-          idCardUrl: '/uploads/avatars/sample-ktp.jpg',
+          idCardUrl: null,
           kabupaten: 'KABUPATEN TAPIN',
           kecamatan: 'Tapin Utara',
           kelurahan: 'Rantau Kiwa (Kelurahan)',
@@ -59,7 +59,7 @@ export async function seedTickets(context?: ScriptDb) {
           kamusUsulan: 'Pembangunan Sumur Bor & Jaringan Irigasi Usaha Tani',
           agency: null,
           category: null,
-          photos: ['/uploads/photos/sample-well-1.jpg'],
+          photos: [],
           documentUrl: 'proposal-sumur-bor-rt04.pdf',
           status: 'selesai' as const,
           adminNotes:
@@ -106,7 +106,7 @@ export async function seedTickets(context?: ScriptDb) {
           kamusUsulan: 'Bantuan Stimulan Perumahan Swadaya / RTLH',
           agency: null,
           category: null,
-          photos: ['/uploads/photos/rtlh-1.jpg', '/uploads/photos/rtlh-2.jpg'],
+          photos: [],
           documentUrl: 'surat-rekomendasi-desa.pdf',
           status: 'sedang_diproses' as const,
           adminNotes: 'Sedang dalam tahap verifikasi lapangan bersama Dinas Perkim Tapin.',
@@ -186,7 +186,7 @@ export async function seedTickets(context?: ScriptDb) {
           kamusUsulan: null,
           agency: 'Komisi III DPRD (Pembangunan & Infrastruktur)',
           category: 'Infrastruktur',
-          photos: ['/uploads/photos/jembatan-rusak-1.jpg'],
+          photos: [],
           documentUrl: null,
           status: 'sedang_diproses' as const,
           adminNotes:
@@ -266,7 +266,7 @@ export async function seedTickets(context?: ScriptDb) {
           kamusUsulan: null,
           agency: 'Komisi III DPRD (Pembangunan & Infrastruktur)',
           category: 'Kebersihan & Lingkungan',
-          photos: ['/uploads/photos/sampah-1.jpg'],
+          photos: [],
           documentUrl: null,
           status: 'selesai' as const,
           adminNotes:
@@ -290,8 +290,19 @@ export async function seedTickets(context?: ScriptDb) {
       },
     ];
 
-    for (const item of sampleTicketData) {
-      const t = item.ticket;
+    const now = Date.now();
+    const hoursAgo = (hours: number) => new Date(now - hours * 3600 * 1000);
+
+    for (const [idx, item] of sampleTicketData.entries()) {
+      const baseCreatedAt = hoursAgo(72 - idx * 10);
+      const isFinished = new Set<string>(['selesai', 'ditolak']).has(item.ticket.status);
+      const resolvedAt = isFinished ? hoursAgo(72 - idx * 10 - (5 + idx)) : null;
+      const t = {
+        ...item.ticket,
+        createdAt: baseCreatedAt,
+        updatedAt: resolvedAt || hoursAgo(72 - idx * 10 - 3),
+        resolvedAt,
+      };
       const [existing] = await db
         .select({ id: tickets.id })
         .from(tickets)
@@ -300,10 +311,7 @@ export async function seedTickets(context?: ScriptDb) {
 
       let ticketId: string;
       if (existing) {
-        await db
-          .update(tickets)
-          .set({ ...t, updatedAt: new Date() })
-          .where(eq(tickets.id, existing.id));
+        await db.update(tickets).set(t).where(eq(tickets.id, existing.id));
         ticketId = existing.id;
         console.log(`  🔄 Updated ticket: ${t.ticketNumber} (${t.type})`);
       } else {

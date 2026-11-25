@@ -8,6 +8,7 @@ import { createAuditLog } from '@/lib/audit.server';
 import { hashPassword } from '@/lib/auth.server';
 import { requireAuth } from '@/lib/session.server';
 
+import { TableViewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 import { type ModeratorItem, ModeratorsTab } from '@/components/dashboard/admin/moderators-tab';
 
 import type { Route } from './+types/users-moderators';
@@ -401,6 +402,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   return Response.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });
+}
+
+export function HydrateFallback() {
+  return <TableViewSkeleton />;
 }
 
 export default function ModeratorsPage({ loaderData }: Route.ComponentProps) {

@@ -1,15 +1,8 @@
-import * as React from 'react';
-
 import { requireAuth } from '@/lib/session.server';
+import { getDashboardOverviewStats } from '@/lib/ticket.server';
 
+import { OverviewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 import { OverviewTab } from '@/components/dashboard/admin/overview-tab';
-import { TicketDetailModal } from '@/components/dashboard/admin/ticket-detail-modal';
-
-import {
-  type AdminTicketItem,
-  type AdminTicketStatus,
-  MOCK_ADMIN_TICKETS,
-} from '@/constants/admin-data';
 
 import type { Route } from './+types/overview';
 
@@ -23,7 +16,12 @@ export const meta: Route.MetaFunction = () => [
 
 export async function loader({ request }: Route.LoaderArgs) {
   const authResult = await requireAuth(request);
-  const payload = { currentUser: authResult.user };
+  const stats = await getDashboardOverviewStats(authResult.user);
+
+  const payload = {
+    currentUser: authResult.user,
+    stats,
+  };
 
   if (authResult.headers) {
     return Response.json(payload, { headers: authResult.headers });
@@ -32,36 +30,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   return payload;
 }
 
-export default function OverviewPage() {
-  const [tickets, setTickets] = React.useState<AdminTicketItem[]>(MOCK_ADMIN_TICKETS);
-  const [selectedTicket, setSelectedTicket] = React.useState<AdminTicketItem | null>(null);
+export function HydrateFallback() {
+  return <OverviewSkeleton />;
+}
 
-  const handleStatusChange = (ticketId: string, newStatus: AdminTicketStatus, newNotes: string) => {
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id === ticketId) {
-          return {
-            ...t,
-            status: newStatus,
-            adminNotes: newNotes,
-            updatedAt: 'Baru saja',
-          };
-        }
-        return t;
-      })
-    );
-  };
-
-  return (
-    <>
-      <OverviewTab tickets={tickets} onSelectTicket={setSelectedTicket} />
-
-      <TicketDetailModal
-        ticket={selectedTicket}
-        isOpen={selectedTicket !== null}
-        onClose={() => setSelectedTicket(null)}
-        onStatusChange={handleStatusChange}
-      />
-    </>
-  );
+export default function OverviewPage({ loaderData }: Route.ComponentProps) {
+  return <OverviewTab stats={loaderData.stats} currentUser={loaderData.currentUser} />;
 }

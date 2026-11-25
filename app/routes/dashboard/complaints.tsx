@@ -1,17 +1,10 @@
-import * as React from 'react';
-
 import { redirect } from 'react-router';
 
 import { requireAuth } from '@/lib/session.server';
+import { getDashboardTickets } from '@/lib/ticket.server';
 
 import { ComplaintsTab } from '@/components/dashboard/admin/complaints-tab';
-import { TicketDetailModal } from '@/components/dashboard/admin/ticket-detail-modal';
-
-import {
-  type AdminTicketItem,
-  type AdminTicketStatus,
-  MOCK_ADMIN_TICKETS,
-} from '@/constants/admin-data';
+import { TableViewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 
 import type { Route } from './+types/complaints';
 
@@ -31,7 +24,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect('/dashboard');
   }
 
-  const payload = { currentUser: authResult.user };
+  const tickets = await getDashboardTickets({ type: 'masyarakat', user: authResult.user });
+
+  const payload = {
+    currentUser: authResult.user,
+    tickets,
+  };
+
   if (authResult.headers) {
     return Response.json(payload, { headers: authResult.headers });
   }
@@ -39,36 +38,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   return payload;
 }
 
-export default function ComplaintsPage() {
-  const [tickets, setTickets] = React.useState<AdminTicketItem[]>(MOCK_ADMIN_TICKETS);
-  const [selectedTicket, setSelectedTicket] = React.useState<AdminTicketItem | null>(null);
+export function HydrateFallback() {
+  return <TableViewSkeleton />;
+}
 
-  const handleStatusChange = (ticketId: string, newStatus: AdminTicketStatus, newNotes: string) => {
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id === ticketId) {
-          return {
-            ...t,
-            status: newStatus,
-            adminNotes: newNotes,
-            updatedAt: 'Baru saja',
-          };
-        }
-        return t;
-      })
-    );
-  };
-
-  return (
-    <>
-      <ComplaintsTab tickets={tickets} onSelectTicket={setSelectedTicket} />
-
-      <TicketDetailModal
-        ticket={selectedTicket}
-        isOpen={selectedTicket !== null}
-        onClose={() => setSelectedTicket(null)}
-        onStatusChange={handleStatusChange}
-      />
-    </>
-  );
+export default function ComplaintsPage({ loaderData }: Route.ComponentProps) {
+  return <ComplaintsTab tickets={loaderData.tickets} />;
 }

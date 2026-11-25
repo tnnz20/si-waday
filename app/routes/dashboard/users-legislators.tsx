@@ -8,6 +8,7 @@ import { createAuditLog } from '@/lib/audit.server';
 import { hashPassword } from '@/lib/auth.server';
 import { requireAuth } from '@/lib/session.server';
 
+import { TableViewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 import { DewanTab, type LegislatorItem } from '@/components/dashboard/admin/dewan-tab';
 
 import type { Route } from './+types/users-legislators';
@@ -434,6 +435,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   return Response.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });
+}
+
+export function HydrateFallback() {
+  return <TableViewSkeleton />;
 }
 
 export default function LegislatorsPage({ loaderData }: Route.ComponentProps) {

@@ -9,6 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 
 import {
   ArrowLeft,
@@ -386,9 +393,20 @@ export function UserDetailCard({
 
         <CardContent className="p-6 pt-2">
           {auditLogs.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 py-8 text-center text-xs text-slate-400">
-              Belum ada riwayat aktivitas yang tercatat untuk akun ini.
-            </div>
+            <Empty className="border-warm-200 border bg-slate-50/40 py-8">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <History className="text-slate-400" />
+                </EmptyMedia>
+                <EmptyTitle className="text-darknavy-900 text-sm font-bold">
+                  Belum Ada Riwayat Aktivitas
+                </EmptyTitle>
+                <EmptyDescription className="text-xs text-slate-500">
+                  Jejak pembaruan profil, status operasional, dan reset password akun ini akan
+                  terekam di sini.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="relative space-y-4 border-l-2 border-slate-200 pl-4 sm:space-y-6 sm:pl-6">
               {auditLogs.map((log) => (

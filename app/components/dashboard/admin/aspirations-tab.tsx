@@ -1,8 +1,26 @@
 import * as React from 'react';
 
+import { Link } from 'react-router';
+
+import { TablePagination } from '@/components/shared/table-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -12,246 +30,446 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { ADMIN_STATUS_META, type AdminTicketItem } from '@/constants/admin-data';
+import {
+  ADMIN_STATUS_META,
+  type AdminTicketStatus,
+  type DashboardTicketItem,
+  formatIndonesianDateTime,
+} from '@/constants/admin-data';
 import { DAPIL_TAPIN_LIST } from '@/constants/tapin';
 
-import { Eye, Filter, Landmark, Search } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock,
+  Eye,
+  Landmark,
+  MapPin,
+  MoreHorizontal,
+  RotateCcw,
+  Search,
+} from 'lucide-react';
+
+import { TicketStatusFilterPills } from './ticket-status-filter-pills';
 
 interface AspirationsTabProps {
-  tickets: AdminTicketItem[];
-  onSelectTicket: (ticket: AdminTicketItem) => void;
+  tickets: DashboardTicketItem[];
   searchQuery?: string;
 }
 
-export function AspirationsTab({ tickets, onSelectTicket, searchQuery }: AspirationsTabProps) {
+const PAGE_SIZE = 10;
+
+export function AspirationsTab({ tickets, searchQuery }: AspirationsTabProps) {
   const [internalSearch, setInternalSearch] = React.useState('');
   const effectiveSearch = searchQuery ?? internalSearch;
+  const [statusFilter, setStatusFilter] = React.useState<'all' | AdminTicketStatus>('all');
   const [dapilFilter, setDapilFilter] = React.useState<string>('all');
-  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [representativeFilter, setRepresentativeFilter] = React.useState<string>('all');
+  const [kecamatanFilter, setKecamatanFilter] = React.useState<string>('all');
+  const [currentPage, setCurrentPage] = React.useState(1);
 
-  const aspirationTickets = React.useMemo(() => {
-    return tickets.filter((t) => t.type === 'dapil');
+  const representativeList = React.useMemo(() => {
+    return Array.from(new Set(tickets.map((t) => t.targetDestination).filter(Boolean))).sort();
   }, [tickets]);
 
-  const filteredTickets = React.useMemo(() => {
-    return aspirationTickets.filter((item) => {
-      // Search query
+  const kecamatanList = React.useMemo(() => {
+    return Array.from(new Set(tickets.map((t) => t.kecamatan).filter(Boolean))).sort();
+  }, [tickets]);
+
+  const statusCounts = React.useMemo(() => {
+    const counts: Record<AdminTicketStatus, number> = {
+      menunggu_verifikasi: 0,
+      terverifikasi: 0,
+      sedang_diproses: 0,
+      selesai: 0,
+      ditolak: 0,
+    };
+    for (const ticket of tickets) {
+      counts[ticket.status]++;
+    }
+    return counts;
+  }, [tickets]);
+
+  const currentFilterKey = `${effectiveSearch}-${statusFilter}-${dapilFilter}-${representativeFilter}-${kecamatanFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = React.useState(currentFilterKey);
+  if (prevFilterKey !== currentFilterKey) {
+    setPrevFilterKey(currentFilterKey);
+    setCurrentPage(1);
+  }
+
+  const filtered = React.useMemo(() => {
+    return tickets.filter((item) => {
+      if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+      if (dapilFilter !== 'all' && item.dapilName !== dapilFilter) return false;
+      if (representativeFilter !== 'all' && item.targetDestination !== representativeFilter) {
+        return false;
+      }
+      if (kecamatanFilter !== 'all' && item.kecamatan !== kecamatanFilter) return false;
+
       if (effectiveSearch.trim()) {
         const q = effectiveSearch.toLowerCase();
+        const matchNumber = item.ticketNumber.toLowerCase().includes(q);
         const matchTitle = item.title.toLowerCase().includes(q);
-        const matchId = item.id.toLowerCase().includes(q);
-        const matchReporter = item.reporter.name.toLowerCase().includes(q);
+        const matchReporter = item.reporterName.toLowerCase().includes(q);
         const matchDewan = item.targetDestination.toLowerCase().includes(q);
         const matchKamus = item.categoryOrKamus.toLowerCase().includes(q);
-        const matchKec = item.location.kecamatan.toLowerCase().includes(q);
-        if (!matchTitle && !matchId && !matchReporter && !matchDewan && !matchKamus && !matchKec) {
+        const matchKec = item.kecamatan.toLowerCase().includes(q);
+        if (
+          !matchNumber &&
+          !matchTitle &&
+          !matchReporter &&
+          !matchDewan &&
+          !matchKamus &&
+          !matchKec
+        ) {
           return false;
         }
       }
 
-      // Dapil Filter
-      if (dapilFilter !== 'all' && item.dapilId !== dapilFilter) {
-        return false;
-      }
-
-      // Status Filter
-      if (statusFilter !== 'all' && item.status !== statusFilter) {
-        return false;
-      }
-
       return true;
     });
-  }, [aspirationTickets, effectiveSearch, dapilFilter, statusFilter]);
+  }, [tickets, effectiveSearch, statusFilter, dapilFilter, representativeFilter, kecamatanFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedItems = React.useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
+
+  const activeProcessCount =
+    statusCounts.menunggu_verifikasi + statusCounts.terverifikasi + statusCounts.sedang_diproses;
+
+  const hasActiveFilter =
+    Boolean(effectiveSearch.trim()) ||
+    statusFilter !== 'all' ||
+    dapilFilter !== 'all' ||
+    representativeFilter !== 'all' ||
+    kecamatanFilter !== 'all';
+
+  const resetFilters = () => {
+    setInternalSearch('');
+    setStatusFilter('all');
+    setDapilFilter('all');
+    setRepresentativeFilter('all');
+    setKecamatanFilter('all');
+  };
 
   return (
-    <div className="space-y-5">
-      {/* Top Banner & Filters with shadcn Card */}
-      <Card className="soft-card border-warm-200 rounded-3xl border bg-white shadow-sm">
+    <div className="animate-in fade-in space-y-6 duration-200 sm:space-y-8">
+      {/* KPI Cards Row (following DewanTab) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card className="soft-card border-warm-200 rounded-3xl bg-white shadow-xs">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xs font-extrabold tracking-wider text-slate-500 uppercase">
+                  Total Aspirasi Pokir
+                </p>
+                <p className="text-darknavy-900 mt-1 text-2xl font-black">{tickets.length}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <Landmark className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-2xs mt-2 text-slate-500">Usulan konstituen tersimpan di database</p>
+          </CardContent>
+        </Card>
+
+        <Card className="soft-card border-warm-200 rounded-3xl bg-white shadow-xs">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xs font-extrabold tracking-wider text-slate-500 uppercase">
+                  Menunggu &amp; Proses Telaah
+                </p>
+                <p className="text-darknavy-900 mt-1 text-2xl font-black">{activeProcessCount}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <Clock className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-2xs mt-2 text-slate-500">
+              {statusCounts.menunggu_verifikasi} Menunggu Verifikasi •{' '}
+              {statusCounts.sedang_diproses} Musrenbang
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="soft-card border-warm-200 rounded-3xl bg-white shadow-xs">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xs font-extrabold tracking-wider text-slate-500 uppercase">
+                  Selesai / Akomodasi
+                </p>
+                <p className="mt-1 text-2xl font-black text-emerald-600">{statusCounts.selesai}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+            </div>
+            <p className="text-2xs mt-2 text-slate-500">
+              {statusCounts.terverifikasi} Lolos Telaah • {statusCounts.ditolak} Ditolak
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Table Card */}
+      <Card className="border-warm-200 overflow-hidden rounded-3xl bg-white shadow-sm">
         <CardHeader className="p-6 pb-4">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <CardTitle className="text-darknavy-900 flex items-center gap-2.5 text-base font-extrabold sm:text-lg">
-                <Landmark className="h-5 w-5 text-emerald-600" />
-                <span>Pokok Pikiran (Pokir) & Aspirasi Dapil DPRD Kabupaten Tapin</span>
+              <CardTitle className="text-darknavy-900 text-lg font-black sm:text-xl">
+                Pokok Pikiran (Pokir) &amp; Aspirasi Dapil DPRD Tapin
               </CardTitle>
-              <CardDescription className="mt-1 text-xs text-slate-500">
-                Total {filteredTickets.length} usulan pokir konstituen terdata untuk 25 anggota
-                dewan
+              <CardDescription className="text-xs text-slate-500 sm:text-sm">
+                Menampilkan {filtered.length} dari {tickets.length} usulan konstituen per daerah
+                pemilihan
               </CardDescription>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Search Input */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
               <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   type="text"
-                  placeholder="Cari pokok pikiran, dewan, dapil..."
+                  placeholder="Cari ID, usulan, dewan..."
                   value={effectiveSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
-                  className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-10 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
+                  className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Filter className="h-4 w-4" />
-                <span className="text-xs font-bold tracking-wider uppercase">Filter:</span>
-              </div>
+              {hasActiveFilter ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="border-warm-300 text-darknavy-900 hover:bg-warm-100 h-10 gap-1.5 rounded-2xl text-xs font-bold"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Reset</span>
+                </Button>
+              ) : null}
+            </div>
+          </div>
 
-              {/* Filter Dapil using shadcn Select */}
-              <div className="w-[210px]">
-                <Select value={dapilFilter} onValueChange={setDapilFilter}>
-                  <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-10 rounded-2xl bg-white text-xs font-semibold shadow-2xs sm:text-sm">
-                    <SelectValue placeholder="Semua Dapil Tapin" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    <SelectItem value="all">Semua Dapil Tapin (1-3)</SelectItem>
-                    {DAPIL_TAPIN_LIST.map((dapil) => (
-                      <SelectItem key={dapil.id} value={dapil.id}>
-                        {dapil.name} ({dapil.seats})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Multi-Dimensional Filter Bar */}
+          <div className="border-warm-200/80 mt-4 flex flex-wrap items-center gap-3 border-t pt-4">
+            <TicketStatusFilterPills
+              value={statusFilter}
+              onChange={setStatusFilter}
+              totalCount={tickets.length}
+              statusCounts={statusCounts}
+            />
 
-              {/* Filter Status using shadcn Select */}
-              <div className="w-[195px]">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-10 rounded-2xl bg-white text-xs font-semibold shadow-2xs sm:text-sm">
-                    <SelectValue placeholder="Semua Status" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="menunggu_verifikasi">Menunggu Verifikasi</SelectItem>
-                    <SelectItem value="terverifikasi">Terverifikasi (Lolos Telaah)</SelectItem>
-                    <SelectItem value="sedang_diproses">Sedang Diproses (Musrenbang)</SelectItem>
-                    <SelectItem value="selesai">Selesai / Masuk APBD</SelectItem>
-                    <SelectItem value="ditolak">Ditolak</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Filter Dapil */}
+            <div className="w-[175px]">
+              <Select value={dapilFilter} onValueChange={setDapilFilter}>
+                <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
+                  <SelectValue placeholder="Semua Dapil" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">Semua Dapil Tapin (1-3)</SelectItem>
+                  {DAPIL_TAPIN_LIST.map((dapil) => (
+                    <SelectItem key={dapil.id} value={dapil.name}>
+                      {dapil.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter Anggota Dewan */}
+            <div className="w-[210px]">
+              <Select value={representativeFilter} onValueChange={setRepresentativeFilter}>
+                <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
+                  <SelectValue placeholder="Semua Anggota Dewan" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 rounded-xl">
+                  <SelectItem value="all">Semua Anggota Dewan</SelectItem>
+                  {representativeList.map((rep) => (
+                    <SelectItem key={rep} value={rep}>
+                      {rep}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter Kecamatan */}
+            <div className="w-[180px]">
+              <Select value={kecamatanFilter} onValueChange={setKecamatanFilter}>
+                <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
+                  <SelectValue placeholder="Semua Kecamatan" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 rounded-xl">
+                  <SelectItem value="all">Semua Kecamatan</SelectItem>
+                  {kecamatanList.map((kec) => (
+                    <SelectItem key={kec} value={kec}>
+                      Kec. {kec}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
-      </Card>
 
-      {/* Aspirations Table with Comfortable Typography */}
-      <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl border bg-white shadow-sm">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1150px] border-collapse text-left">
-              <thead>
-                <tr className="border-warm-200 bg-warm-50/80 border-b text-xs font-extrabold tracking-wider text-slate-500 uppercase">
-                  <th className="px-5 py-4 whitespace-nowrap sm:px-6">ID Pokir</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Pengusul (e-KTP)</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Anggota Dewan Dituju</th>
-                  <th className="min-w-[280px] px-5 py-4">Kamus Usulan & Perihal</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Estimasi Anggaran</th>
-                  <th className="px-5 py-4 whitespace-nowrap">Status Pokir</th>
-                  <th className="px-5 py-4 text-right whitespace-nowrap sm:px-6">Aksi</th>
+            <table className="w-full text-left text-xs">
+              <thead className="border-warm-200 bg-warm-50/60 border-y text-slate-500 uppercase">
+                <tr>
+                  <th className="px-6 py-3 font-extrabold tracking-wider">ID Pokir</th>
+                  <th className="px-4 py-3 font-extrabold tracking-wider">Pengusul (e-KTP)</th>
+                  <th className="px-4 py-3 font-extrabold tracking-wider">Anggota Dewan Dituju</th>
+                  <th className="min-w-[260px] px-4 py-3 font-extrabold tracking-wider">
+                    Kamus Usulan &amp; Lokasi
+                  </th>
+                  <th className="px-4 py-3 text-center font-extrabold tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-center font-extrabold tracking-wider">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-warm-100 divide-y text-xs sm:text-sm">
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => {
-                    const status = ADMIN_STATUS_META[ticket.status];
+              <tbody className="divide-warm-200/80 divide-y">
+                {paginatedItems.map((ticket) => {
+                  const status = ADMIN_STATUS_META[ticket.status];
+                  const detailHref = `/dashboard/aspirations/${ticket.ticketNumber}`;
 
-                    return (
-                      <tr
-                        key={ticket.id}
-                        onClick={() => onSelectTicket(ticket)}
-                        className="group hover:bg-warm-50/70 cursor-pointer transition-colors"
-                      >
-                        {/* ID */}
-                        <td className="px-5 py-4.5 whitespace-nowrap sm:px-6">
-                          <span className="block font-mono text-xs font-bold whitespace-nowrap text-emerald-600 sm:text-sm">
-                            {ticket.id}
-                          </span>
-                          <span className="mt-0.5 block text-xs whitespace-nowrap text-slate-400">
-                            {ticket.createdAt}
-                          </span>
-                        </td>
+                  return (
+                    <tr key={ticket.id} className="hover:bg-warm-50/50 transition-colors">
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <Link
+                          to={detailHref}
+                          className="block font-mono text-xs font-bold text-emerald-700 hover:underline sm:text-sm"
+                        >
+                          {ticket.ticketNumber}
+                        </Link>
+                        <p className="text-2xs mt-0.5 text-slate-400">
+                          {formatIndonesianDateTime(ticket.createdAt)}
+                        </p>
+                      </td>
 
-                        {/* Reporter */}
-                        <td className="px-5 py-4.5 whitespace-nowrap">
-                          <span className="text-darknavy-900 block text-sm font-bold whitespace-nowrap">
-                            {ticket.reporter.name}
-                          </span>
-                          <span className="mt-0.5 block text-xs whitespace-nowrap text-slate-400">
-                            Kec. {ticket.location.kecamatan}
-                          </span>
-                        </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <p className="text-darknavy-900 text-sm font-bold">{ticket.reporterName}</p>
+                        <p className="text-2xs mt-0.5 font-mono text-slate-400">
+                          {ticket.maskedNik}
+                        </p>
+                      </td>
 
-                        {/* Dewan */}
-                        <td className="px-5 py-4.5 whitespace-nowrap">
-                          <span className="text-darknavy-900 block text-sm font-bold whitespace-nowrap">
-                            {ticket.targetDestination}
-                          </span>
-                          <Badge
-                            variant="secondary"
-                            className="mt-1 inline-flex border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-emerald-700"
-                          >
-                            {ticket.dapilName?.split('(')[0] || 'Dapil Tapin'}
-                          </Badge>
-                        </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <p className="text-darknavy-900 text-sm font-bold">
+                          {ticket.targetDestination}
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className="text-2xs mt-1 inline-flex border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700"
+                        >
+                          {ticket.dapilName || 'Dapil Tapin'}
+                        </Badge>
+                      </td>
 
-                        {/* Kamus Usulan */}
-                        <td className="max-w-sm min-w-[280px] px-5 py-4.5">
-                          <span className="text-darknavy-900 line-clamp-2 text-sm leading-snug font-bold transition-colors group-hover:text-emerald-700">
-                            {ticket.categoryOrKamus}
+                      <td className="max-w-sm px-4 py-3.5">
+                        <Link
+                          to={detailHref}
+                          className="text-darknavy-900 line-clamp-1 text-sm font-bold transition-colors hover:text-emerald-700"
+                        >
+                          {ticket.categoryOrKamus}
+                        </Link>
+                        <div className="text-2xs mt-1 flex items-center gap-1.5 text-slate-500">
+                          <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+                          <span className="truncate">
+                            {ticket.kelurahan}, Kec. {ticket.kecamatan}
                           </span>
-                          <span className="mt-1 line-clamp-1 text-xs leading-normal text-slate-500">
-                            {ticket.title}
-                          </span>
-                        </td>
+                        </div>
+                      </td>
 
-                        {/* Budget */}
-                        <td className="px-5 py-4.5 whitespace-nowrap">
-                          <span className="text-accent-600 block font-mono text-sm font-extrabold whitespace-nowrap">
-                            {ticket.estimatedBudget || '-'}
-                          </span>
-                          <span className="mt-0.5 block text-xs whitespace-nowrap text-slate-400">
-                            Usulan APBD
-                          </span>
-                        </td>
+                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                        <Badge
+                          variant="outline"
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold ${status.bg} ${status.text}`}
+                        >
+                          <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+                          <span>{status.shortLabel}</span>
+                        </Badge>
+                      </td>
 
-                        {/* Status */}
-                        <td className="px-5 py-4.5 whitespace-nowrap">
-                          <Badge
-                            variant="outline"
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap ${status.bg} ${status.text}`}
-                          >
-                            <span className={`h-2 w-2 rounded-full ${status.dot}`} />
-                            <span>{status.label}</span>
-                          </Badge>
-                        </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="hover:bg-warm-100 h-8 w-8 rounded-xl text-slate-500"
+                              aria-label={`Menu aksi untuk ${ticket.ticketNumber}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 rounded-2xl shadow-xl">
+                            <DropdownMenuLabel>Aksi Pokir</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link to={detailHref} className="flex items-center gap-2">
+                                <Eye className="h-4 w-4 text-emerald-600" />
+                                <span>Lihat Detail &amp; Proses</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  );
+                })}
 
-                        {/* Action */}
-                        <td className="px-5 py-4.5 text-right whitespace-nowrap sm:px-6">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="border-warm-300 text-darknavy-900 h-9 gap-1.5 rounded-full text-xs font-bold whitespace-nowrap shadow-2xs group-hover:border-emerald-500 group-hover:text-emerald-600"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span>Detail</span>
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
+                {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-14 text-center text-sm text-slate-400">
-                      Tidak ditemukan usulan aspirasi dapil yang sesuai kriteria pencarian.
+                    <td colSpan={6} className="p-6">
+                      <Empty className="border-warm-200 border bg-slate-50/40">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Landmark className="text-slate-500" />
+                          </EmptyMedia>
+                          <EmptyTitle className="text-darknavy-900 text-base font-bold">
+                            {hasActiveFilter
+                              ? 'Aspirasi Tidak Ditemukan'
+                              : 'Belum Ada Aspirasi Pokir'}
+                          </EmptyTitle>
+                          <EmptyDescription className="text-xs text-slate-500">
+                            {hasActiveFilter
+                              ? 'Tidak ada usulan pokir yang sesuai dengan kata kunci atau filter yang dipilih.'
+                              : 'Usulan pokok pikiran konstituen yang dikirim melalui formulir publik akan tampil di tabel ini.'}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        {hasActiveFilter ? (
+                          <EmptyContent>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={resetFilters}
+                              className="rounded-xl text-xs font-bold"
+                            >
+                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                              Reset Semua Filter
+                            </Button>
+                          </EmptyContent>
+                        ) : null}
+                      </Empty>
                     </td>
                   </tr>
-                )}
+                ) : null}
               </tbody>
             </table>
           </div>
+
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>

@@ -15,6 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -31,6 +39,7 @@ import {
   MoreHorizontal,
   Pencil,
   Power,
+  RotateCcw,
   Search,
   ShieldCheck,
   Trash2,
@@ -451,8 +460,52 @@ export function DewanTab({ legislators, searchQuery }: DewanTabProps) {
 
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-500">
-                      Tidak ditemukan anggota dewan dengan kriteria filter tersebut.
+                    <td colSpan={7} className="p-6">
+                      <Empty className="border-warm-200 border bg-slate-50/40">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Users className="text-slate-500" />
+                          </EmptyMedia>
+                          <EmptyTitle className="text-darknavy-900 text-base font-bold">
+                            {effectiveSearch.trim() ||
+                            filterRole !== 'all' ||
+                            filterParty !== 'all' ||
+                            filterCommission !== 'all'
+                              ? 'Anggota Dewan Tidak Ditemukan'
+                              : 'Belum Ada Anggota Dewan'}
+                          </EmptyTitle>
+                          <EmptyDescription className="text-xs text-slate-500">
+                            {effectiveSearch.trim() ||
+                            filterRole !== 'all' ||
+                            filterParty !== 'all' ||
+                            filterCommission !== 'all'
+                              ? 'Tidak ada anggota dewan yang sesuai dengan filter tingkat, partai, komisi, atau pencarian Anda.'
+                              : 'Tambahkan akun anggota DPRD Kabupaten Tapin atau DPR RI untuk mulai mengelola direktori.'}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        {effectiveSearch.trim() ||
+                        filterRole !== 'all' ||
+                        filterParty !== 'all' ||
+                        filterCommission !== 'all' ? (
+                          <EmptyContent>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setInternalSearch('');
+                                setFilterRole('all');
+                                setFilterParty('all');
+                                setFilterCommission('all');
+                              }}
+                              className="rounded-xl text-xs font-bold"
+                            >
+                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                              Reset Filter
+                            </Button>
+                          </EmptyContent>
+                        ) : null}
+                      </Empty>
                     </td>
                   </tr>
                 ) : null}
