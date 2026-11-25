@@ -17,7 +17,7 @@ import { ProposalStep } from '@/components/aspiration/proposal-step';
 import type { IdentityFormData, UsulanFormData } from '@/types/aspiration';
 
 import { APP_NAME } from '@/constants/index';
-import { DAPIL_DISTRICTS_MAP, DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
+import { DAPIL_DISTRICTS_MAP, DESA_KELURAHAN_TAPIN_MAP, TAPIN_CENTER } from '@/constants/tapin';
 
 import { ArrowLeft, Megaphone } from 'lucide-react';
 
@@ -219,8 +219,8 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     representativeParty: initialRep?.party || '',
     kamusUsulan: 'Perbaikan Rumah Tidak Layak Huni (RTLH)',
     permasalahan: '',
-    latitude: -2.9381,
-    longitude: 115.1524,
+    latitude: TAPIN_CENTER.lat,
+    longitude: TAPIN_CENTER.lng,
     alamatLokasi: '',
     kabupaten: 'Kabupaten Tapin',
     kecamatan: initialKecamatan,

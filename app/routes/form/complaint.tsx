@@ -15,7 +15,7 @@ import type { IdentityFormData, PublicComplaintFormData } from '@/types/aspirati
 
 import { AGENCIES, CATEGORIES } from '@/constants/aspirations';
 import { APP_NAME } from '@/constants/index';
-import { DESA_KELURAHAN_TAPIN_MAP } from '@/constants/tapin';
+import { DESA_KELURAHAN_TAPIN_MAP, TAPIN_CENTER } from '@/constants/tapin';
 
 import { ArrowLeft, Landmark } from 'lucide-react';
 
@@ -150,8 +150,8 @@ export default function FormComplaintPage() {
     agency: AGENCIES[0] || 'Komisi I DPRD (Pemerintahan & Hukum)',
     title: '',
     content: '',
-    latitude: -2.9381,
-    longitude: 115.1524,
+    latitude: TAPIN_CENTER.lat,
+    longitude: TAPIN_CENTER.lng,
     alamatLokasi: '',
     kabupaten: 'Kabupaten Tapin',
     kecamatan: 'Tapin Utara',
