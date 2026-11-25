@@ -7,8 +7,9 @@ import {
   type HighlightedFeedbackItem,
   type KecamatanStatItem,
   type TicketDetailItem,
+  normalizeKecamatanName,
 } from '~/constants/admin-data';
-import { DAPIL_TAPIN_LIST, KECAMATAN_TAPIN_LIST } from '~/constants/tapin';
+import { DAPIL_TAPIN_LIST } from '~/constants/tapin';
 import { db } from '~/db/index.server';
 import {
   type FeedbackType,
@@ -26,7 +27,7 @@ import {
 import { createAuditLog } from '~/lib/audit.server';
 import type { AuthUserPayload } from '~/lib/auth.server';
 import { requireAuth } from '~/lib/session.server';
-import { surveySchema } from '~/schema/form';
+import { flattenZodFieldErrors, surveySchema } from '~/schema/form';
 import { updateTicketStatusSchema } from '~/schema/ticket';
 import type { AppSatisfactionRating } from '~/types/aspiration';
 
@@ -312,13 +313,22 @@ export async function getTicketFeedbacks(ticketId: string): Promise<TicketFeedba
 /**
  * Aggregate CSAT analytics (average score, star distribution, and popular aspects).
  */
-export async function getCsatAnalytics(): Promise<CsatAnalyticsResult> {
-  const allReviews = await db
-    .select({
-      rating: ticketFeedbacks.rating,
-      aspects: ticketFeedbacks.aspects,
-    })
-    .from(ticketFeedbacks);
+export async function getCsatAnalytics(scopeWhere?: SQL): Promise<CsatAnalyticsResult> {
+  const allReviews = scopeWhere
+    ? await db
+        .select({
+          rating: ticketFeedbacks.rating,
+          aspects: ticketFeedbacks.aspects,
+        })
+        .from(ticketFeedbacks)
+        .innerJoin(tickets, eq(ticketFeedbacks.ticketId, tickets.id))
+        .where(scopeWhere)
+    : await db
+        .select({
+          rating: ticketFeedbacks.rating,
+          aspects: ticketFeedbacks.aspects,
+        })
+        .from(ticketFeedbacks);
 
   const totalReviews = allReviews.length;
   if (totalReviews === 0) {
@@ -419,18 +429,21 @@ async function resolveUserTicketScope(user?: AuthUserPayload): Promise<SQL | und
   }
 
   if (user.role === 'moderator') {
-    if (user.regionId) {
-      const [region] = await db
-        .select({ code: regions.code })
-        .from(regions)
-        .where(eq(regions.id, user.regionId))
-        .limit(1);
-
-      if (region?.code) {
-        return and(eq(tickets.type, 'dapil'), eq(tickets.dapilId, region.code));
-      }
+    if (!user.regionId) {
+      return sql`false`;
     }
-    return eq(tickets.type, 'dapil');
+
+    const [region] = await db
+      .select({ code: regions.code })
+      .from(regions)
+      .where(eq(regions.id, user.regionId))
+      .limit(1);
+
+    if (!region?.code) {
+      return sql`false`;
+    }
+
+    return and(eq(tickets.type, 'dapil'), eq(tickets.dapilId, region.code));
   }
 
   return sql`false`;
@@ -501,7 +514,7 @@ export async function getDashboardTickets(options?: {
       status: row.status,
       reporterName: row.reporterName,
       maskedNik: maskNik(row.reporterNik),
-      kecamatan: row.kecamatan,
+      kecamatan: normalizeKecamatanName(row.kecamatan),
       kelurahan: row.kelurahan,
       targetDestination: isDapil
         ? row.repName || resolvedDapilName || 'Perwakilan DPRD Tapin'
@@ -569,9 +582,9 @@ export async function getDashboardOverviewStats(
 
   const normalizedDistrictMap = new Map<string, { name: string; count: number }>();
   for (const row of kecamatanRows) {
-    const trimmed = row.name.trim();
-    const lowerKey = trimmed.toLowerCase();
-    const canonicalName = KECAMATAN_TAPIN_LIST.find((k) => k.toLowerCase() === lowerKey) || trimmed;
+    const canonicalName = normalizeKecamatanName(row.name);
+    if (!canonicalName) continue;
+    const lowerKey = canonicalName.toLowerCase();
     const existing = normalizedDistrictMap.get(lowerKey);
     if (existing) {
       existing.count += Number(row.count);
@@ -601,7 +614,7 @@ export async function getDashboardOverviewStats(
   }));
 
   const [csat, recentTickets, highlightRows] = await Promise.all([
-    getCsatAnalytics(),
+    getCsatAnalytics(scopeWhere),
     getDashboardTickets({ user, limit: 5 }),
     db
       .select({
@@ -877,12 +890,25 @@ export async function updateTicketStatus(
   ticketNumber: string,
   status: TicketDbStatus,
   adminNotes?: string,
-  assignedToUserId?: string
+  assignedToUserId?: string,
+  options?: { existingResolvedAt?: Date | null }
 ): Promise<Ticket | null> {
+  const isTerminalStatus = status === 'selesai' || status === 'ditolak';
+
+  let existingResolvedAt = options?.existingResolvedAt;
+  if (isTerminalStatus && existingResolvedAt === undefined) {
+    const [current] = await db
+      .select({ resolvedAt: tickets.resolvedAt })
+      .from(tickets)
+      .where(eq(tickets.ticketNumber, ticketNumber))
+      .limit(1);
+    existingResolvedAt = current?.resolvedAt ?? null;
+  }
+
   const updateData: Partial<NewTicket> = {
     status,
     updatedAt: new Date(),
-    resolvedAt: status === 'selesai' || status === 'ditolak' ? new Date() : null,
+    resolvedAt: isTerminalStatus ? (existingResolvedAt ?? new Date()) : null,
   };
 
   if (adminNotes !== undefined) {
@@ -933,18 +959,11 @@ export async function handleTicketStatusUpdateAction(
   });
 
   if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = String(issue.path[0] || '');
-      if (key && !fieldErrors[key]) {
-        fieldErrors[key] = issue.message;
-      }
-    }
     return Response.json(
       {
         success: false,
         error: 'Mohon periksa kembali status dan catatan tindak lanjut.',
-        fieldErrors,
+        fieldErrors: flattenZodFieldErrors(parsed),
       },
       { status: 400 }
     );
@@ -952,8 +971,23 @@ export async function handleTicketStatusUpdateAction(
 
   const nextStatus = parsed.data.status;
   const nextNotes = parsed.data.adminNotes;
+  const currentNotes = existing.adminNotes || '';
 
-  const updated = await updateTicketStatus(ticketNumber, nextStatus, nextNotes, authResult.user.id);
+  if (nextStatus === existing.status && nextNotes === currentNotes) {
+    return Response.json({
+      success: true,
+      message: 'Tidak ada perubahan status atau catatan yang perlu disimpan.',
+    });
+  }
+
+  const existingResolvedAt = existing.resolvedAt ? new Date(existing.resolvedAt) : null;
+  const updated = await updateTicketStatus(
+    ticketNumber,
+    nextStatus,
+    nextNotes,
+    authResult.user.id,
+    { existingResolvedAt }
+  );
 
   if (!updated) {
     return Response.json(

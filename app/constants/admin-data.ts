@@ -1,6 +1,7 @@
 import type { FeedbackType, TicketDbStatus, TicketType } from '@/db/schema/schema';
 
-export type AdminTicketType = TicketType;
+import { KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
+
 export type AdminTicketStatus = TicketDbStatus;
 
 export interface DashboardTicketItem {
@@ -181,4 +182,34 @@ export function formatIndonesianDateTime(dateInput: string | Date | null | undef
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+/**
+ * Normalize district names against canonical Tapin district spelling (case-insensitive)
+ * so tables and chart aggregations never split e.g. "TAPIN UTARA" and "Tapin Utara".
+ */
+export function normalizeKecamatanName(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  const lower = trimmed.toLowerCase();
+  return KECAMATAN_TAPIN_LIST.find((k) => k.toLowerCase() === lower) || trimmed;
+}
+
+/**
+ * Count ticket totals per AdminTicketStatus in a single pass.
+ */
+export function computeTicketStatusCounts(
+  tickets: ReadonlyArray<{ status: AdminTicketStatus }>
+): Record<AdminTicketStatus, number> {
+  const counts: Record<AdminTicketStatus, number> = {
+    menunggu_verifikasi: 0,
+    terverifikasi: 0,
+    sedang_diproses: 0,
+    selesai: 0,
+    ditolak: 0,
+  };
+  for (const ticket of tickets) {
+    counts[ticket.status]++;
+  }
+  return counts;
 }

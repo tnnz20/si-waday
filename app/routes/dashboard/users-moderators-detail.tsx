@@ -6,6 +6,7 @@ import { redirect } from 'react-router';
 
 import { createAuditLog } from '@/lib/audit.server';
 import { hashPassword } from '@/lib/auth.server';
+import { resolveRegionIdByName } from '@/lib/region.server';
 import { requireAuth } from '@/lib/session.server';
 import { saveAvatarFile } from '@/lib/upload.server';
 
@@ -310,14 +311,17 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    let regionId: string | null = null;
-    if (dapilName) {
-      const [matchedRegion] = await db
-        .select({ id: regions.id })
-        .from(regions)
-        .where(eq(regions.name, dapilName))
-        .limit(1);
-      if (matchedRegion) regionId = matchedRegion.id;
+    const regionId = await resolveRegionIdByName(dapilName || '');
+    if (!regionId) {
+      return Response.json(
+        {
+          error: 'Daerah Pemilihan (Dapil) wajib dipilih dan harus terdaftar di database.',
+          fieldErrors: {
+            dapilName: 'Daerah Pemilihan (Dapil) wajib dipilih dan valid di database.',
+          },
+        },
+        { status: 400 }
+      );
     }
 
     await db.update(users).set({ email, updatedAt: new Date() }).where(eq(users.id, userId));
@@ -327,7 +331,7 @@ export async function action({ request }: Route.ActionArgs) {
         fullName,
         gender,
         phone,
-        ...(regionId ? { regionId } : {}),
+        regionId,
         updatedAt: new Date(),
       })
       .where(eq(userProfiles.userId, userId));

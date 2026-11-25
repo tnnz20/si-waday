@@ -30,11 +30,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { useTicketTablePagination } from '@/hooks/use-ticket-table-pagination';
+
 import {
   ADMIN_STATUS_META,
   type AdminTicketStatus,
   type DashboardTicketItem,
+  computeTicketStatusCounts,
   formatIndonesianDateTime,
+  normalizeKecamatanName,
 } from '@/constants/admin-data';
 import { CATEGORIES, EXTENDED_AGENCIES } from '@/constants/aspirations';
 
@@ -53,19 +57,16 @@ import { TicketStatusFilterPills } from './ticket-status-filter-pills';
 
 interface ComplaintsTabProps {
   tickets: DashboardTicketItem[];
-  searchQuery?: string;
 }
 
 const PAGE_SIZE = 10;
 
-export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
-  const [internalSearch, setInternalSearch] = React.useState('');
-  const effectiveSearch = searchQuery ?? internalSearch;
+export function ComplaintsTab({ tickets }: ComplaintsTabProps) {
+  const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'all' | AdminTicketStatus>('all');
   const [agencyFilter, setAgencyFilter] = React.useState<string>('all');
   const [categoryFilter, setCategoryFilter] = React.useState<string>('all');
   const [kecamatanFilter, setKecamatanFilter] = React.useState<string>('all');
-  const [currentPage, setCurrentPage] = React.useState(1);
 
   const agencyList = React.useMemo(() => {
     const merged = new Set<string>([
@@ -85,44 +86,29 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
   }, [tickets]);
 
   const kecamatanList = React.useMemo(() => {
-    return Array.from(new Set(tickets.map((t) => t.kecamatan).filter(Boolean))).sort();
+    return Array.from(
+      new Set(tickets.map((t) => normalizeKecamatanName(t.kecamatan)).filter(Boolean))
+    ).sort();
   }, [tickets]);
 
-  const statusCounts = React.useMemo(() => {
-    const counts: Record<AdminTicketStatus, number> = {
-      menunggu_verifikasi: 0,
-      terverifikasi: 0,
-      sedang_diproses: 0,
-      selesai: 0,
-      ditolak: 0,
-    };
-    for (const ticket of tickets) {
-      counts[ticket.status]++;
-    }
-    return counts;
-  }, [tickets]);
-
-  const currentFilterKey = `${effectiveSearch}-${statusFilter}-${agencyFilter}-${categoryFilter}-${kecamatanFilter}`;
-  const [prevFilterKey, setPrevFilterKey] = React.useState(currentFilterKey);
-  if (prevFilterKey !== currentFilterKey) {
-    setPrevFilterKey(currentFilterKey);
-    setCurrentPage(1);
-  }
+  const statusCounts = React.useMemo(() => computeTicketStatusCounts(tickets), [tickets]);
 
   const filtered = React.useMemo(() => {
     return tickets.filter((item) => {
       if (statusFilter !== 'all' && item.status !== statusFilter) return false;
       if (agencyFilter !== 'all' && item.targetDestination !== agencyFilter) return false;
       if (categoryFilter !== 'all' && item.categoryOrKamus !== categoryFilter) return false;
-      if (kecamatanFilter !== 'all' && item.kecamatan !== kecamatanFilter) return false;
+      if (kecamatanFilter !== 'all' && normalizeKecamatanName(item.kecamatan) !== kecamatanFilter) {
+        return false;
+      }
 
-      if (effectiveSearch.trim()) {
-        const q = effectiveSearch.toLowerCase();
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
         const matchNumber = item.ticketNumber.toLowerCase().includes(q);
         const matchTitle = item.title.toLowerCase().includes(q);
         const matchReporter = item.reporterName.toLowerCase().includes(q);
         const matchAgency = item.targetDestination.toLowerCase().includes(q);
-        const matchKec = item.kecamatan.toLowerCase().includes(q);
+        const matchKec = normalizeKecamatanName(item.kecamatan).toLowerCase().includes(q);
         if (!matchNumber && !matchTitle && !matchReporter && !matchAgency && !matchKec) {
           return false;
         }
@@ -130,26 +116,27 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
 
       return true;
     });
-  }, [tickets, effectiveSearch, statusFilter, agencyFilter, categoryFilter, kecamatanFilter]);
+  }, [tickets, searchQuery, statusFilter, agencyFilter, categoryFilter, kecamatanFilter]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginatedItems = React.useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, currentPage]);
+  const filterKey = `${searchQuery}-${statusFilter}-${agencyFilter}-${categoryFilter}-${kecamatanFilter}`;
+  const { currentPage, setCurrentPage, totalPages, paginatedItems } = useTicketTablePagination(
+    filtered,
+    filterKey,
+    PAGE_SIZE
+  );
 
   const activeProcessCount =
     statusCounts.menunggu_verifikasi + statusCounts.terverifikasi + statusCounts.sedang_diproses;
 
   const hasActiveFilter =
-    Boolean(effectiveSearch.trim()) ||
+    Boolean(searchQuery.trim()) ||
     statusFilter !== 'all' ||
     agencyFilter !== 'all' ||
     categoryFilter !== 'all' ||
     kecamatanFilter !== 'all';
 
   const resetFilters = () => {
-    setInternalSearch('');
+    setSearchQuery('');
     setStatusFilter('all');
     setAgencyFilter('all');
     setCategoryFilter('all');
@@ -236,8 +223,8 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
                 <Input
                   type="text"
                   placeholder="Cari ID, perihal, pelapor..."
-                  value={effectiveSearch}
-                  onChange={(e) => setInternalSearch(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="border-warm-300 text-darknavy-900 focus-visible:border-accent-500 focus-visible:ring-accent-500/20 bg-warm-50/70 h-10 w-full rounded-2xl py-2 pr-4 pl-9 text-xs shadow-2xs transition-all placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-2 sm:text-sm"
                 />
               </div>
@@ -266,7 +253,7 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
             />
 
             {/* Filter Komisi DPRD */}
-            <div className="w-[220px]">
+            <div className="w-55">
               <Select value={agencyFilter} onValueChange={setAgencyFilter}>
                 <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
                   <SelectValue placeholder="Semua Komisi DPRD" />
@@ -283,7 +270,7 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
             </div>
 
             {/* Filter Kategori */}
-            <div className="w-[180px]">
+            <div className="w-45">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
                   <SelectValue placeholder="Semua Kategori" />
@@ -300,7 +287,7 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
             </div>
 
             {/* Filter Kecamatan */}
-            <div className="w-[180px]">
+            <div className="w-45">
               <Select value={kecamatanFilter} onValueChange={setKecamatanFilter}>
                 <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
                   <SelectValue placeholder="Semua Kecamatan" />
@@ -326,7 +313,7 @@ export function ComplaintsTab({ tickets, searchQuery }: ComplaintsTabProps) {
                   <th className="px-6 py-3 font-extrabold tracking-wider">ID &amp; Tanggal</th>
                   <th className="px-4 py-3 font-extrabold tracking-wider">Pelapor (e-KTP)</th>
                   <th className="px-4 py-3 font-extrabold tracking-wider">Komisi &amp; Kategori</th>
-                  <th className="min-w-[260px] px-4 py-3 font-extrabold tracking-wider">
+                  <th className="min-w-65 px-4 py-3 font-extrabold tracking-wider">
                     Perihal Aduan
                   </th>
                   <th className="px-4 py-3 font-extrabold tracking-wider">Lokasi Kejadian</th>

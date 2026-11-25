@@ -1,10 +1,12 @@
 import * as React from 'react';
 
+import { flattenZodFieldErrors } from '@/schema/form';
 import { updateTicketStatusSchema } from '@/schema/ticket';
 import { Link, useFetcher } from 'react-router';
 import { toast } from 'sonner';
 
 import type { AuthUserPayload } from '@/lib/auth.server';
+import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,6 +56,8 @@ import {
   Star,
   User,
 } from 'lucide-react';
+
+const isPdfAttachment = (url: string) => url.split('?')[0].toLowerCase().endsWith('.pdf');
 
 interface TicketDetailViewProps {
   ticket: TicketDetailItem;
@@ -130,14 +134,7 @@ export function TicketDetailView({
     });
 
     if (!parsed.success) {
-      const nextErrors: Record<string, string> = {};
-      for (const issue of parsed.error.issues) {
-        const key = String(issue.path[0] || '');
-        if (key && !nextErrors[key]) {
-          nextErrors[key] = issue.message;
-        }
-      }
-      setClientFieldErrors(nextErrors);
+      setClientFieldErrors(flattenZodFieldErrors(parsed));
       return;
     }
 
@@ -282,13 +279,15 @@ export function TicketDetailView({
               </div>
             </div>
 
-            {/* e-KTP Photo Box */}
+            {/* e-KTP Photo / PDF Box */}
             <div className="border-warm-200 bg-warm-50/50 space-y-2.5 rounded-2xl border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
                   Tanda Pengenal e-KTP
                 </span>
-                {ticket.reporter.idCardUrl ? (
+                {ticket.reporter.idCardUrl &&
+                !isPdfAttachment(ticket.reporter.idCardUrl) &&
+                !brokenImages[ticket.reporter.idCardUrl] ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -301,7 +300,39 @@ export function TicketDetailView({
                 ) : null}
               </div>
 
-              {ticket.reporter.idCardUrl && !brokenImages[ticket.reporter.idCardUrl] ? (
+              {ticket.reporter.idCardUrl && isPdfAttachment(ticket.reporter.idCardUrl) ? (
+                <div className="border-warm-200 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <FileText className="text-accent-500 h-5 w-5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-darknavy-900 truncate text-sm font-bold">
+                        Dokumen e-KTP Resmi (PDF)
+                      </p>
+                      <p className="text-2xs truncate font-mono text-slate-500">
+                        {ticket.reporter.idCardUrl}
+                      </p>
+                    </div>
+                  </div>
+                  {ticket.reporter.idCardUrl.startsWith('/uploads/') ||
+                  ticket.reporter.idCardUrl.startsWith('https://') ? (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-warm-300 gap-1.5 rounded-xl text-xs font-semibold"
+                    >
+                      <a href={ticket.reporter.idCardUrl} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-3.5 w-3.5" />
+                        <span>Lihat / Unduh PDF</span>
+                      </a>
+                    </Button>
+                  ) : (
+                    <Badge variant="secondary" className="text-2xs font-semibold text-slate-500">
+                      Arsip Referensi
+                    </Badge>
+                  )}
+                </div>
+              ) : ticket.reporter.idCardUrl && !brokenImages[ticket.reporter.idCardUrl] ? (
                 <div className="border-warm-200 relative overflow-hidden rounded-xl border bg-slate-100">
                   <img
                     src={ticket.reporter.idCardUrl}
@@ -606,9 +637,10 @@ export function TicketDetailView({
                     id="ticket-status-select"
                     aria-invalid={fieldErrors.status ? 'true' : undefined}
                     aria-describedby={fieldErrors.status ? 'status-error' : undefined}
-                    className={`border-darknavy-700 bg-darknavy-800 focus:ring-accent-500 h-10.5 w-full rounded-xl text-xs text-white sm:text-sm ${
-                      fieldErrors.status ? 'border-rose-500 focus-visible:ring-rose-500' : ''
-                    }`}
+                    className={cn(
+                      'border-darknavy-700 bg-darknavy-800 focus:ring-accent-500 h-10.5 w-full rounded-xl text-xs text-white sm:text-sm',
+                      fieldErrors.status && 'border-rose-500 focus-visible:ring-rose-500'
+                    )}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -667,9 +699,10 @@ export function TicketDetailView({
                   aria-invalid={fieldErrors.adminNotes ? 'true' : undefined}
                   aria-describedby={fieldErrors.adminNotes ? 'adminNotes-error' : undefined}
                   placeholder="Tuliskan catatan disposisi, tindak lanjut lapangan, atau alasan keputusan..."
-                  className={`border-darknavy-700 bg-darknavy-800 focus-visible:ring-accent-500 w-full rounded-xl text-xs leading-relaxed text-white placeholder:text-slate-500 sm:text-sm ${
-                    fieldErrors.adminNotes ? 'border-rose-500 focus-visible:ring-rose-500' : ''
-                  }`}
+                  className={cn(
+                    'border-darknavy-700 bg-darknavy-800 focus-visible:ring-accent-500 w-full rounded-xl text-xs leading-relaxed text-white placeholder:text-slate-500 sm:text-sm',
+                    fieldErrors.adminNotes && 'border-rose-500 focus-visible:ring-rose-500'
+                  )}
                 />
                 {fieldErrors.adminNotes ? (
                   <p id="adminNotes-error" className="text-2xs mt-1 font-semibold text-rose-400">
