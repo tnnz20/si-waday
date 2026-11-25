@@ -74,8 +74,116 @@ export async function createTicket(data: CreateTicketInput): Promise<Ticket> {
   throw new Error('Gagal menghasilkan nomor tiket unik setelah beberapa percobaan.');
 }
 
+export interface PublicTicketDto {
+  ticketNumber: string;
+  type: TicketType;
+  reporterName: string;
+  maskedNik: string;
+  title: string | null;
+  kamusUsulan: string | null;
+  agency: string | null;
+  dapilId: string | null;
+  kecamatan: string;
+  kelurahan: string;
+  status: TicketDbStatus;
+  adminNotes: string | null;
+  createdAt: string;
+  representative: {
+    fullName: string;
+    party: string | null;
+    position: string | null;
+  } | null;
+}
+
 /**
- * Find a single ticket by its official ticket number with related representative and assigned admin.
+ * Mask citizen 16-digit NIK for public tracking and registration receipts.
+ */
+export function maskNik(nik: string): string {
+  if (nik.length < 10) return nik;
+  return `${nik.slice(0, 6)}******${nik.slice(-4)}`;
+}
+
+async function findPublicTicketRow(ticketNumber: string) {
+  return db.query.tickets.findFirst({
+    where: eq(tickets.ticketNumber, ticketNumber),
+    columns: {
+      id: true,
+      ticketNumber: true,
+      type: true,
+      reporterName: true,
+      reporterNik: true,
+      title: true,
+      kamusUsulan: true,
+      agency: true,
+      dapilId: true,
+      kecamatan: true,
+      kelurahan: true,
+      status: true,
+      adminNotes: true,
+      createdAt: true,
+    },
+    with: {
+      representative: {
+        columns: {
+          fullName: true,
+          party: true,
+          position: true,
+        },
+      },
+    },
+  });
+}
+
+function toPublicTicketDto(
+  row: NonNullable<Awaited<ReturnType<typeof findPublicTicketRow>>>
+): PublicTicketDto {
+  return {
+    ticketNumber: row.ticketNumber,
+    type: row.type,
+    reporterName: row.reporterName,
+    maskedNik: maskNik(row.reporterNik),
+    title: row.title,
+    kamusUsulan: row.kamusUsulan,
+    agency: row.agency,
+    dapilId: row.dapilId,
+    kecamatan: row.kecamatan,
+    kelurahan: row.kelurahan,
+    status: row.status,
+    adminNotes: row.adminNotes,
+    createdAt: row.createdAt.toISOString(),
+    representative: row.representative,
+  };
+}
+
+/**
+ * Public-safe ticket lookup excluding reporter contact details, KTP URL, and internal staff fields.
+ */
+export async function getPublicTicketByNumber(
+  ticketNumber: string
+): Promise<PublicTicketDto | null> {
+  const row = await findPublicTicketRow(ticketNumber);
+  return row ? toPublicTicketDto(row) : null;
+}
+
+/**
+ * Public-safe ticket + initial feedback lookup for citizen registration receipt page.
+ */
+export async function getPublicTicketWithFeedback(ticketNumber: string): Promise<{
+  ticket: PublicTicketDto;
+  feedback: TicketFeedback | null;
+} | null> {
+  const row = await findPublicTicketRow(ticketNumber);
+  if (!row) return null;
+
+  const feedbacks = await getTicketFeedbacks(row.id);
+  return {
+    ticket: toPublicTicketDto(row),
+    feedback: feedbacks[0] ?? null,
+  };
+}
+
+/**
+ * Find a full ticket record (including citizen PII) for internal/admin server workflows and tests.
  * Zero N+1 query via Drizzle ORM relational queries.
  */
 export async function getTicketByNumber(ticketNumber: string) {
@@ -128,7 +236,12 @@ export async function submitTicketSatisfaction(
   survey: AppSatisfactionRating,
   type: FeedbackType = 'submission'
 ): Promise<TicketFeedback> {
-  const ticket = await getTicketByNumber(ticketNumber);
+  const [ticket] = await db
+    .select({ id: tickets.id })
+    .from(tickets)
+    .where(eq(tickets.ticketNumber, ticketNumber))
+    .limit(1);
+
   if (!ticket) {
     throw new Error(`Tiket dengan nomor ${ticketNumber} tidak ditemukan.`);
   }
@@ -281,11 +394,29 @@ export async function handleSurveyAction(formData: FormData): Promise<Response> 
     );
   }
 
-  await submitTicketSatisfaction(parsed.data.ticketNumber, {
-    rating: parsed.data.rating,
-    aspects: parsed.data.aspects,
-    feedback: parsed.data.feedback || '',
-  });
+  try {
+    await submitTicketSatisfaction(parsed.data.ticketNumber, {
+      rating: parsed.data.rating,
+      aspects: parsed.data.aspects,
+      feedback: parsed.data.feedback || '',
+    });
 
-  return Response.json({ success: true });
+    return Response.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    const isNotFound = message.includes('tidak ditemukan');
+    if (!isNotFound) {
+      console.error('Failed to submit citizen satisfaction survey:', error);
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: isNotFound
+          ? 'Tiket tidak ditemukan untuk menyimpan survei.'
+          : 'Gagal menyimpan penilaian survei. Silakan coba lagi.',
+      },
+      { status: isNotFound ? 404 : 500 }
+    );
+  }
 }

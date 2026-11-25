@@ -14,7 +14,7 @@ export function CtaTracking({ onTrackTicket }: CtaTrackingProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanId = ticketInput.trim().toUpperCase() || 'ASP-2026-9081';
+    const cleanId = ticketInput.trim().toUpperCase();
     onTrackTicket(cleanId);
   };
 
@@ -47,7 +47,7 @@ export function CtaTracking({ onTrackTicket }: CtaTrackingProps) {
             type="text"
             value={ticketInput}
             onChange={(e) => setTicketInput(e.target.value)}
-            placeholder="Contoh: ASP-2026-9081"
+            placeholder="Contoh: ASP-2026-1001"
             className="focus-visible:ring-accent-500 rounded-full border-white/20 bg-white/10 px-6 py-6 font-mono text-xs text-white uppercase placeholder:text-slate-400"
           />
           <Button

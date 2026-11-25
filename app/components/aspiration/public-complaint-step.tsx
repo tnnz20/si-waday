@@ -1,9 +1,11 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 
-import { complaintStepSchema } from '~/schema/form';
+import { complaintStepSchema, flattenZodFieldErrors } from '~/schema/form';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
 import { PhotoDropzone } from '@/components/aspiration/photo-dropzone';
+import { RegionSelectorFields } from '@/components/aspiration/region-selector-fields';
+import { SupportingDocumentField } from '@/components/aspiration/supporting-document-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,9 +22,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { PublicComplaintFormData } from '@/types/aspiration';
 
 import { CATEGORIES, EXTENDED_AGENCIES } from '@/constants/aspirations';
-import { DESA_KELURAHAN_TAPIN_MAP, KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
+import { KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
 
-import { ArrowLeft, FileText, HelpCircle, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, HelpCircle, Send } from 'lucide-react';
 
 interface PublicComplaintStepProps {
   data: PublicComplaintFormData;
@@ -41,10 +43,6 @@ export function PublicComplaintStep({
 }: PublicComplaintStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const documentInputRef = useRef<HTMLInputElement | null>(null);
-
-  const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
-
   const handleKecamatanChange = (kecamatan: string) => {
     onChange({
       kecamatan,
@@ -54,30 +52,12 @@ export function PublicComplaintStep({
     if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
   };
 
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, document: 'Ukuran dokumen maksimal 10MB.' }));
-      return;
-    }
-    onChange({ documentFileName: file.name, documentFile: file });
-    if (errors.document) setErrors((prev) => ({ ...prev, document: '' }));
-  };
-
   const handleValidateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = complaintStepSchema.safeParse(data);
 
     if (!result.success) {
-      const fieldErrors = result.error.flatten().fieldErrors;
-      const mappedErrors: Record<string, string> = {};
-      for (const [key, messages] of Object.entries(fieldErrors)) {
-        if (messages && messages.length > 0) {
-          mappedErrors[key] = messages[0];
-        }
-      }
-      setErrors(mappedErrors);
+      setErrors(flattenZodFieldErrors(result));
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
     }
@@ -98,7 +78,7 @@ export function PublicComplaintStep({
     <TooltipProvider delayDuration={150}>
       <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
         <CardContent className="p-6 sm:p-8">
-          <form onSubmit={handleValidateSubmit} className="space-y-7">
+          <form onSubmit={handleValidateSubmit} noValidate className="space-y-7">
             {/* FIELD 1: KOMISI DPRD & KATEGORI */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Komisi / Bagian DPRD */}
@@ -143,8 +123,10 @@ export function PublicComplaintStep({
                 >
                   <SelectTrigger
                     id="agency-select"
+                    aria-invalid={Boolean(errors.agency)}
+                    aria-describedby={errors.agency ? 'agency-error' : undefined}
                     className={`border-warm-200 bg-white ${
-                      errors.agency ? 'border-rose-400 focus:ring-rose-400' : ''
+                      errors.agency ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                     }`}
                   >
                     <SelectValue placeholder="Pilih Komisi / Bidang DPRD" />
@@ -158,7 +140,9 @@ export function PublicComplaintStep({
                   </SelectContent>
                 </Select>
                 {errors.agency ? (
-                  <p className="text-2xs font-semibold text-rose-500">{errors.agency}</p>
+                  <p id="agency-error" className="text-2xs font-semibold text-rose-500">
+                    {errors.agency}
+                  </p>
                 ) : null}
               </div>
 
@@ -204,8 +188,10 @@ export function PublicComplaintStep({
                 >
                   <SelectTrigger
                     id="category-select"
+                    aria-invalid={Boolean(errors.category)}
+                    aria-describedby={errors.category ? 'category-error' : undefined}
                     className={`border-warm-200 bg-white ${
-                      errors.category ? 'border-rose-400 focus:ring-rose-400' : ''
+                      errors.category ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                     }`}
                   >
                     <SelectValue placeholder="Pilih Kategori Aduan" />
@@ -219,7 +205,9 @@ export function PublicComplaintStep({
                   </SelectContent>
                 </Select>
                 {errors.category ? (
-                  <p className="text-2xs font-semibold text-rose-500">{errors.category}</p>
+                  <p id="category-error" className="text-2xs font-semibold text-rose-500">
+                    {errors.category}
+                  </p>
                 ) : null}
               </div>
             </div>
@@ -262,6 +250,8 @@ export function PublicComplaintStep({
                 id="complaint-title-input"
                 type="text"
                 required
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? 'title-error' : undefined}
                 value={data.title}
                 onChange={(e) => {
                   onChange({ title: e.target.value });
@@ -269,11 +259,13 @@ export function PublicComplaintStep({
                 }}
                 placeholder="Contoh: Penerangan jalan mati total di sepanjang Jl. Brigjend H. Hasan Basry"
                 className={`border-warm-200 bg-white ${
-                  errors.title ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.title ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               {errors.title ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.title}</p>
+                <p id="title-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.title}
+                </p>
               ) : null}
             </div>
 
@@ -314,6 +306,8 @@ export function PublicComplaintStep({
               <Textarea
                 id="complaint-content-input"
                 required
+                aria-invalid={Boolean(errors.content)}
+                aria-describedby={errors.content ? 'content-error' : undefined}
                 rows={4}
                 value={data.content}
                 onChange={(e) => {
@@ -322,7 +316,7 @@ export function PublicComplaintStep({
                 }}
                 placeholder="Jelaskan secara rinci kronologi kejadian, sejak kapan masalah berlangsung, dan bagaimana dampaknya bagi keselamatan atau kenyamanan masyarakat..."
                 className={`border-warm-200 bg-white ${
-                  errors.content ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.content ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               <div className="text-2xs flex items-center justify-between text-slate-400">
@@ -330,7 +324,9 @@ export function PublicComplaintStep({
                 <span>{data.content.length} karakter</span>
               </div>
               {errors.content ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.content}</p>
+                <p id="content-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.content}
+                </p>
               ) : null}
             </div>
 
@@ -412,6 +408,8 @@ export function PublicComplaintStep({
               <Textarea
                 id="complaint-address-input"
                 required
+                aria-invalid={Boolean(errors.alamatLokasi)}
+                aria-describedby={errors.alamatLokasi ? 'complaint-address-error' : undefined}
                 rows={2}
                 value={data.alamatLokasi}
                 onChange={(e) => {
@@ -420,108 +418,31 @@ export function PublicComplaintStep({
                 }}
                 placeholder="Contoh: Jl. Trans Kalimantan Km 3, Depan Kantor Desa Tungkap, RT 02 / RW 01"
                 className={`border-warm-200 bg-white ${
-                  errors.alamatLokasi ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.alamatLokasi ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               {errors.alamatLokasi ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.alamatLokasi}</p>
+                <p id="complaint-address-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.alamatLokasi}
+                </p>
               ) : null}
             </div>
 
             {/* ADMINISTRATIVE REGION: KABUPATEN, KECAMATAN, KELURAHAN */}
-            <div className="border-warm-200 bg-warm-50/50 space-y-4 rounded-2xl border p-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {/* Kabupaten */}
-                <div>
-                  <label
-                    htmlFor="complaint-kabupaten-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kabupaten / Kota <span className="text-rose-500">*</span>
-                  </label>
-                  <Input
-                    id="complaint-kabupaten-select"
-                    type="text"
-                    readOnly
-                    value={data.kabupaten}
-                    className="border-warm-200 bg-warm-100 text-darknavy-900 cursor-not-allowed text-xs font-semibold"
-                  />
-                </div>
-
-                {/* Kecamatan */}
-                <div>
-                  <label
-                    htmlFor="complaint-kecamatan-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kecamatan <span className="text-rose-500">*</span>
-                  </label>
-                  <Select value={data.kecamatan} onValueChange={handleKecamatanChange}>
-                    <SelectTrigger
-                      id="complaint-kecamatan-select"
-                      className={`border-warm-200 bg-white text-xs ${
-                        errors.kecamatan ? 'border-rose-400 focus:ring-rose-400' : ''
-                      }`}
-                    >
-                      <SelectValue placeholder="Pilih Kecamatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {KECAMATAN_TAPIN_LIST.map((kec) => (
-                        <SelectItem key={kec} value={kec}>
-                          Kecamatan {kec}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.kecamatan ? (
-                    <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.kecamatan}</p>
-                  ) : null}
-                </div>
-
-                {/* Kelurahan / Desa */}
-                <div>
-                  <label
-                    htmlFor="complaint-kelurahan-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kelurahan / Desa <span className="text-rose-500">*</span>
-                  </label>
-                  <Select
-                    disabled={!data.kecamatan}
-                    value={data.kelurahan}
-                    onValueChange={(val) => {
-                      onChange({ kelurahan: val });
-                      if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
-                    }}
-                  >
-                    <SelectTrigger
-                      id="complaint-kelurahan-select"
-                      className={`border-warm-200 bg-white text-xs ${
-                        errors.kelurahan ? 'border-rose-400 focus:ring-rose-400' : ''
-                      }`}
-                    >
-                      <SelectValue
-                        placeholder={
-                          data.kecamatan
-                            ? 'Pilih Kelurahan / Desa'
-                            : 'Pilih Kecamatan terlebih dahulu'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableVillages.map((desa) => (
-                        <SelectItem key={desa} value={desa}>
-                          {desa}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.kelurahan ? (
-                    <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.kelurahan}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
+            <RegionSelectorFields
+              idPrefix="complaint"
+              kabupaten={data.kabupaten}
+              kecamatan={data.kecamatan}
+              kelurahan={data.kelurahan}
+              districts={KECAMATAN_TAPIN_LIST}
+              kecamatanError={errors.kecamatan}
+              kelurahanError={errors.kelurahan}
+              onKecamatanChange={handleKecamatanChange}
+              onKelurahanChange={(val) => {
+                onChange({ kelurahan: val });
+                if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
+              }}
+            />
 
             {/* FIELD 6: BUKTI FOTO & DOKUMEN */}
             <div className="border-warm-200 bg-warm-50/60 space-y-4 rounded-3xl border p-5">
@@ -555,17 +476,10 @@ export function PublicComplaintStep({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <span className="text-xs font-medium text-slate-500">Maks. 8MB / Foto</span>
+                <span className="text-xs font-medium text-slate-500">
+                  Maks. 5MB / Foto (Kompresi Otomatis)
+                </span>
               </div>
-
-              {/* Hidden file inputs */}
-              <input
-                type="file"
-                ref={documentInputRef}
-                accept=".pdf,.doc,.docx"
-                className="hidden"
-                onChange={handleDocumentUpload}
-              />
 
               {/* Foto Bukti Kejadian Dropzone */}
               <PhotoDropzone
@@ -573,44 +487,23 @@ export function PublicComplaintStep({
                 onChange={(photos) => onChange({ photos })}
                 error={errors.photos}
                 label="Foto Bukti Kejadian"
-                helperText="Format: JPG, PNG, atau WebP. Maksimal 3 foto (kompresi otomatis)."
+                helperText="Format: JPG, PNG, atau WebP. Maksimal 3 foto (kompresi otomatis maks. 5MB)."
               />
 
               {/* Surat / Dokumen Pendukung */}
-              <div className="space-y-1 pt-1">
-                <label className="text-darknavy-900 block text-xs font-bold">
-                  Dokumen / Berkas Lampiran Lainnya{' '}
-                  <span className="font-normal text-slate-400">(opsional)</span>
-                </label>
-                <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                  <div className="flex min-w-0 items-center gap-2 pr-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => documentInputRef.current?.click()}
-                      className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 shrink-0 rounded-lg text-xs"
-                    >
-                      Browse...
-                    </Button>
-                    <span className="truncate font-mono text-xs text-slate-700">
-                      {data.documentFileName || 'Lampiran.pdf (Belum ada file)'}
-                    </span>
-                  </div>
-
-                  {data.documentFileName ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onChange({ documentFileName: '' })}
-                      className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
+              <SupportingDocumentField
+                id="complaint-doc-input"
+                label="Dokumen / Berkas Lampiran Lainnya"
+                placeholder="Lampiran.pdf (Belum ada file)"
+                fileName={data.documentFileName}
+                error={errors.document}
+                onFileSelect={(file) => {
+                  onChange({ documentFileName: file.name, documentFile: file });
+                  if (errors.document) setErrors((prev) => ({ ...prev, document: '' }));
+                }}
+                onClear={() => onChange({ documentFileName: '', documentFile: null })}
+                onError={(message) => setErrors((prev) => ({ ...prev, document: message }))}
+              />
             </div>
 
             {/* Action Buttons */}

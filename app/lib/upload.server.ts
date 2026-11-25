@@ -73,16 +73,29 @@ export async function saveAttachmentFile(
     ktp: {
       maxSize: 5 * 1024 * 1024,
       allowedExts: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+      requireMime: true,
       dir: 'ktp',
     },
     photo: {
       maxSize: 5 * 1024 * 1024,
       allowedExts: ['.jpg', '.jpeg', '.png', '.webp'],
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      requireMime: true,
       dir: 'photos',
     },
     document: {
       maxSize: 10 * 1024 * 1024,
       allowedExts: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp'],
+      allowedMimeTypes: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+      ],
+      requireMime: false,
       dir: 'documents',
     },
   };
@@ -102,6 +115,26 @@ export async function saveAttachmentFile(
       success: false,
       error: `Format file tidak didukung (${ext || 'tanpa ekstensi'}).`,
     };
+  }
+
+  const isWordDocGenericMime =
+    category === 'document' &&
+    (ext === '.doc' || ext === '.docx') &&
+    (!file.type || file.type === 'application/octet-stream');
+
+  if (!isWordDocGenericMime) {
+    if (config.requireMime && !file.type) {
+      return {
+        success: false,
+        error: 'Tipe MIME file tidak valid atau tidak terdeteksi.',
+      };
+    }
+    if (file.type && !config.allowedMimeTypes.includes(file.type)) {
+      return {
+        success: false,
+        error: `Tipe MIME file tidak didukung (${file.type}).`,
+      };
+    }
   }
 
   try {
@@ -126,11 +159,29 @@ export interface ExtractedAttachments {
   idCardUrl: string | null;
   documentUrl: string | null;
   photos: string[];
+  errors: string[];
+}
+
+function isPersistentUploadUrl(value?: string | null): value is string {
+  if (!value) return false;
+  return value.startsWith('/uploads/') || /^https?:\/\//.test(value);
+}
+
+async function cleanupSavedFiles(urls: string[]): Promise<void> {
+  for (const relativeUrl of urls) {
+    if (!relativeUrl.startsWith('/uploads/')) continue;
+    try {
+      const fullPath = path.join(process.cwd(), 'public', relativeUrl.replace(/^\//, ''));
+      await fs.unlink(fullPath);
+    } catch {
+      // Ignore unlink cleanup errors
+    }
+  }
 }
 
 /**
- * Extracts and saves citizen file attachments (KTP, proposal/doc, photos) from FormData,
- * with graceful fallback to provided client preview URLs.
+ * Extracts and saves citizen file attachments (KTP, proposal/doc, photos) from FormData.
+ * Rejects failed physical uploads with explicit error messages instead of persisting client blob: URLs.
  */
 export async function extractTicketAttachments(
   formData: FormData,
@@ -140,57 +191,61 @@ export async function extractTicketAttachments(
     photoUrls?: (string | undefined | null)[];
   }
 ): Promise<ExtractedAttachments> {
+  const errors: string[] = [];
+  const savedDiskUrls: string[] = [];
+
   // 1. KTP
-  let idCardUrl = fallbacks.idCardUrl || null;
+  let idCardUrl = isPersistentUploadUrl(fallbacks.idCardUrl) ? fallbacks.idCardUrl : null;
   const idCardFile = formData.get('idCardFile');
   if (idCardFile instanceof File && idCardFile.size > 0) {
     const uploadRes = await saveAttachmentFile(idCardFile, 'ktp');
     if (uploadRes.success && uploadRes.url) {
       idCardUrl = uploadRes.url;
+      savedDiskUrls.push(uploadRes.url);
+    } else {
+      errors.push(`Lampiran KTP: ${uploadRes.error || 'gagal mengunggah file.'}`);
     }
   }
 
   // 2. Proposal / Complaint Document
-  let documentUrl = fallbacks.documentUrl || null;
+  let documentUrl = isPersistentUploadUrl(fallbacks.documentUrl) ? fallbacks.documentUrl : null;
   const docFile = formData.get('proposalFile') || formData.get('documentFile');
   if (docFile instanceof File && docFile.size > 0) {
     const uploadRes = await saveAttachmentFile(docFile, 'document');
     if (uploadRes.success && uploadRes.url) {
       documentUrl = uploadRes.url;
+      savedDiskUrls.push(uploadRes.url);
+    } else {
+      errors.push(`Dokumen pendukung: ${uploadRes.error || 'gagal mengunggah file.'}`);
     }
   }
 
-  // 3. Evidence Photos (support both 'photos' multi-entry and legacy 'photo1', 'photo2', 'photo3')
+  // 3. Evidence Photos (multi-entry 'photos')
   const uploadedPhotos: string[] = [];
   const multiPhotos = formData.getAll('photos');
-  const candidateFiles: File[] = [];
-
-  if (multiPhotos.length > 0) {
-    for (const item of multiPhotos) {
-      if (item instanceof File && item.size > 0) {
-        candidateFiles.push(item);
-      }
-    }
-  } else {
-    for (const key of ['photo1', 'photo2', 'photo3']) {
-      const file = formData.get(key);
-      if (file instanceof File && file.size > 0) {
-        candidateFiles.push(file);
-      }
-    }
-  }
+  const candidateFiles = multiPhotos.filter(
+    (item): item is File => item instanceof File && item.size > 0
+  );
 
   for (const photoFile of candidateFiles.slice(0, 3)) {
     const uploadRes = await saveAttachmentFile(photoFile, 'photo');
     if (uploadRes.success && uploadRes.url) {
       uploadedPhotos.push(uploadRes.url);
+      savedDiskUrls.push(uploadRes.url);
+    } else {
+      errors.push(`Foto dokumentasi (${photoFile.name}): ${uploadRes.error || 'gagal diunggah.'}`);
     }
+  }
+
+  if (errors.length > 0) {
+    await cleanupSavedFiles(savedDiskUrls);
+    return { idCardUrl: null, documentUrl: null, photos: [], errors };
   }
 
   const photos =
     uploadedPhotos.length > 0
       ? uploadedPhotos
-      : (fallbacks.photoUrls || []).filter((url): url is string => Boolean(url));
+      : (fallbacks.photoUrls || []).filter((url): url is string => isPersistentUploadUrl(url));
 
-  return { idCardUrl, documentUrl, photos };
+  return { idCardUrl, documentUrl, photos, errors: [] };
 }

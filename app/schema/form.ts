@@ -136,3 +136,20 @@ export type IdentityStepInput = z.infer<typeof identityStepSchema>;
 export type AspirationStepInput = z.infer<typeof aspirationStepSchema>;
 export type ComplaintStepInput = z.infer<typeof complaintStepSchema>;
 export type SurveyInput = z.infer<typeof surveySchema>;
+
+/**
+ * Flatten Zod validation issues to first message per field key.
+ */
+export function flattenZodFieldErrors<T>(result: {
+  success: false;
+  error: z.ZodError<T>;
+}): Record<string, string> {
+  const fieldErrors = result.error.flatten().fieldErrors as Record<string, string[] | undefined>;
+  const mapped: Record<string, string> = {};
+  for (const [key, messages] of Object.entries(fieldErrors)) {
+    if (messages && messages.length > 0) {
+      mapped[key] = messages[0];
+    }
+  }
+  return mapped;
+}

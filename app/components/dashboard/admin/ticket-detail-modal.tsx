@@ -366,16 +366,37 @@ function TicketDetailDialog({
                       <p className="text-xs text-slate-500">Dokumen Lampiran PDF Resmi</p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toast.info(`Mengunduh berkas ${ticket.documentFileName}...`)}
-                    className="border-warm-300 gap-1.5 rounded-lg text-xs font-semibold"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Unduh Berkas</span>
-                  </Button>
+                  {ticket.documentFileName.startsWith('/') ||
+                  ticket.documentFileName.startsWith('http') ? (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-warm-300 gap-1.5 rounded-lg text-xs font-semibold"
+                    >
+                      <a
+                        href={ticket.documentFileName}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Unduh Berkas</span>
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      title="Berkas simulasi contoh (belum tersedia file fisik di server)"
+                      className="border-warm-300 gap-1.5 rounded-lg text-xs font-semibold"
+                    >
+                      <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>Contoh Lampiran</span>
+                    </Button>
+                  )}
                 </div>
               ) : null}
             </div>

@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { Link } from 'react-router';
 import { toast } from 'sonner';
-import { getTicketByNumber, getTicketFeedbacks } from '~/lib/ticket.server';
+import { getPublicTicketWithFeedback } from '~/lib/ticket.server';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,17 +46,14 @@ export async function loader({ params }: Route.LoaderArgs) {
     return { ticket: null, feedback: null, ticketNumber: '' };
   }
 
-  const ticket = await getTicketByNumber(ticketNumber);
-  if (!ticket) {
+  const result = await getPublicTicketWithFeedback(ticketNumber);
+  if (!result) {
     return { ticket: null, feedback: null, ticketNumber };
   }
 
-  const feedbacks = await getTicketFeedbacks(ticket.id);
-  const feedback = feedbacks[0] || null;
-
   return {
-    ticket,
-    feedback,
+    ticket: result.ticket,
+    feedback: result.feedback,
     ticketNumber,
   };
 }
@@ -114,12 +111,7 @@ export default function SuccessPage({ loaderData }: Route.ComponentProps) {
   }
 
   const isDapil = ticket.type === 'dapil';
-
-  // Mask NIK for civic privacy (e.g., 630501******0001)
-  const maskedNik =
-    ticket.reporterNik && ticket.reporterNik.length >= 10
-      ? `${ticket.reporterNik.slice(0, 6)}******${ticket.reporterNik.slice(-4)}`
-      : ticket.reporterNik;
+  const maskedNik = ticket.maskedNik;
 
   const targetDestination = isDapil
     ? ticket.representative?.fullName || ticket.dapilId || 'DPRD Kabupaten Tapin'

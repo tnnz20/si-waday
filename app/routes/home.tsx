@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { getTicketByNumber } from '~/lib/ticket.server';
+import { getPublicTicketByNumber } from '~/lib/ticket.server';
 
 import { CtaTracking } from '@/components/home/cta-tracking';
 import { Faq } from '@/components/home/faq';
@@ -34,7 +34,7 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({ success: false, error: 'Nomor tiket wajib diisi.' }, { status: 400 });
   }
 
-  const ticket = await getTicketByNumber(ticketNumber);
+  const ticket = await getPublicTicketByNumber(ticketNumber);
   if (!ticket) {
     return Response.json(
       {
@@ -53,7 +53,7 @@ export default function Home() {
   const [currentCategory, setCurrentCategory] = useState<Category>('semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
-  const [activeTrackId, setActiveTrackId] = useState('ASP-2026-9081');
+  const [activeTrackId, setActiveTrackId] = useState('');
 
   const handleToggleVote = (id: string) => {
     setAspirations((prev) =>
@@ -73,7 +73,7 @@ export default function Home() {
   };
 
   const handleOpenTrackModal = (ticketId?: string) => {
-    setActiveTrackId(ticketId || 'ASP-2026-9081');
+    setActiveTrackId(ticketId?.trim() || '');
     setIsTrackModalOpen(true);
   };
 

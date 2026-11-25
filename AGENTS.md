@@ -34,7 +34,7 @@
 │   ├── routes/                # Route modules (loaders, actions, page components)
 │   │   ├── auth/              # Auth routes (login.tsx, logout.tsx)
 │   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*, users-*-detail)
-│   │   ├── form/              # Dedicated public form routes (aspiration.tsx, complaint.tsx)
+│   │   ├── form/              # Dedicated public form routes (aspiration.tsx, complaint.tsx, success.tsx)
 │   │   └── home.tsx           # Landing page route
 │   ├── schema/                # Zod validation schemas
 │   ├── types/                 # Shared TypeScript interfaces & types (aspiration.ts, ui.ts)
@@ -77,6 +77,7 @@
     ...prefix('form', [
       route('aspiration', 'routes/form/aspiration.tsx'),
       route('complaint', 'routes/form/complaint.tsx'),
+      route('success/:ticketNumber', 'routes/form/success.tsx'),
     ]),
   ]),
   layout('layouts/auth-layout.tsx', [

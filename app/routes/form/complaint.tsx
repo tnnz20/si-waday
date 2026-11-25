@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import { Link, useFetcher, useNavigate } from 'react-router';
+import { Link, useFetcher } from 'react-router';
 import { toast } from 'sonner';
+import { useRevokeBlobUrlsOnUnmount, useTicketSurvey } from '~/hooks/use-ticket-survey';
+import { buildTicketSubmissionFormData } from '~/lib/ticket-form';
 import { createTicket, handleSurveyAction } from '~/lib/ticket.server';
 import { extractTicketAttachments } from '~/lib/upload.server';
 import { INITIAL_IDENTITY_DATA, complaintStepSchema, identityStepSchema } from '~/schema/form';
@@ -73,20 +75,19 @@ export async function action({ request }: Route.ActionArgs) {
     const rawComplaint = complaintData as PublicComplaintFormData;
     const rawIdentity = identityData as IdentityFormData;
 
-    const fallbackPhotoUrls =
-      rawComplaint.photos && rawComplaint.photos.length > 0
-        ? rawComplaint.photos.map((p) => p.previewUrl)
-        : [
-            rawComplaint.photo1PreviewUrl,
-            rawComplaint.photo2PreviewUrl,
-            rawComplaint.photo3PreviewUrl,
-          ];
+    const fallbackPhotoUrls = rawComplaint.photos?.map((p) => p.previewUrl) || [];
 
-    const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
+    const attachments = await extractTicketAttachments(formData, {
       idCardUrl: rawIdentity.idCardPreviewUrl,
       documentUrl: rawComplaint.documentFileName,
       photoUrls: fallbackPhotoUrls,
     });
+
+    if (attachments.errors.length > 0) {
+      return Response.json({ success: false, error: attachments.errors[0] }, { status: 400 });
+    }
+
+    const { idCardUrl, documentUrl, photos } = attachments;
 
     const newTicket = await createTicket({
       type: 'masyarakat',
@@ -113,7 +114,6 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({
       success: true,
       ticketNumber: newTicket.ticketNumber,
-      ticket: newTicket,
     });
   } catch (error) {
     console.error('Failed to register complaint ticket:', error);
@@ -128,14 +128,20 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function FormComplaintPage() {
-  const navigate = useNavigate();
   const submitFetcher = useFetcher<{
     success: boolean;
     ticketNumber?: string;
     error?: string;
     fieldErrors?: Record<string, string[]>;
   }>();
-  const surveyFetcher = useFetcher<{ success: boolean }>();
+  const {
+    feedbackRating,
+    feedbackAspects,
+    feedbackComment,
+    isSurveySubmitting,
+    updateFeedback,
+    submitSurvey,
+  } = useTicketSurvey();
 
   // Wizard Step: 1 = Identitas & KTP, 2 = Form Aduan
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -156,24 +162,14 @@ export default function FormComplaintPage() {
     kecamatan: '',
     kelurahan: '',
     photos: [],
-    photo1PreviewUrl: '',
-    photo1FileName: '',
-    photo2PreviewUrl: '',
-    photo2FileName: '',
-    photo3PreviewUrl: '',
-    photo3FileName: '',
     documentFileName: '',
-    satisfactionRating: 5,
-    satisfactionAspects: ['Kemudahan Formulir', 'Kecepatan Proses'],
-    satisfactionFeedback: '',
+    documentFile: null,
   });
 
-  const [feedbackRating, setFeedbackRating] = useState(5);
-  const [feedbackAspects, setFeedbackAspects] = useState<string[]>([
-    'Formulir Mudah Dipahami',
-    'Kecepatan Akses Lancar',
+  useRevokeBlobUrlsOnUnmount([
+    identityData.idCardPreviewUrl,
+    ...(complaintData.photos?.map((p) => p.previewUrl) || []),
   ]);
-  const [feedbackComment, setFeedbackComment] = useState('');
 
   const isSubmitting = submitFetcher.state === 'submitting';
   const ticketNumber = submitFetcher.data?.ticketNumber || '';
@@ -211,26 +207,15 @@ export default function FormComplaintPage() {
 
   const handleSubmitMasyarakat = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = new FormData();
-    payload.append('intent', 'create_complaint');
-    payload.append('identityData', JSON.stringify(identityData));
-    payload.append('complaintData', JSON.stringify(complaintData));
-
-    if (identityData.idCardFile) {
-      payload.append('idCardFile', identityData.idCardFile);
-    }
-    if (complaintData.documentFile) {
-      payload.append('documentFile', complaintData.documentFile);
-    }
-    if (complaintData.photos && complaintData.photos.length > 0) {
-      for (const item of complaintData.photos) {
-        if (item.file) payload.append('photos', item.file);
-      }
-    } else {
-      if (complaintData.photo1File) payload.append('photo1', complaintData.photo1File);
-      if (complaintData.photo2File) payload.append('photo2', complaintData.photo2File);
-      if (complaintData.photo3File) payload.append('photo3', complaintData.photo3File);
-    }
+    const payload = buildTicketSubmissionFormData({
+      intent: 'create_complaint',
+      payloadKey: 'complaintData',
+      identityData,
+      payloadData: complaintData,
+      documentKey: 'documentFile',
+      documentFile: complaintData.documentFile,
+      photos: complaintData.photos,
+    });
 
     submitFetcher.submit(payload, {
       method: 'post',
@@ -239,36 +224,7 @@ export default function FormComplaintPage() {
   };
 
   const handleFeedbackSubmit = () => {
-    if (!ticketNumber) return;
-
-    surveyFetcher.submit(
-      {
-        intent: 'submit_survey',
-        ticketNumber,
-        rating: String(feedbackRating),
-        aspects: JSON.stringify(feedbackAspects),
-        feedback: feedbackComment,
-      },
-      { method: 'post' }
-    );
-
-    // Clean up local blob object URLs to prevent memory leaks
-    if (identityData.idCardPreviewUrl && identityData.idCardPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(identityData.idCardPreviewUrl);
-    }
-    if (complaintData.photos) {
-      for (const p of complaintData.photos) {
-        if (p.previewUrl && p.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(p.previewUrl);
-        }
-      }
-    }
-
-    toast.success('Ulasan Berhasil Dikirim!', {
-      description: 'Mengarahkan ke bukti registrasi resmi tiket...',
-    });
-
-    navigate(`/form/success/${ticketNumber}`);
+    submitSurvey(ticketNumber);
   };
 
   return (
@@ -336,12 +292,8 @@ export default function FormComplaintPage() {
           rating={feedbackRating}
           aspects={feedbackAspects}
           feedback={feedbackComment}
-          isSubmitting={surveyFetcher.state === 'submitting'}
-          onChange={(updates) => {
-            if (updates.rating !== undefined) setFeedbackRating(updates.rating);
-            if (updates.aspects !== undefined) setFeedbackAspects(updates.aspects);
-            if (updates.feedback !== undefined) setFeedbackComment(updates.feedback);
-          }}
+          isSubmitting={isSurveySubmitting}
+          onChange={updateFeedback}
           onSubmit={handleFeedbackSubmit}
         />
       </div>

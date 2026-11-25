@@ -70,13 +70,13 @@ export async function seedTickets(context?: ScriptDb) {
           {
             type: 'submission' as const,
             rating: 5,
-            aspects: ['Kemudahan Formulir', 'Tampilan Rapi & Jelas'],
+            aspects: ['Formulir Mudah Dipahami', 'Tampilan Rapi & Jelas'],
             feedback: 'Formulir online sangat mudah diisi dan langsung terkonfirmasi.',
           },
           {
             type: 'resolution' as const,
             rating: 5,
-            aspects: ['Kecepatan Respon', 'Transparansi Penanganan'],
+            aspects: ['Kecepatan Akses Lancar', 'Transparansi Alur Aduan'],
             feedback:
               'Alhamdulillah aspirasi sumur bor warga kami cepat ditanggapi dan diakomodasi oleh dewan.',
           },
@@ -155,7 +155,7 @@ export async function seedTickets(context?: ScriptDb) {
           {
             type: 'submission' as const,
             rating: 5,
-            aspects: ['Kemudahan Formulir'],
+            aspects: ['Formulir Mudah Dipahami'],
             feedback: 'Sangat praktis bisa langsung titip usulan ke dewan Dapil.',
           },
         ],
@@ -197,7 +197,7 @@ export async function seedTickets(context?: ScriptDb) {
           {
             type: 'submission' as const,
             rating: 5,
-            aspects: ['Kecepatan Respon', 'Transparansi Alur Aduan'],
+            aspects: ['Kecepatan Akses Lancar', 'Transparansi Alur Aduan'],
             feedback: 'Luar biasa cepat diteruskan ke Komisi 3 DPRD.',
           },
         ],
@@ -237,7 +237,7 @@ export async function seedTickets(context?: ScriptDb) {
           {
             type: 'submission' as const,
             rating: 4,
-            aspects: ['Kemudahan Formulir'],
+            aspects: ['Formulir Mudah Dipahami'],
             feedback: 'Semoga segera ada tindak lanjut untuk pelayanan puskesmas pembantu.',
           },
         ],
@@ -277,13 +277,13 @@ export async function seedTickets(context?: ScriptDb) {
           {
             type: 'submission' as const,
             rating: 5,
-            aspects: ['Kemudahan Formulir'],
+            aspects: ['Formulir Mudah Dipahami'],
             feedback: 'Alur pelaporan aduan masyarakat sangat jelas.',
           },
           {
             type: 'resolution' as const,
             rating: 5,
-            aspects: ['Kecepatan Respon', 'Transparansi Alur Aduan'],
+            aspects: ['Kecepatan Akses Lancar', 'Transparansi Alur Aduan'],
             feedback: 'Sampah sudah diangkut bersih, terima kasih tim dewan dan dinas LH.',
           },
         ],

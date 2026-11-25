@@ -1,13 +1,25 @@
 import 'dotenv/config';
+import { inArray } from 'drizzle-orm';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { db } from '../app/db/index.server';
+import { tickets } from '../app/db/schema/schema';
 import {
   createTicket,
   getCsatAnalytics,
   getTicketFeedbacks,
   submitTicketSatisfaction,
 } from '../app/lib/ticket.server';
+
+const createdTicketIds: string[] = [];
+
+test.after(async () => {
+  if (createdTicketIds.length > 0) {
+    await db.delete(tickets).where(inArray(tickets.id, createdTicketIds));
+  }
+  await db.$client.end();
+});
 
 test('submitTicketSatisfaction inserts into ticket_feedbacks and supports multi-stage surveys', async () => {
   // 1. Create a ticket
@@ -26,6 +38,7 @@ test('submitTicketSatisfaction inserts into ticket_feedbacks and supports multi-
     title: 'Uji Coba Multi-Stage Feedback',
     description: 'Pengecekan decoupling survei kepuasan',
   });
+  createdTicketIds.push(ticket.id);
 
   assert.ok(ticket.id);
 
@@ -34,7 +47,7 @@ test('submitTicketSatisfaction inserts into ticket_feedbacks and supports multi-
     ticket.ticketNumber,
     {
       rating: 5,
-      aspects: ['Kemudahan Formulir', 'Kecepatan Proses'],
+      aspects: ['Formulir Mudah Dipahami', 'Kecepatan Akses Lancar'],
       feedback: 'Formulir sangat mudah diakses.',
     },
     'submission'
@@ -44,14 +57,17 @@ test('submitTicketSatisfaction inserts into ticket_feedbacks and supports multi-
   assert.equal(submissionFeedback.ticketId, ticket.id);
   assert.equal(submissionFeedback.type, 'submission');
   assert.equal(submissionFeedback.rating, 5);
-  assert.deepEqual(submissionFeedback.aspects, ['Kemudahan Formulir', 'Kecepatan Proses']);
+  assert.deepEqual(submissionFeedback.aspects, [
+    'Formulir Mudah Dipahami',
+    'Kecepatan Akses Lancar',
+  ]);
 
   // 3. Submit resolution feedback for the same ticket (multi-stage)
   const resolutionFeedback = await submitTicketSatisfaction(
     ticket.ticketNumber,
     {
       rating: 4,
-      aspects: ['Tindak Lanjut Cepat'],
+      aspects: ['Transparansi Alur Aduan'],
       feedback: 'Penanganan sudah baik dan tuntas.',
     },
     'resolution'
@@ -75,5 +91,4 @@ test('submitTicketSatisfaction inserts into ticket_feedbacks and supports multi-
   assert.ok(analytics.averageRating > 0 && analytics.averageRating <= 5);
   assert.equal(analytics.distribution.length, 5);
   assert.ok(Array.isArray(analytics.aspectRatings));
-  process.exit(0);
 });

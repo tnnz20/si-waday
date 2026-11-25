@@ -541,7 +541,7 @@ export const CSAT_DISTRIBUTION = [
 export const CSAT_ASPECT_RATINGS = [
   { name: 'Formulir Mudah Dipahami', score: 98 },
   { name: 'Kecepatan Akses Lancar', score: 94 },
-  { name: 'Tampilan Rapi & Jelas (UI/UX)', score: 96 },
+  { name: 'Tampilan Rapi & Jelas', score: 96 },
   { name: 'Akurasi Pin Peta Lokasi', score: 91 },
   { name: 'Petunjuk Tooltip Informatif', score: 93 },
   { name: 'Transparansi Alur Aduan', score: 95 },

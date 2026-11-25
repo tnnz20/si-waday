@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useFetcher } from 'react-router';
 
@@ -21,23 +21,19 @@ interface TrackModalProps {
 }
 
 interface TrackedTicketData {
-  id: string;
   ticketNumber: string;
   type: 'dapil' | 'masyarakat';
   reporterName: string;
+  maskedNik: string;
   title: string | null;
-  description: string;
   kamusUsulan?: string | null;
   dapilId?: string | null;
   status: 'menunggu_verifikasi' | 'terverifikasi' | 'sedang_diproses' | 'selesai' | 'ditolak';
   adminNotes: string | null;
-  kabupaten: string;
   kecamatan: string;
   kelurahan: string;
-  alamatLokasi: string;
   createdAt: string;
   representative?: {
-    id: string;
     fullName: string;
     party: string | null;
     position: string | null;
@@ -80,15 +76,27 @@ export function TrackModal({ isOpen, ticketId, onClose }: TrackModalProps) {
     error?: string;
   }>();
 
-  useEffect(() => {
-    if (isOpen && ticketId) {
-      fetcher.submit({ ticketNumber: ticketId }, { method: 'post' });
-    }
-  }, [isOpen, ticketId, fetcher]);
+  const submit = fetcher.submit;
+  const lastFetchedTicketRef = useRef<string | null>(null);
 
-  const isLoading = fetcher.state === 'submitting';
-  const ticket = fetcher.data?.ticket;
-  const error = fetcher.data?.error;
+  useEffect(() => {
+    if (!isOpen) {
+      lastFetchedTicketRef.current = null;
+      return;
+    }
+    if (ticketId && lastFetchedTicketRef.current !== ticketId) {
+      lastFetchedTicketRef.current = ticketId;
+      submit({ ticketNumber: ticketId }, { method: 'post' });
+    }
+  }, [isOpen, ticketId, submit]);
+
+  const isLoading = fetcher.state !== 'idle';
+  const ticket =
+    !isLoading && fetcher.data?.success && fetcher.data.ticket?.ticketNumber === ticketId
+      ? fetcher.data.ticket
+      : undefined;
+  const error =
+    !isLoading && fetcher.data && !fetcher.data.success ? fetcher.data.error : undefined;
 
   const statusConfig = ticket?.status
     ? STATUS_CONFIG[ticket.status] || STATUS_CONFIG.menunggu_verifikasi
@@ -271,7 +279,9 @@ export function TrackModal({ isOpen, ticketId, onClose }: TrackModalProps) {
               <h4 className="text-darknavy-900 text-sm font-extrabold">Tiket Tidak Ditemukan</h4>
               <p className="mt-1 text-xs text-slate-500">
                 {error ||
-                  `Kode tiket "${ticketId}" tidak terdaftar pada sistem SI-WADAY Kabupaten Tapin.`}
+                  (ticketId
+                    ? `Kode tiket "${ticketId}" tidak terdaftar pada sistem SI-WADAY Kabupaten Tapin.`
+                    : 'Nomor tiket wajib diisi untuk melacak status laporan.')}
               </p>
               <div className="mt-4 rounded-xl bg-slate-50 p-3 text-left text-xs text-slate-500">
                 <p className="font-bold text-slate-700">Contoh Kode Tiket yang Valid:</p>

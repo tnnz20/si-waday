@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+import { CSAT_ASPECT_OPTIONS } from '@/constants/aspirations';
+
 import { Check, CheckCircle2, Heart, MessageSquare, Star } from 'lucide-react';
 
 export interface FeedbackAlertDialogProps {
@@ -34,14 +36,7 @@ const RATING_LABELS: Record<number, { text: string; color: string }> = {
   5: { text: 'Sangat Memuaskan & Cepat', color: 'text-accent-500' },
 };
 
-const ASPECT_OPTIONS = [
-  'Formulir Mudah Dipahami',
-  'Kecepatan Akses Lancar',
-  'Tampilan Rapi & Jelas',
-  'Petunjuk Tooltip Informatif',
-  'Akurasi Pin Peta Lokasi',
-  'Transparansi Alur Aduan',
-];
+const ASPECT_OPTIONS = CSAT_ASPECT_OPTIONS;
 
 export function FeedbackAlertDialog({
   isOpen,

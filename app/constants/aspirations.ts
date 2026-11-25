@@ -8,13 +8,6 @@ export const CATEGORIES: Category[] = [
   'Kesehatan',
 ];
 
-export const AGENCIES: string[] = [
-  'Komisi I DPRD (Pemerintahan & Hukum)',
-  'Komisi II DPRD (Ekonomi & Pertanian)',
-  'Komisi III DPRD (Pembangunan & Infrastruktur)',
-  'Sekretariat DPRD Kab. Tapin',
-];
-
 export const EXTENDED_AGENCIES: string[] = [
   'Komisi I DPRD (Pemerintahan, Hukum & Pelayanan Publik)',
   'Komisi II DPRD (Ekonomi, Keuangan & Pertanian)',
@@ -24,6 +17,15 @@ export const EXTENDED_AGENCIES: string[] = [
   'Pimpinan DPRD Kabupaten Tapin',
   'Fraksi-Fraksi DPRD Tapin',
 ];
+
+export const CSAT_ASPECT_OPTIONS = [
+  'Formulir Mudah Dipahami',
+  'Kecepatan Akses Lancar',
+  'Tampilan Rapi & Jelas',
+  'Petunjuk Tooltip Informatif',
+  'Akurasi Pin Peta Lokasi',
+  'Transparansi Alur Aduan',
+] as const;
 
 export const INITIAL_ASPIRATIONS: Aspiration[] = [
   {

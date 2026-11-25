@@ -59,18 +59,6 @@ export interface UsulanFormData {
   proposalFileName: string;
   proposalFile?: File | null;
   photos?: FormPhotoItem[];
-  photo1PreviewUrl?: string;
-  photo1FileName?: string;
-  photo1File?: File | null;
-  photo2PreviewUrl?: string;
-  photo2FileName?: string;
-  photo2File?: File | null;
-  photo3PreviewUrl?: string;
-  photo3FileName?: string;
-  photo3File?: File | null;
-  satisfactionRating: number;
-  satisfactionAspects: string[];
-  satisfactionFeedback: string;
 }
 
 export interface PublicComplaintFormData {
@@ -85,20 +73,8 @@ export interface PublicComplaintFormData {
   kecamatan: string;
   kelurahan: string;
   photos?: FormPhotoItem[];
-  photo1PreviewUrl?: string;
-  photo1FileName?: string;
-  photo1File?: File | null;
-  photo2PreviewUrl?: string;
-  photo2FileName?: string;
-  photo2File?: File | null;
-  photo3PreviewUrl?: string;
-  photo3FileName?: string;
-  photo3File?: File | null;
   documentFileName: string;
   documentFile?: File | null;
-  satisfactionRating: number;
-  satisfactionAspects: string[];
-  satisfactionFeedback: string;
 }
 
 export interface AppSatisfactionRating {

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { Link, useFetcher, useNavigate } from 'react-router';
+import { Link, useFetcher } from 'react-router';
 import { toast } from 'sonner';
 import { db } from '~/db/index.server';
 import { regions, userProfiles, users } from '~/db/schema/schema';
+import { useRevokeBlobUrlsOnUnmount, useTicketSurvey } from '~/hooks/use-ticket-survey';
+import { buildTicketSubmissionFormData } from '~/lib/ticket-form';
 import { createTicket, handleSurveyAction } from '~/lib/ticket.server';
 import { extractTicketAttachments } from '~/lib/upload.server';
 import { INITIAL_IDENTITY_DATA, aspirationStepSchema, identityStepSchema } from '~/schema/form';
@@ -136,16 +138,19 @@ export async function action({ request }: Route.ActionArgs) {
     const rawUsulan = usulanData as UsulanFormData;
     const rawIdentity = identityData as IdentityFormData;
 
-    const fallbackPhotoUrls =
-      rawUsulan.photos && rawUsulan.photos.length > 0
-        ? rawUsulan.photos.map((p) => p.previewUrl)
-        : [rawUsulan.photo1PreviewUrl, rawUsulan.photo2PreviewUrl, rawUsulan.photo3PreviewUrl];
+    const fallbackPhotoUrls = rawUsulan.photos?.map((p) => p.previewUrl) || [];
 
-    const { idCardUrl, documentUrl, photos } = await extractTicketAttachments(formData, {
+    const attachments = await extractTicketAttachments(formData, {
       idCardUrl: rawIdentity.idCardPreviewUrl,
       documentUrl: rawUsulan.proposalFileName,
       photoUrls: fallbackPhotoUrls,
     });
+
+    if (attachments.errors.length > 0) {
+      return Response.json({ success: false, error: attachments.errors[0] }, { status: 400 });
+    }
+
+    const { idCardUrl, documentUrl, photos } = attachments;
 
     const newTicket = await createTicket({
       type: 'dapil',
@@ -173,7 +178,6 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({
       success: true,
       ticketNumber: newTicket.ticketNumber,
-      ticket: newTicket,
     });
   } catch (error) {
     console.error('Failed to register aspiration ticket:', error);
@@ -188,14 +192,20 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function FormAspirationPage({ loaderData }: Route.ComponentProps) {
-  const navigate = useNavigate();
   const submitFetcher = useFetcher<{
     success: boolean;
     ticketNumber?: string;
     error?: string;
     fieldErrors?: Record<string, string[]>;
   }>();
-  const surveyFetcher = useFetcher<{ success: boolean }>();
+  const {
+    feedbackRating,
+    feedbackAspects,
+    feedbackComment,
+    isSurveySubmitting,
+    updateFeedback,
+    submitSurvey,
+  } = useTicketSurvey();
 
   // Wizard Step: 1 = Identitas & KTP, 2 = Form Usulan
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -223,24 +233,14 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     kecamatan: '',
     kelurahan: '',
     proposalFileName: '',
+    proposalFile: null,
     photos: [],
-    photo1PreviewUrl: '',
-    photo1FileName: '',
-    photo2PreviewUrl: '',
-    photo2FileName: '',
-    photo3PreviewUrl: '',
-    photo3FileName: '',
-    satisfactionRating: 5,
-    satisfactionAspects: ['Kemudahan Formulir', 'Kecepatan Proses'],
-    satisfactionFeedback: '',
   }));
 
-  const [feedbackRating, setFeedbackRating] = useState(5);
-  const [feedbackAspects, setFeedbackAspects] = useState<string[]>([
-    'Formulir Mudah Dipahami',
-    'Kecepatan Akses Lancar',
+  useRevokeBlobUrlsOnUnmount([
+    identityData.idCardPreviewUrl,
+    ...(usulanData.photos?.map((p) => p.previewUrl) || []),
   ]);
-  const [feedbackComment, setFeedbackComment] = useState('');
 
   const isSubmitting = submitFetcher.state === 'submitting';
   const ticketNumber = submitFetcher.data?.ticketNumber || '';
@@ -277,26 +277,15 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
 
   const handleSubmitDapil = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = new FormData();
-    payload.append('intent', 'create_aspiration');
-    payload.append('identityData', JSON.stringify(identityData));
-    payload.append('usulanData', JSON.stringify(usulanData));
-
-    if (identityData.idCardFile) {
-      payload.append('idCardFile', identityData.idCardFile);
-    }
-    if (usulanData.proposalFile) {
-      payload.append('proposalFile', usulanData.proposalFile);
-    }
-    if (usulanData.photos && usulanData.photos.length > 0) {
-      for (const item of usulanData.photos) {
-        if (item.file) payload.append('photos', item.file);
-      }
-    } else {
-      if (usulanData.photo1File) payload.append('photo1', usulanData.photo1File);
-      if (usulanData.photo2File) payload.append('photo2', usulanData.photo2File);
-      if (usulanData.photo3File) payload.append('photo3', usulanData.photo3File);
-    }
+    const payload = buildTicketSubmissionFormData({
+      intent: 'create_aspiration',
+      payloadKey: 'usulanData',
+      identityData,
+      payloadData: usulanData,
+      documentKey: 'proposalFile',
+      documentFile: usulanData.proposalFile,
+      photos: usulanData.photos,
+    });
 
     submitFetcher.submit(payload, {
       method: 'post',
@@ -305,36 +294,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
   };
 
   const handleFeedbackSubmit = () => {
-    if (!ticketNumber) return;
-
-    surveyFetcher.submit(
-      {
-        intent: 'submit_survey',
-        ticketNumber,
-        rating: String(feedbackRating),
-        aspects: JSON.stringify(feedbackAspects),
-        feedback: feedbackComment,
-      },
-      { method: 'post' }
-    );
-
-    // Clean up local blob object URLs to prevent memory leaks
-    if (identityData.idCardPreviewUrl && identityData.idCardPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(identityData.idCardPreviewUrl);
-    }
-    if (usulanData.photos) {
-      for (const p of usulanData.photos) {
-        if (p.previewUrl && p.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(p.previewUrl);
-        }
-      }
-    }
-
-    toast.success('Ulasan Berhasil Dikirim!', {
-      description: 'Mengarahkan ke bukti registrasi resmi tiket...',
-    });
-
-    navigate(`/form/success/${ticketNumber}`);
+    submitSurvey(ticketNumber);
   };
 
   return (
@@ -404,12 +364,8 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
           rating={feedbackRating}
           aspects={feedbackAspects}
           feedback={feedbackComment}
-          isSubmitting={surveyFetcher.state === 'submitting'}
-          onChange={(updates) => {
-            if (updates.rating !== undefined) setFeedbackRating(updates.rating);
-            if (updates.aspects !== undefined) setFeedbackAspects(updates.aspects);
-            if (updates.feedback !== undefined) setFeedbackComment(updates.feedback);
-          }}
+          isSubmitting={isSurveySubmitting}
+          onChange={updateFeedback}
           onSubmit={handleFeedbackSubmit}
         />
       </div>
