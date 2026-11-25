@@ -15,9 +15,9 @@
 .
 ├── app/
 │   ├── components/
-│   │   ├── dashboard/admin/   # Admin dashboard widgets & tab views (overview, aspirations, complaints, user tables & modals)
-│   │   ├── aspiration/        # Aspiration & complaint multi-step form wizard (identity, proposal, map-picker, modals)
-│   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, etc.)
+│   │   ├── dashboard/admin/   # Admin dashboard widgets & tab views (overview, aspirations, complaints, satisfaction, user tables & modals)
+│   │   ├── aspiration/        # Multi-step wizard widgets (identity, proposal, complaint, map-picker, photo-dropzone, region-selector, document-field, feedback-dialog)
+│   │   ├── home/              # Landing page sections & presentation widgets (hero, feed, stats, faq, track modal, etc.)
 │   │   ├── layout/            # Structural layout blocks (navbar, footer, admin-sidebar, breadcrumbs)
 │   │   │   └── admin-sidebar/ # Decomposed sidebar subcomponents (header, nav, user-menu, types)
 │   │   ├── shared/            # Reusable UI components shared across 2+ routes (table-pagination, etc.)
@@ -27,22 +27,22 @@
 │   │   ├── migrations/        # Generated SQL migrations and metadata snapshots
 │   │   ├── schema/            # Drizzle table schema definitions (*.ts)
 │   │   └── index.server.ts    # Drizzle client singleton with discrete credentials
-│   ├── hooks/                 # Custom React client hooks
-│   ├── layouts/               # Route shell layouts with <Outlet /> (home-layout.tsx, admin-layout.tsx, auth-layout.tsx)
-│   ├── lib/                   # Utility helpers (cn(), logger.server.ts, auth.server.ts, upload.server.ts, audit.server.ts)
+│   ├── hooks/                 # Custom React client hooks (use-ticket-survey.ts)
+│   ├── layouts/               # Route shell layouts with <Outlet /> (home-layout.tsx, form-layout.tsx, admin-layout.tsx, auth-layout.tsx)
+│   ├── lib/                   # Helpers (cn(), logger.server.ts, auth.server.ts, session.server.ts, upload.server.ts, audit.server.ts, ticket.server.ts, ticket-form.ts, image-compressor.ts, map-utils.ts)
 │   ├── middleware/            # React Router 8 server middlewares (logger.server.ts, auth, etc.)
 │   ├── routes/                # Route modules (loaders, actions, page components)
 │   │   ├── auth/              # Auth routes (login.tsx, logout.tsx)
-│   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, users-*, users-*-detail)
-│   │   ├── form/              # Dedicated public form routes (aspiration.tsx, complaint.tsx, success.tsx)
+│   │   ├── dashboard/         # Nested dashboard routes (overview, complaints, aspirations, satisfaction, users-*, users-*-detail)
+│   │   ├── form/              # Dedicated public form & receipt routes (aspiration.tsx, complaint.tsx, success.tsx)
 │   │   └── home.tsx           # Landing page route
-│   ├── schema/                # Zod validation schemas
+│   ├── schema/                # Zod validation schemas (auth.ts, form.ts, user.ts)
 │   ├── types/                 # Shared TypeScript interfaces & types (aspiration.ts, ui.ts)
 │   ├── app.css                # Tailwind CSS v4 imports, theme tokens & shadcn variables
 │   ├── root.tsx               # Root document layout, HTML shell, and global middleware
 │   └── routes.ts              # Route manifest & URL configuration
 ├── public/
-│   └── uploads/               # User uploaded files (avatars, attachments)
+│   └── uploads/               # User & citizen uploaded files (avatars/, ktp/, photos/, documents/)
 ├── scripts/
 │   ├── data/                  # Source CSV datasets (dprd-tapin-members.csv, moderators.csv)
 │   ├── csv.ts                 # Native Node.js CSV parsing utility
@@ -52,7 +52,9 @@
 │   ├── seed-admin.ts          # Super admin seeder (from .env)
 │   ├── seed-moderators.ts     # Regional moderators seeder (from CSV)
 │   ├── seed-representatives.ts# DPRD & DPR RI representatives seeder (from CSV)
+│   ├── seed-tickets.ts        # Sample citizen tickets & CSAT feedbacks seeder
 │   └── tunnel.ts              # SSH port forwarding utility (ssh2)
+├── tests/                     # Automated unit & integration tests (tsx --test tests/**/*.test.ts)
 ├── compose.yaml               # Container configuration for PostgreSQL
 ├── Dockerfile                 # Multi-stage production container
 ├── drizzle.config.ts          # Drizzle Kit configuration (PostgreSQL dialect)
@@ -107,7 +109,7 @@
   export async function action({ request }: Route.ActionArgs) { ... }
   export default function Home({ loaderData }: Route.ComponentProps) { ... }
   ```
-- Use React Router `<Link>` and `<NavLink>` for client-side navigation (e.g. `<Link to="/aspiration">`). Use hash anchor links for in-page section scrolling (e.g. `<Link to="/#lacak-tiket">`).
+- Use React Router `<Link>` and `<NavLink>` for client-side navigation (e.g. `<Link to="/form/aspiration">`). Use hash anchor links for in-page section scrolling (e.g. `<Link to="/#lacak-tiket">`).
 - Use `useNavigation().state` in [`app/root.tsx`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/root.tsx) for page transition indicators.
 - Use `HydrateFallback` for routes requiring client-side initialization skeletons.
 
@@ -136,14 +138,14 @@
 
 ### 4. Global Toast Notifications (Sonner)
 
-- Standardized on **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted inside persistent layout shells (`home-layout.tsx`, `admin-layout.tsx`, `auth-layout.tsx`).
+- Standardized on **shadcn `sonner`** via `<Toaster position="bottom-right" richColors />` mounted inside persistent layout shells (`home-layout.tsx`, `form-layout.tsx`, `admin-layout.tsx`, `auth-layout.tsx`).
 - Never build custom floating toast containers or pass toast state down through prop drilling.
 - Dispatch toast notifications imperatively from anywhere:
   ```typescript
   import { toast } from 'sonner';
 
   toast.success('Aspirasi Terkirim!', {
-    description: 'Laporan Anda telah berhasil dicatat dengan ID ASP-2026-9081.',
+    description: 'Laporan Anda telah berhasil dicatat dengan ID ASP-2026-1001.',
   });
   ```
 
@@ -157,17 +159,16 @@
   - Use project color tokens (`border-warm-200`, `bg-darknavy-900`, `text-accent-500`) instead of raw hex values (`border-[#e8dbcb]`, `bg-[#191b24]`).
 - Design tokens and shadcn custom properties are mapped in `:root` and `@theme inline` in [`app/app.css`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/app.css).
 
-### 6. Client-Side & Server-Side File Uploads (`URL.revokeObjectURL` & `upload.server.ts`)
+### 6. Client-Side & Server-Side File Uploads (`URL.revokeObjectURL`, `image-compressor.ts` & `upload.server.ts`)
 
-- **Client-Side File Uploads & Memory Management**:
-  - When handling image/document file uploads that produce preview URLs via `URL.createObjectURL(file)`:
-  - Always verify whether an existing preview URL begins with `blob:`.
-  - Safely revoke obsolete URLs using `URL.revokeObjectURL(url)` before creating a new one or upon file deletion.
-  - This prevents browser memory leaks when citizens repeatedly browse or swap attachments.
+- **Client-Side File Uploads, Compression & Memory Management**:
+  - Image uploads (`IdentityStep` KTP & `PhotoDropzone`) run canvas WebP/JPEG downscaling via `compressImageFile()` in [`app/lib/image-compressor.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/app/lib/image-compressor.ts) before creating object preview URLs.
+  - Always verify whether an existing preview URL begins with `blob:`, and revoke obsolete URLs via `URL.revokeObjectURL(url)` on replacement, removal, or unmount (`useRevokeBlobUrlsOnUnmount`).
+  - Document uploaders (`SupportingDocumentField`) must clear both `File` state and `<input type="file">` ref `.value` on delete or validation failure so deleted files cannot re-upload.
 - **Server-Side File Persistence (`app/lib/upload.server.ts`)**:
-  - Validates avatar uploads strictly against allowed MIME types (`image/jpeg`, `image/png`, `image/webp`) and size limits (max 2MB).
+  - `saveAvatarFile()` validates avatar uploads against `image/jpeg`, `image/png`, `image/webp` (max 2MB) and saves to `public/uploads/avatars/`.
+  - `saveAttachmentFile()` & `extractTicketAttachments()` validate citizen ticket uploads across `ktp` (`public/uploads/ktp/`, max 5MB), `photo` (`public/uploads/photos/`, max 5MB), and `document` (`public/uploads/documents/`, max 10MB), reject invalid MIME types or ephemeral `blob:` URLs, and roll back partial saved files cleanly when any attachment fails.
   - Generates secure random UUID filenames to prevent collisions and path traversal attacks.
-  - Persists files directly into `public/uploads/avatars/`.
 
 ### 7. Avoid Barrel Files (`bundle-barrel-imports`)
 
@@ -221,8 +222,10 @@
   - SSH tunnel credentials use `SSH_*` and `SSH_POSTGRES_*` variables in `.env`.
 - **Database Seeding & CSV Datasets**:
   - Master seeder: `npm run db:seed` (`make db-seed`).
-  - Granular seeders: `npm run db:seed:admin`, `npm run db:seed:representatives`, `npm run db:seed:moderators` (all support `ssh=true`).
+  - Granular seeders: `npm run db:seed:admin`, `npm run db:seed:representatives`, `npm run db:seed:moderators`, `npm run db:seed:tickets` (all support `ssh=true`).
   - Source data for representatives and moderators are stored as CSV files in [`scripts/data/`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/data/) and parsed at runtime via [`scripts/csv.ts`](file:///c:/Users/tnnz/Documents/projects/freelancer/si-waday/scripts/csv.ts). Never maintain hardcoded array constants for tabular seed data.
+- **Public Citizen Ticket Privacy (`ticket.server.ts`)**:
+  - Public ticket lookups (`TrackModal` via `POST /` and receipt via `GET /form/success/:ticketNumber`) MUST use `getPublicTicketByNumber()` / `getPublicTicketWithFeedback()` (column projection + server-side `maskNik()`), never exposing raw `reporterNik`, `reporterPhone`, `reporterEmail`, `reporterAddress`, `idCardUrl`, or `assignedTo`.
 - **Audit Logging Subsystem (`audit_logs`)**:
   - Administrative operations (status toggle, password reset, profile update, user deletion, user creation, avatar upload) are tracked in the `audit_logs` table.
   - Enumerated in `audit_action` enum: `STATUS_CHANGE`, `PASSWORD_RESET`, `PROFILE_UPDATE`, `USER_DELETE`, `USER_CREATE`, `AVATAR_UPLOAD`.
@@ -288,6 +291,9 @@ npm run lint
 # 3. Type check React Router types & TypeScript
 npm run typecheck
 
-# 4. Production build check
+# 4. Run unit & integration tests (clean up any inserted DB rows in test.after)
+npm test
+
+# 5. Production build check
 npm run build
 ```

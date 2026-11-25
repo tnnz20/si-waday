@@ -4,12 +4,12 @@ Wadah Aspirasi & Aduan Warga.
 
 ## Stack
 
-- **Framework:** React Router v8.4 (Framework Mode)
-- **UI & Styling:** React v19, Tailwind CSS v4, shadcn/ui, Lucide React
+- **Framework:** React Router v8.5 (Framework Mode)
+- **UI, Maps & Styling:** React v19, Tailwind CSS v4, shadcn/ui, Lucide React, Leaflet (`leaflet`)
 - **Database & ORM:** PostgreSQL 16, Drizzle ORM (`drizzle-orm`, `drizzle-kit`), `postgres` (Postgres.js)
-- **Tooling:** Vite v8, TypeScript 5.9, ESLint 9, Prettier
+- **Tooling & Testing:** Vite v8, TypeScript 5.9, ESLint 9, Prettier, Node.js test runner (`tsx --test`)
 - **Logging & Validation:** Winston logger, Zod
-- **Infrastructure:** Docker & Docker Compose, SSH tunnel migration runner
+- **Infrastructure:** Podman / Docker Compose, SSH tunnel migration runner
 
 ---
 
@@ -31,17 +31,17 @@ Wadah Aspirasi & Aduan Warga.
 │   │   ├── migrations/    # Generated SQL migration files
 │   │   ├── schema/        # Drizzle table schemas
 │   │   └── index.server.ts# Drizzle DB client instance
-│   ├── hooks/             # Custom React hooks
+│   ├── hooks/             # Custom React hooks (use-ticket-survey.ts)
 │   ├── layouts/           # Persistent layout shells with <Outlet /> (home-layout, form-layout, admin-layout, auth-layout)
-│   ├── lib/               # Utility functions (logger, cn helper, auth, upload, audit, etc.)
+│   ├── lib/               # Helpers (logger, cn helper, auth, upload, audit, ticket.server, ticket-form, image-compressor, map-utils)
 │   ├── middleware/        # Server middlewares (request logger, etc.)
 │   ├── routes/            # Route modules (home, form/*, auth/*, dashboard/*, dashboard/users/*)
-│   ├── schema/            # Zod validation schemas
+│   ├── schema/            # Zod validation schemas (auth.ts, form.ts, user.ts)
 │   ├── types/             # Shared TypeScript interfaces & types
 │   ├── app.css            # Tailwind v4 styles, theme tokens & shadcn variables
 │   ├── root.tsx           # Root layout & HTML shell
 │   └── routes.ts          # Route manifest configuration
-├── public/                # Static public assets (icons, favicon, logos, uploads)
+├── public/                # Static assets & uploads (avatars/, ktp/, photos/, documents/)
 ├── scripts/               # Migration, seeding & utility scripts
 │   ├── data/              # Datasets for seeding (dprd-tapin-members.csv, moderators.csv)
 │   ├── csv.ts             # Native CSV parser utility
@@ -51,11 +51,13 @@ Wadah Aspirasi & Aduan Warga.
 │   ├── seed-admin.ts      # Super admin seeder
 │   ├── seed-moderators.ts # Regional moderators seeder (CSV)
 │   ├── seed-representatives.ts # DPRD & DPR RI representatives seeder (CSV)
+│   ├── seed-tickets.ts    # Sample citizen tickets & CSAT feedbacks seeder
 │   └── tunnel.ts          # SSH port forwarder
-├── compose.yaml           # Docker Compose (PostgreSQL 16 Alpine)
+├── tests/                 # Automated unit & integration tests (tsx --test)
+├── compose.yaml           # Podman / Docker Compose (PostgreSQL 16 Alpine)
 ├── Dockerfile             # Multi-stage production container
 ├── drizzle.config.ts      # Drizzle ORM configuration
-├── Makefile                   # Developer task automation
+├── Makefile               # Developer task automation
 ├── package.json           # Dependencies and scripts
 └── README.md
 ```
@@ -69,17 +71,19 @@ Wadah Aspirasi & Aduan Warga.
   - Interactive ticket tracking section (`/#lacak-tiket`).
   - Recent public aspiration feed, real-time activity metrics, and FAQ accordion.
 - **Formulir Aspirasi Dapil DPRD (`/form/aspiration`):**
-  - **Langkah 1:** Validasi data pelapor dengan unggah bukti e-KTP.
-  - **Langkah 2:** Pemilihan daerah pemilihan (Dapil), profil & foto anggota dewan DPRD Tapin, kamus usulan Pokir, alamat, dan penanda peta koordinat GPS.
-  - **Pasca-Kirim:** Penerbitan tiket `ASP-2026-XXXX`, survei Indeks Kepuasan Masyarakat (IKM), dan dialog bukti penerimaan tiket resmi.
+  - **Langkah 1:** Validasi identitas pelapor dengan unggah & kompresi bukti e-KTP/PDF.
+  - **Langkah 2:** Pemilihan daerah pemilihan (Dapil), profil & foto anggota dewan DPRD Tapin, kamus usulan Pokir, peta interaktif Leaflet dengan batas wilayah Kabupaten Tapin (`MapPicker`), dokumen proposal opsional, dan unggah multi-foto dokumentasi (`PhotoDropzone` dengan kompresi otomatis).
+  - **Pasca-Kirim:** Penerbitan tiket `ASP-2026-XXXX`, survei Indeks Kepuasan Masyarakat (IKM) via `FeedbackAlertDialog`, lalu navigasi ke halaman bukti registrasi resmi (`/form/success/:ticketNumber`).
 - **Formulir Aduan Masyarakat (`/form/complaint`):**
-  - **Langkah 1:** Validasi data pelapor dengan unggah bukti e-KTP.
-  - **Langkah 2:** Laporan keluhan fasilitas umum dengan routing pengawasan Komisi DPRD, penanda peta GPS, dan bukti foto/dokumen pendukung.
-  - **Pasca-Kirim:** Penerbitan tiket `ADU-2026-XXXX`, survei IKM, dan tanda terima resmi.
+  - **Langkah 1:** Validasi identitas pelapor dengan unggah & kompresi bukti e-KTP/PDF.
+  - **Langkah 2:** Laporan keluhan fasilitas umum dengan routing pengawasan Komisi DPRD, peta interaktif Leaflet (`MapPicker`), multi-foto bukti kejadian, dan dokumen lampiran opsional.
+  - **Pasca-Kirim:** Penerbitan tiket `ADU-2026-XXXX`, survei IKM, lalu tanda terima resmi di `/form/success/:ticketNumber`.
+- **Bukti Registrasi Tiket (`/form/success/:ticketNumber`):**
+  - Tanda terima publik dengan proyeksi data aman (NIK disamarkan di server, tanpa mengekspos kontak/dokumen KTP pribadi), status tindak lanjut awal, hasil survei IKM, salin nomor tiket, serta cetak/simpan PDF.
 - **Dashboard Admin & Statistik (`/dashboard`):**
   - Pusat kendali bento-grid untuk rekapitulasi KPI dan tren aduan warga.
-  - Tabel filter dan pencarian untuk usulan Pokir dan aduan publik.
-  - Modal inspeksi detail tiket, audit pergerakan status, dan analisis kepuasan masyarakat.
+  - Tabel filter dan pencarian untuk usulan Pokir (`/dashboard/aspirations`) dan aduan publik (`/dashboard/complaints`) _(sementara masih menggunakan data mock `MOCK_ADMIN_TICKETS`)_, serta analitik CSAT/IKM langsung dari `ticket_feedbacks` (`/dashboard/satisfaction`).
+  - Modal inspeksi detail tiket, audit pergerakan status, unduh dokumen lampiran, dan riwayat survei multi-tahap.
 - **Manajemen Pengguna Dewan & Moderator (`/dashboard/users/legislators` & `/dashboard/users/moderators`):**
   - **Kelola Anggota Dewan:** Tabel 7 kolom terpisah (_Anggota Dewan_, _Tingkat_, _Partai_, _Dapil_, _Komisi_, _Status_, _Aksi_) lengkap dengan identitas visual resmi partai politik, badge Dapil (Tapin 1, 2, 3 & DPR RI Kalsel 1), filter komisi, dan status aktif/nonaktif.
   - **Kelola Moderator:** Pemantauan akun moderator wilayah per kecamatan se-Kabupaten Tapin.
@@ -96,7 +100,7 @@ Wadah Aspirasi & Aduan Warga.
 
 - **Node.js:** `v24.0.0` or newer
 - **npm:** `v10` or newer
-- **Docker & Docker Compose:** For running PostgreSQL locally
+- **Podman / Docker & Docker Compose:** For running PostgreSQL locally
 - **GNU Make:** Optional (for `make` shortcuts)
 
 ---
@@ -171,7 +175,7 @@ make db-migrate
 
 ### 5. Seed Initial Data (Optional)
 
-Populate default administrative accounts, regional moderators, and legislative representatives (DPRD & DPR RI):
+Populate default administrative accounts, regional moderators, legislative representatives (DPRD & DPR RI), and sample citizen tickets/feedbacks:
 
 ```bash
 npm run db:seed
@@ -180,7 +184,7 @@ make db-seed
 ```
 
 > [!TIP]
-> You can also seed individual datasets via `make db-seed-admin`, `make db-seed-representatives`, or `make db-seed-moderators`.
+> You can also seed individual datasets via `make db-seed-admin`, `make db-seed-representatives`, `make db-seed-moderators`, or `make db-seed-tickets`.
 
 ### 6. Start Development Server
 
@@ -342,7 +346,8 @@ Initial data (super admin, moderators, and legislative representatives) can be s
   ```bash
   npm run db:seed:admin            # make db-seed-admin
   npm run db:seed:representatives  # make db-seed-representatives
-  npm run db:seed:moderators      # make db-seed-moderators
+  npm run db:seed:moderators       # make db-seed-moderators
+  npm run db:seed:tickets          # make db-seed-tickets
   ```
 
 Datasets are cleanly managed as CSV files inside [`scripts/data/`](scripts/data/) (`dprd-tapin-members.csv` and `moderators.csv`) and parsed at runtime via [`scripts/csv.ts`](scripts/csv.ts).
@@ -351,27 +356,29 @@ Datasets are cleanly managed as CSV files inside [`scripts/data/`](scripts/data/
 
 ## Available Commands
 
-| Command                                         | Makefile                                  | Description                                  |
-| :---------------------------------------------- | :---------------------------------------- | :------------------------------------------- |
-| `npm run dev`                                   | `make dev`                                | Start development server on port 5173        |
-| `npm run build`                                 | `make build`                              | Build production client & server             |
-| `npm run start`                                 | `make start`                              | Run production server                        |
-| `npm run typecheck`                             | `make typecheck`                          | Run React Router typegen & TypeScript check  |
-| `npm run lint`                                  | `make lint`                               | Run ESLint checks                            |
-| `npm run lint:fix`                              | `make lint-fix`                           | Auto-fix ESLint issues                       |
-| `npm run format`                                | `make format`                             | Format code with Prettier                    |
-| `npm run format:check`                          | `make format-check`                       | Verify code formatting                       |
-| `podman compose up -d` / `docker compose up -d` | `make compose-up [engine=docker]`         | Start PostgreSQL container (default: podman) |
-| `podman compose down` / `docker compose down`   | `make compose-down [engine=docker]`       | Stop PostgreSQL container (default: podman)  |
-| `npm run db:generate`                           | `make db-generate`                        | Generate Drizzle migration files             |
-| `npm run db:migrate`                            | `make db-migrate`                         | Apply migrations to local DB                 |
-| `npm run db:migrate -- --ssh`                   | `make db-migrate ssh=true`                | Apply migrations via SSH tunnel              |
-| `npm run db:seed`                               | `make db-seed [ssh=true]`                 | Run full database seeding workflow           |
-| `npm run db:seed:admin`                         | `make db-seed-admin [ssh=true]`           | Seed Super Admin account from `.env`         |
-| `npm run db:seed:representatives`               | `make db-seed-representatives [ssh=true]` | Seed regions & legislators from CSV          |
-| `npm run db:seed:moderators`                    | `make db-seed-moderators [ssh=true]`      | Seed regional moderators from CSV            |
-| `npm run db:push`                               | `make db-push`                            | Push schema directly without migration files |
-| `npm run db:studio`                             | `make db-studio`                          | Open Drizzle Studio UI                       |
+| Command                                         | Makefile                                  | Description                                   |
+| :---------------------------------------------- | :---------------------------------------- | :-------------------------------------------- |
+| `npm run dev`                                   | `make dev`                                | Start development server on port 5173         |
+| `npm run build`                                 | `make build`                              | Build production client & server              |
+| `npm run start`                                 | `make start`                              | Run production server                         |
+| `npm test`                                      | `make test`                               | Run unit and integration tests (`tsx --test`) |
+| `npm run typecheck`                             | `make typecheck`                          | Run React Router typegen & TypeScript check   |
+| `npm run lint`                                  | `make lint`                               | Run ESLint checks                             |
+| `npm run lint:fix`                              | `make lint-fix`                           | Auto-fix ESLint issues                        |
+| `npm run format`                                | `make format`                             | Format code with Prettier                     |
+| `npm run format:check`                          | `make format-check`                       | Verify code formatting                        |
+| `podman compose up -d` / `docker compose up -d` | `make compose-up [engine=docker]`         | Start PostgreSQL container (default: podman)  |
+| `podman compose down` / `docker compose down`   | `make compose-down [engine=docker]`       | Stop PostgreSQL container (default: podman)   |
+| `npm run db:generate`                           | `make db-generate`                        | Generate Drizzle migration files              |
+| `npm run db:migrate`                            | `make db-migrate`                         | Apply migrations to local DB                  |
+| `npm run db:migrate -- --ssh`                   | `make db-migrate ssh=true`                | Apply migrations via SSH tunnel               |
+| `npm run db:seed`                               | `make db-seed [ssh=true]`                 | Run full database seeding workflow            |
+| `npm run db:seed:admin`                         | `make db-seed-admin [ssh=true]`           | Seed Super Admin account from `.env`          |
+| `npm run db:seed:representatives`               | `make db-seed-representatives [ssh=true]` | Seed regions & legislators from CSV           |
+| `npm run db:seed:moderators`                    | `make db-seed-moderators [ssh=true]`      | Seed regional moderators from CSV             |
+| `npm run db:seed:tickets`                       | `make db-seed-tickets [ssh=true]`         | Seed sample citizen tickets & feedbacks       |
+| `npm run db:push`                               | `make db-push`                            | Push schema directly without migration files  |
+| `npm run db:studio`                             | `make db-studio`                          | Open Drizzle Studio UI                        |
 
 ---
 
