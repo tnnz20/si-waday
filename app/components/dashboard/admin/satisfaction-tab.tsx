@@ -13,15 +13,74 @@ import {
 
 import { Check, MessageSquare, Sparkles, Star } from 'lucide-react';
 
-interface SatisfactionTabProps {
-  tickets: AdminTicketItem[];
+export interface CsatAspectStat {
+  name: string;
+  count: number;
+  percentage: number;
 }
 
-export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
-  // Extract all tickets that have satisfaction data
+export interface CsatDistributionStat {
+  star: number;
+  count: number;
+  percentage: number;
+}
+
+export interface CsatAnalyticsData {
+  averageRating: number;
+  totalReviews: number;
+  distribution: CsatDistributionStat[];
+  aspectRatings: CsatAspectStat[];
+}
+
+export interface CsatReviewItem {
+  id: string;
+  ticketNumber: string;
+  type: 'submission' | 'resolution' | 'general';
+  reporterName: string;
+  kecamatan: string;
+  rating: number;
+  aspects: string[];
+  feedback: string | null;
+  createdAt?: string;
+}
+
+export interface SatisfactionTabProps {
+  analytics?: CsatAnalyticsData;
+  reviews?: CsatReviewItem[];
+  tickets?: AdminTicketItem[];
+}
+
+export function SatisfactionTab({ analytics, reviews, tickets = [] }: SatisfactionTabProps) {
+  // Extract all legacy tickets that have satisfaction data (fallback if reviews not provided)
   const ticketsWithReviews = React.useMemo(() => {
     return tickets.filter((t) => t.satisfaction && t.satisfaction.rating > 0);
   }, [tickets]);
+
+  const averageRating = analytics ? analytics.averageRating : ADMIN_KPI_DATA.averageCsatRating;
+  const totalReviews = analytics ? analytics.totalReviews : ADMIN_KPI_DATA.totalCsatReviews;
+  const distribution = analytics?.distribution || CSAT_DISTRIBUTION;
+
+  const aspectList =
+    analytics?.aspectRatings && analytics.aspectRatings.length > 0
+      ? analytics.aspectRatings.map((a) => ({ name: a.name, score: a.percentage }))
+      : CSAT_ASPECT_RATINGS;
+
+  const reviewItems: CsatReviewItem[] = React.useMemo(() => {
+    if (reviews !== undefined) {
+      return reviews;
+    }
+    return ticketsWithReviews.map((t) => ({
+      id: t.id,
+      ticketNumber: t.id,
+      type: 'submission' as const,
+      reporterName: t.reporter.name,
+      kecamatan: t.location.kecamatan,
+      rating: t.satisfaction?.rating || 5,
+      aspects: t.satisfaction?.aspects || [],
+      feedback: t.satisfaction?.feedback || null,
+      createdAt: t.satisfaction?.submittedAt,
+    }));
+  }, [reviews, ticketsWithReviews]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -38,12 +97,19 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
 
               <div className="mt-4 flex items-baseline gap-4">
                 <span className="text-darknavy-900 text-5xl font-black tracking-tight sm:text-6xl">
-                  {ADMIN_KPI_DATA.averageCsatRating}
+                  {averageRating.toFixed(1)}
                 </span>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-amber-400">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className="h-5 w-5 fill-amber-400" />
+                      <Star
+                        key={s}
+                        className={`h-5 w-5 ${
+                          s <= Math.round(averageRating)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-200'
+                        }`}
+                      />
                     ))}
                   </div>
                   <span className="block text-xs font-bold text-slate-400">Skala Maksimal 5.0</span>
@@ -51,8 +117,8 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
               </div>
 
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                Berdasarkan <strong>{ADMIN_KPI_DATA.totalCsatReviews} ulasan masyarakat</strong>{' '}
-                yang mengajukan formulir aduan publik dan usulan dapil di Kabupaten Tapin.
+                Berdasarkan <strong>{totalReviews} ulasan masyarakat</strong> yang mengajukan
+                formulir aduan publik dan usulan dapil di Kabupaten Tapin.
               </p>
             </div>
 
@@ -63,7 +129,7 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
               </h4>
 
               <div className="space-y-2.5">
-                {CSAT_DISTRIBUTION.map((d) => (
+                {distribution.map((d) => (
                   <div key={d.star} className="flex items-center gap-3 text-sm">
                     <span className="text-darknavy-900 flex w-12 items-center gap-1.5 font-bold">
                       <span>{d.star}</span>
@@ -90,9 +156,9 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
               </h4>
 
               <div className="space-y-2.5">
-                {CSAT_ASPECT_RATINGS.map((aspect) => (
+                {aspectList.map((aspect) => (
                   <div key={aspect.name} className="flex items-center justify-between text-sm">
-                    <span className="max-w-[210px] truncate font-medium text-slate-700">
+                    <span className="max-w-52 truncate font-medium text-slate-700">
                       {aspect.name}
                     </span>
                     <Badge
@@ -121,7 +187,7 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
                 Komentar & Ulasan Warga Terbaru
               </h3>
               <p className="text-xs text-slate-500">
-                Umpan balik langsung setelah warga menyelesaikan formulir
+                Umpan balik langsung setelah warga menyelesaikan formulir dan penyelesaian aduan
               </p>
             </div>
           </div>
@@ -129,97 +195,120 @@ export function SatisfactionTab({ tickets }: SatisfactionTabProps) {
             variant="secondary"
             className="border-warm-200 bg-warm-50 self-start px-3 py-1 text-xs font-semibold text-slate-600 sm:self-auto"
           >
-            Total {ticketsWithReviews.length} Testimoni Warga
+            Total {reviewItems.length} Testimoni Warga
           </Badge>
         </div>
 
-        {/* Testimonials Grid with Redesigned Aspect Badges (Screenshot 2) */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {ticketsWithReviews.map((ticket) => {
-            const review = ticket.satisfaction!;
-            const initials = ticket.reporter.name
-              .split(' ')
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
+        {/* Testimonials Grid */}
+        {reviewItems.length === 0 ? (
+          <Card className="border-warm-200 rounded-3xl border bg-white p-8 text-center text-slate-500">
+            Belum ada ulasan masyarakat yang tercatat.
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {reviewItems.map((review) => {
+              const initials = review.reporterName
+                .split(' ')
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
 
-            return (
-              <Card
-                key={ticket.id}
-                className="soft-card border-warm-200 rounded-3xl border bg-white shadow-xs transition-all hover:shadow-md"
-              >
-                <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="border-warm-200 h-10 w-10 border shadow-2xs">
-                        <AvatarFallback className="bg-warm-100 text-darknavy-900 text-xs font-extrabold">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-darknavy-900 text-sm font-extrabold sm:text-base">
-                          {ticket.reporter.name}
-                        </CardTitle>
-                        <CardDescription className="mt-0.5 text-xs text-slate-500">
-                          Kec. {ticket.location.kecamatan} • Tiket{' '}
-                          <span className="font-mono font-bold text-slate-700">{ticket.id}</span>
-                        </CardDescription>
+              return (
+                <Card
+                  key={review.id}
+                  className="soft-card border-warm-200 rounded-3xl border bg-white shadow-xs transition-all hover:shadow-md"
+                >
+                  <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="border-warm-200 h-10 w-10 border shadow-2xs">
+                          <AvatarFallback className="bg-warm-100 text-darknavy-900 text-xs font-extrabold">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-darknavy-900 text-sm font-extrabold sm:text-base">
+                              {review.reporterName}
+                            </CardTitle>
+                            <Badge
+                              variant="outline"
+                              className={
+                                review.type === 'resolution'
+                                  ? 'text-2xs border-emerald-300 bg-emerald-50 text-emerald-800'
+                                  : 'text-2xs border-blue-300 bg-blue-50 text-blue-800'
+                              }
+                            >
+                              {review.type === 'resolution'
+                                ? 'Penyelesaian Aduan'
+                                : 'Pengisian Formulir'}
+                            </Badge>
+                          </div>
+                          <CardDescription className="mt-0.5 text-xs text-slate-500">
+                            Kec. {review.kecamatan} • Tiket{' '}
+                            <span className="font-mono font-bold text-slate-700">
+                              {review.ticketNumber}
+                            </span>
+                          </CardDescription>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Star Rating Badge */}
-                    <div className="flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/70 px-2.5 py-1">
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-3.5 w-3.5 ${
-                              s <= review.rating
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'text-slate-200'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="font-mono text-xs font-extrabold text-amber-700">
-                        {review.rating}.0
-                      </span>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4 p-5 pt-0 sm:p-6 sm:pt-0">
-                  {/* Testimonial Quote with Relaxed Leading */}
-                  <blockquote className="border-warm-200/90 bg-warm-50/70 rounded-2xl border p-3.5 text-xs leading-relaxed text-slate-700 italic sm:text-sm">
-                    "
-                    {review.feedback ||
-                      'Pelayanan formulir aplikasi sangat memuaskan, responsif, dan mudah dipahami.'}
-                    "
-                  </blockquote>
-
-                  {/* Redesigned Aspect Chips (Screenshot 2: Readable, Polished, Spacious) */}
-                  <div className="space-y-1.5">
-                    <p className="text-2xs font-bold tracking-wider text-slate-400 uppercase">
-                      Aspek Yang Disukai:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {review.aspects.map((aspect) => (
-                        <span
-                          key={aspect}
-                          className="border-warm-200/90 bg-warm-50/80 hover:bg-warm-100 text-darknavy-900 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold shadow-2xs transition-colors"
-                        >
-                          <Check className="text-accent-500 h-3.5 w-3.5 shrink-0 stroke-[2.5]" />
-                          <span>{aspect}</span>
+                      {/* Star Rating Badge */}
+                      <div className="flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/70 px-2.5 py-1">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`h-3.5 w-3.5 ${
+                                s <= review.rating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="font-mono text-xs font-extrabold text-amber-700">
+                          {review.rating}.0
                         </span>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4 p-5 pt-0 sm:p-6 sm:pt-0">
+                    {/* Testimonial Quote */}
+                    <blockquote className="border-warm-200/90 bg-warm-50/70 rounded-2xl border p-3.5 text-xs leading-relaxed text-slate-700 italic sm:text-sm">
+                      "
+                      {review.feedback ||
+                        'Pelayanan formulir aplikasi sangat memuaskan, responsif, dan mudah dipahami.'}
+                      "
+                    </blockquote>
+
+                    {/* Aspect Chips */}
+                    {review.aspects && review.aspects.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <p className="text-2xs font-bold tracking-wider text-slate-400 uppercase">
+                          Aspek Yang Disukai:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {review.aspects.map((aspect) => (
+                            <span
+                              key={aspect}
+                              className="border-warm-200/90 bg-warm-50/80 hover:bg-warm-100 text-darknavy-900 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold shadow-2xs transition-colors"
+                            >
+                              <Check className="text-accent-500 h-3.5 w-3.5 shrink-0 stroke-2" />
+                              <span>{aspect}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

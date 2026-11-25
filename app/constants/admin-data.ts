@@ -30,6 +30,15 @@ export interface AdminSatisfactionReview {
   submittedAt: string;
 }
 
+export interface AdminFeedbackItem {
+  id: string;
+  type: string;
+  rating: number;
+  aspects: string[];
+  feedback: string | null;
+  createdAt?: string;
+}
+
 export interface AdminTicketItem {
   id: string;
   type: AdminTicketType;
@@ -50,6 +59,7 @@ export interface AdminTicketItem {
   updatedAt: string;
   slaHoursRemaining: number;
   satisfaction?: AdminSatisfactionReview;
+  feedbacks?: AdminFeedbackItem[];
   adminNotes: string;
   assignedTo?: string;
 }
@@ -531,7 +541,7 @@ export const CSAT_DISTRIBUTION = [
 export const CSAT_ASPECT_RATINGS = [
   { name: 'Formulir Mudah Dipahami', score: 98 },
   { name: 'Kecepatan Akses Lancar', score: 94 },
-  { name: 'Tampilan Rapi & Jelas (UI/UX)', score: 96 },
+  { name: 'Tampilan Rapi & Jelas', score: 96 },
   { name: 'Akurasi Pin Peta Lokasi', score: 91 },
   { name: 'Petunjuk Tooltip Informatif', score: 93 },
   { name: 'Transparansi Alur Aduan', score: 95 },

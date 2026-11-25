@@ -1,10 +1,15 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
+
+import { aspirationStepSchema, flattenZodFieldErrors } from '~/schema/form';
 
 import { getInitials } from '@/lib/utils';
 
 import { MapPicker } from '@/components/aspiration/map-picker';
+import { PhotoDropzone } from '@/components/aspiration/photo-dropzone';
+import { RegionSelectorFields } from '@/components/aspiration/region-selector-fields';
+import { SupportingDocumentField } from '@/components/aspiration/supporting-document-field';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +33,6 @@ import type { UsulanFormData } from '@/types/aspiration';
 import {
   type AnggotaDprdTapin,
   DAPIL_TAPIN_LIST,
-  DESA_KELURAHAN_TAPIN_MAP,
   KAMUS_USULAN_LIST,
   KECAMATAN_TAPIN_LIST,
 } from '@/constants/tapin';
@@ -39,13 +43,10 @@ import {
   ChevronDown,
   Eye,
   FileText,
-  FileUp,
   HelpCircle,
-  Image as ImageIcon,
   Landmark,
   Search,
   Send,
-  Trash2,
   ZoomIn,
 } from 'lucide-react';
 
@@ -76,17 +77,9 @@ export function ProposalStep({
   const [repSearchQuery, setRepSearchQuery] = useState('');
   const [previewRep, setPreviewRep] = useState<AnggotaDprdTapin | null>(null);
 
-  const proposalInputRef = useRef<HTMLInputElement | null>(null);
-  const photo1InputRef = useRef<HTMLInputElement | null>(null);
-  const photo2InputRef = useRef<HTMLInputElement | null>(null);
-  const photo3InputRef = useRef<HTMLInputElement | null>(null);
-
   // Available subdistricts based on selected Dapil, or all subdistricts
   const activeDapil = dapils.find((d) => d.id === data.dapilId);
   const availableDistricts = activeDapil ? activeDapil.districts : KECAMATAN_TAPIN_LIST;
-
-  // Available villages based on selected subdistrict
-  const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
 
   // Filtered representatives
   const filteredRepresentatives = representatives.filter((rep) => {
@@ -105,13 +98,10 @@ export function ProposalStep({
   const selectedRepresentative = representatives.find((rep) => rep.id === data.representativeId);
 
   const handleSelectRepresentative = (rep: AnggotaDprdTapin) => {
-    // If current kecamatan is not in the new dapil, pick the first one
-    const newKecamatan = rep.districts.includes(data.kecamatan)
-      ? data.kecamatan
-      : rep.districts[0] || 'Tapin Utara';
-
-    const newVillages = DESA_KELURAHAN_TAPIN_MAP[newKecamatan] || [];
-    const newKelurahan = newVillages[0] || '';
+    // Keep selected kecamatan only if it belongs to the chosen representative's Dapil
+    const keepsKecamatan = Boolean(data.kecamatan && rep.districts.includes(data.kecamatan));
+    const newKecamatan = keepsKecamatan ? data.kecamatan : '';
+    const newKelurahan = keepsKecamatan ? data.kelurahan : '';
 
     onChange({
       representativeId: rep.id,
@@ -128,100 +118,20 @@ export function ProposalStep({
   };
 
   const handleKecamatanChange = (kecamatan: string) => {
-    const villages = DESA_KELURAHAN_TAPIN_MAP[kecamatan] || [];
     onChange({
       kecamatan,
-      kelurahan: villages[0] || '',
+      kelurahan: '',
     });
     if (errors.kecamatan) setErrors((prev) => ({ ...prev, kecamatan: '' }));
-  };
-
-  // Proposal File upload handler
-  const handleProposalUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, proposal: 'Ukuran proposal maksimal 10MB.' }));
-      return;
-    }
-    onChange({ proposalFileName: file.name });
-    if (errors.proposal) setErrors((prev) => ({ ...prev, proposal: '' }));
-  };
-
-  // Photo uploads handler
-  const handlePhotoUpload = (index: 1 | 2 | 3, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, [`photo${index}`]: 'Ukuran foto maksimal 8MB.' }));
-      return;
-    }
-
-    if (index === 1 && data.photo1PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo1PreviewUrl);
-    } else if (index === 2 && data.photo2PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo2PreviewUrl);
-    } else if (index === 3 && data.photo3PreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.photo3PreviewUrl);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    if (index === 1) {
-      onChange({ photo1FileName: file.name, photo1PreviewUrl: previewUrl });
-    } else if (index === 2) {
-      onChange({ photo2FileName: file.name, photo2PreviewUrl: previewUrl });
-    } else {
-      onChange({ photo3FileName: file.name, photo3PreviewUrl: previewUrl });
-    }
-  };
-
-  const handleRemovePhoto = (index: 1 | 2 | 3) => {
-    if (index === 1) {
-      if (data.photo1PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo1PreviewUrl);
-      }
-      onChange({ photo1FileName: '', photo1PreviewUrl: '' });
-      if (photo1InputRef.current) photo1InputRef.current.value = '';
-    } else if (index === 2) {
-      if (data.photo2PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo2PreviewUrl);
-      }
-      onChange({ photo2FileName: '', photo2PreviewUrl: '' });
-      if (photo2InputRef.current) photo2InputRef.current.value = '';
-    } else {
-      if (data.photo3PreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(data.photo3PreviewUrl);
-      }
-      onChange({ photo3FileName: '', photo3PreviewUrl: '' });
-      if (photo3InputRef.current) photo3InputRef.current.value = '';
-    }
+    if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
   };
 
   const handleValidateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
+    const result = aspirationStepSchema.safeParse(data);
 
-    if (!data.dapilId || !data.representativeName) {
-      newErrors.dapil = 'Silakan pilih anggota dewan / perwakilan Dapil tujuan usulan.';
-    }
-    if (!data.kamusUsulan) {
-      newErrors.kamusUsulan = 'Kamus usulan wajib dipilih.';
-    }
-    if (!data.permasalahan.trim()) {
-      newErrors.permasalahan = 'Deskripsi permasalahan dan rincian usulan wajib diisi.';
-    }
-    if (!data.alamatLokasi.trim()) {
-      newErrors.alamatLokasi = 'Alamat lokasi usulan wajib diisi secara rinci.';
-    }
-    if (!data.kecamatan) {
-      newErrors.kecamatan = 'Kecamatan wajib dipilih.';
-    }
-    if (!data.kelurahan) {
-      newErrors.kelurahan = 'Kelurahan / Desa wajib dipilih.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!result.success) {
+      setErrors(flattenZodFieldErrors(result));
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
     }
@@ -240,38 +150,8 @@ export function ProposalStep({
   return (
     <TooltipProvider delayDuration={150}>
       <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
-        {/* Header section */}
-        <CardHeader className="bg-darknavy-900 p-6 text-white sm:p-8">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg">
-                <FileUp className="h-6 w-6" aria-hidden="true" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xs rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2.5 py-0.5 font-extrabold tracking-wider text-emerald-400 uppercase">
-                    Langkah 2 dari 2
-                  </span>
-                  <span className="text-xs text-slate-400">Pokir DPRD Kab. Tapin</span>
-                </div>
-                <CardTitle className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                  FORM USULAN ASPIRASI DAPIL
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-300">
-                  Penyampaian usulan resmi langsung ke perwakilan anggota DPRD Kabupaten Tapin
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="border-darknavy-800 bg-darknavy-800/80 text-2xs flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-slate-300">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-              <span>25 Anggota Dewan Siap Menampung</span>
-            </div>
-          </div>
-        </CardHeader>
-
         <CardContent className="p-6 sm:p-8">
-          <form onSubmit={handleValidateSubmit} className="space-y-7">
+          <form onSubmit={handleValidateSubmit} noValidate className="space-y-7">
             {/* FIELD 1: TUJUAN DAPIL (LIST NAMA & FOTO DUMMY ANGGOTA DPRD) */}
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
@@ -309,17 +189,12 @@ export function ProposalStep({
                   <div className="flex flex-col justify-between gap-4 rounded-2xl border-2 border-emerald-400 bg-linear-to-r from-emerald-50/70 via-white to-white p-4 shadow-xs sm:flex-row sm:items-center sm:p-5">
                     <div className="flex items-center gap-4 sm:gap-5">
                       {/* Large Portrait Photo Frame */}
-                      <div
-                        role="button"
-                        tabIndex={0}
+                      <button
+                        type="button"
                         onClick={() => setPreviewRep(selectedRepresentative)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setPreviewRep(selectedRepresentative);
-                          }
-                        }}
                         title="Klik untuk perbesar foto profil anggota dewan"
-                        className="group relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-emerald-500 bg-slate-100 shadow-md transition-all hover:ring-4 hover:ring-emerald-400/30 sm:h-28 sm:w-24"
+                        aria-label={`Perbesar foto ${selectedRepresentative.name}`}
+                        className="group relative flex h-24 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-emerald-500 bg-slate-100 shadow-md transition-all hover:ring-4 hover:ring-emerald-400/30 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none sm:h-28 sm:w-24"
                       >
                         {selectedRepresentative.photoUrl ? (
                           <img
@@ -333,14 +208,17 @@ export function ProposalStep({
                           </div>
                         )}
                         <div className="from-darknavy-900/90 via-darknavy-900/50 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-1 text-center">
-                          <span className="text-[10px] font-extrabold tracking-wider text-emerald-300 uppercase">
+                          <span className="text-2xs font-extrabold tracking-wider text-emerald-300 uppercase">
                             DPRD Tapin
                           </span>
                         </div>
                         <div className="bg-darknavy-900/40 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                          <ZoomIn className="h-6 w-6 text-white drop-shadow-md" />
+                          <ZoomIn
+                            className="h-6 w-6 text-white drop-shadow-md"
+                            aria-hidden="true"
+                          />
                         </div>
-                      </div>
+                      </button>
 
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -468,107 +346,97 @@ export function ProposalStep({
                     </div>
 
                     {/* Representatives Grid */}
-                    <div className="grid max-h-[460px] grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                    <div className="grid max-h-115 grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
                       {filteredRepresentatives.map((rep) => {
                         const isSelected = data.representativeId === rep.id;
                         return (
                           <div
                             key={rep.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleSelectRepresentative(rep)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                handleSelectRepresentative(rep);
-                              }
-                            }}
-                            className={`group relative flex cursor-pointer items-center justify-between gap-3.5 rounded-2xl border p-3 text-left transition-all ${
+                            className={`group relative rounded-2xl border p-3 transition-all ${
                               isSelected
                                 ? 'border-emerald-500 bg-emerald-50/90 shadow-md ring-2 ring-emerald-500/30'
                                 : 'border-warm-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/30 hover:shadow-xs'
                             }`}
                           >
-                            <div className="flex min-w-0 items-center gap-3">
-                              {/* Large Portrait Photo Frame */}
-                              <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewRep(rep);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.stopPropagation();
-                                    setPreviewRep(rep);
-                                  }
-                                }}
-                                title="Klik untuk perbesar foto profil anggota dewan"
-                                className="border-warm-300 relative h-22 w-18 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 shadow-xs transition-colors group-hover:border-emerald-400 sm:h-24 sm:w-20"
-                              >
-                                {rep.photoUrl ? (
-                                  <img
-                                    src={rep.photoUrl}
-                                    alt={rep.name}
-                                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center bg-emerald-100 text-sm font-extrabold text-emerald-800 sm:text-base">
-                                    {getInitials(rep.name)}
-                                  </div>
-                                )}
-                                <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-0.5 text-center">
-                                  <span className="text-[8px] font-extrabold tracking-tight text-emerald-300 uppercase sm:text-[9px]">
-                                    {rep.dapilName.replace('Dapil Tapin ', 'Dapil ')}
-                                  </span>
-                                </div>
-                                <div className="bg-darknavy-900/30 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                                  <ZoomIn className="h-5 w-5 text-white drop-shadow-sm" />
-                                </div>
-                              </div>
+                            <button
+                              type="button"
+                              aria-label={`Pilih ${rep.name} (${rep.dapilName})`}
+                              aria-pressed={isSelected}
+                              onClick={() => handleSelectRepresentative(rep)}
+                              className="focus-visible:ring-accent-500 absolute inset-0 z-0 cursor-pointer rounded-2xl focus-visible:ring-2 focus-visible:outline-none"
+                            />
 
-                              <div className="min-w-0">
-                                <span className="text-darknavy-900 block truncate text-xs font-extrabold sm:text-sm">
-                                  {rep.name}
-                                </span>
-                                <span className="bg-warm-100 border-warm-200 mt-0.5 inline-block rounded border px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                                  {rep.party}
-                                </span>
-                                <p className="text-2xs mt-1 truncate font-semibold text-emerald-800">
-                                  {rep.districts.join(', ')}
-                                </p>
-                                <p className="text-2xs truncate text-slate-500">{rep.commission}</p>
+                            <div className="pointer-events-none relative z-10 flex items-center justify-between gap-3.5 text-left">
+                              <div className="flex min-w-0 items-center gap-3">
+                                {/* Large Portrait Photo Frame */}
                                 <button
                                   type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPreviewRep(rep);
-                                  }}
-                                  className="text-2xs mt-1 flex items-center gap-1 font-bold text-emerald-700 hover:underline"
+                                  onClick={() => setPreviewRep(rep)}
+                                  title="Klik untuk perbesar foto profil anggota dewan"
+                                  aria-label={`Perbesar foto ${rep.name}`}
+                                  className="border-warm-300 pointer-events-auto relative h-22 w-18 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 bg-slate-100 shadow-xs transition-colors group-hover:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none sm:h-24 sm:w-20"
                                 >
-                                  <Eye className="h-2.5 w-2.5" />
-                                  <span>Perbesar Wajah</span>
+                                  {rep.photoUrl ? (
+                                    <img
+                                      src={rep.photoUrl}
+                                      alt={rep.name}
+                                      className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-emerald-100 text-sm font-extrabold text-emerald-800 sm:text-base">
+                                      {getInitials(rep.name)}
+                                    </div>
+                                  )}
+                                  <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-0.5 text-center">
+                                    <span className="text-2xs leading-tight font-extrabold tracking-tight text-emerald-300 uppercase">
+                                      {rep.dapilName.replace('Dapil Tapin ', 'Dapil ')}
+                                    </span>
+                                  </div>
+                                  <div className="bg-darknavy-900/30 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                                    <ZoomIn
+                                      className="h-5 w-5 text-white drop-shadow-sm"
+                                      aria-hidden="true"
+                                    />
+                                  </div>
                                 </button>
-                              </div>
-                            </div>
 
-                            <div className="shrink-0">
-                              {isSelected ? (
-                                <span className="text-2xs flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 font-extrabold text-white shadow-xs">
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                  <span>Terpilih</span>
-                                </span>
-                              ) : (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-2xs border-warm-300 h-8 rounded-full px-3 font-bold text-slate-600 transition-colors group-hover:border-emerald-500 group-hover:bg-emerald-600 group-hover:text-white"
-                                >
-                                  Pilih
-                                </Button>
-                              )}
+                                <div className="min-w-0">
+                                  <span className="text-darknavy-900 block truncate text-xs font-extrabold sm:text-sm">
+                                    {rep.name}
+                                  </span>
+                                  <span className="bg-warm-100 border-warm-200 text-xs-tight mt-0.5 inline-block rounded border px-2 py-0.5 font-bold text-slate-700">
+                                    {rep.party}
+                                  </span>
+                                  <p className="text-2xs mt-1 truncate font-semibold text-emerald-800">
+                                    {rep.districts.join(', ')}
+                                  </p>
+                                  <p className="text-2xs truncate text-slate-500">
+                                    {rep.commission}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewRep(rep)}
+                                    className="text-2xs pointer-events-auto mt-1 flex cursor-pointer items-center gap-1 font-bold text-emerald-700 hover:underline focus-visible:underline focus-visible:outline-none"
+                                  >
+                                    <Eye className="h-2.5 w-2.5" aria-hidden="true" />
+                                    <span>Perbesar Wajah</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0">
+                                {isSelected ? (
+                                  <span className="text-2xs flex items-center gap-1 rounded-full bg-emerald-600 px-2.5 py-1 font-extrabold text-white shadow-xs">
+                                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                    <span>Terpilih</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-2xs border-warm-300 inline-flex h-8 items-center rounded-full border bg-white px-3 font-bold text-slate-600 transition-colors group-hover:border-emerald-500 group-hover:bg-emerald-600 group-hover:text-white">
+                                    Pilih
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -579,7 +447,9 @@ export function ProposalStep({
               </div>
 
               {errors.dapil ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.dapil}</p>
+                <p id="dapil-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.dapil}
+                </p>
               ) : null}
             </div>
 
@@ -626,8 +496,10 @@ export function ProposalStep({
               >
                 <SelectTrigger
                   id="kamus-usulan-select"
+                  aria-invalid={Boolean(errors.kamusUsulan)}
+                  aria-describedby={errors.kamusUsulan ? 'kamus-usulan-error' : undefined}
                   className={`border-warm-200 bg-white ${
-                    errors.kamusUsulan ? 'border-rose-400 focus:ring-rose-400' : ''
+                    errors.kamusUsulan ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                   }`}
                 >
                   <SelectValue placeholder="Pilih Kamus Usulan yang sesuai" />
@@ -641,7 +513,9 @@ export function ProposalStep({
                 </SelectContent>
               </Select>
               {errors.kamusUsulan ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.kamusUsulan}</p>
+                <p id="kamus-usulan-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.kamusUsulan}
+                </p>
               ) : null}
             </div>
 
@@ -686,6 +560,8 @@ export function ProposalStep({
               <Textarea
                 id="permasalahan-input"
                 required
+                aria-invalid={Boolean(errors.permasalahan)}
+                aria-describedby={errors.permasalahan ? 'permasalahan-error' : undefined}
                 rows={4}
                 value={data.permasalahan}
                 onChange={(e) => {
@@ -694,7 +570,7 @@ export function ProposalStep({
                 }}
                 placeholder="Contoh: Perbaikan rumah tidak layak huni milik Bapak Budi 1 Unit RP 15.000.000"
                 className={`border-warm-200 bg-white ${
-                  errors.permasalahan ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.permasalahan ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               <div className="text-2xs flex items-center justify-between text-slate-400">
@@ -702,7 +578,9 @@ export function ProposalStep({
                 <span>{data.permasalahan.length} karakter</span>
               </div>
               {errors.permasalahan ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.permasalahan}</p>
+                <p id="permasalahan-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.permasalahan}
+                </p>
               ) : null}
             </div>
 
@@ -785,6 +663,8 @@ export function ProposalStep({
               <Textarea
                 id="alamat-lokasi-input"
                 required
+                aria-invalid={Boolean(errors.alamatLokasi)}
+                aria-describedby={errors.alamatLokasi ? 'alamat-lokasi-error' : undefined}
                 rows={2}
                 value={data.alamatLokasi}
                 onChange={(e) => {
@@ -793,101 +673,32 @@ export function ProposalStep({
                 }}
                 placeholder="Dusun 1, RT 02 / RW 01, Samping Pos Ronda"
                 className={`border-warm-200 bg-white ${
-                  errors.alamatLokasi ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.alamatLokasi ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               {errors.alamatLokasi ? (
-                <p className="text-2xs font-semibold text-rose-500">{errors.alamatLokasi}</p>
+                <p id="alamat-lokasi-error" className="text-2xs font-semibold text-rose-500">
+                  {errors.alamatLokasi}
+                </p>
               ) : null}
             </div>
 
             {/* ADMINISTRATIVE REGION: KABUPATEN, KECAMATAN, KELURAHAN */}
-            <div className="border-warm-200 bg-warm-50/50 space-y-4 rounded-2xl border p-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {/* Kabupaten */}
-                <div>
-                  <label
-                    htmlFor="kabupaten-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kabupaten atau Kota <span className="text-rose-500">*</span>
-                  </label>
-                  <Input
-                    id="kabupaten-select"
-                    type="text"
-                    readOnly
-                    value={data.kabupaten}
-                    className="border-warm-200 bg-warm-100 text-darknavy-900 cursor-not-allowed text-xs font-semibold"
-                  />
-                </div>
-
-                {/* Kecamatan */}
-                <div>
-                  <label
-                    htmlFor="kecamatan-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kecamatan <span className="text-rose-500">*</span>
-                  </label>
-                  <Select value={data.kecamatan} onValueChange={handleKecamatanChange}>
-                    <SelectTrigger
-                      id="kecamatan-select"
-                      className={`border-warm-200 bg-white text-xs ${
-                        errors.kecamatan ? 'border-rose-400 focus:ring-rose-400' : ''
-                      }`}
-                    >
-                      <SelectValue placeholder="Pilih Kecamatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableDistricts.map((kec) => (
-                        <SelectItem key={kec} value={kec}>
-                          Kecamatan {kec}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.kecamatan ? (
-                    <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.kecamatan}</p>
-                  ) : null}
-                </div>
-
-                {/* Kelurahan / Desa */}
-                <div>
-                  <label
-                    htmlFor="kelurahan-select"
-                    className="text-darknavy-900 mb-1.5 block text-xs font-bold"
-                  >
-                    Kelurahan / Desa <span className="text-rose-500">*</span>
-                  </label>
-                  <Select
-                    value={data.kelurahan}
-                    onValueChange={(val) => {
-                      onChange({ kelurahan: val });
-                      if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
-                    }}
-                  >
-                    <SelectTrigger
-                      id="kelurahan-select"
-                      className={`border-warm-200 bg-white text-xs ${
-                        errors.kelurahan ? 'border-rose-400 focus:ring-rose-400' : ''
-                      }`}
-                    >
-                      <SelectValue placeholder="Pilih Desa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableVillages.map((desa) => (
-                        <SelectItem key={desa} value={desa}>
-                          {desa}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.kelurahan ? (
-                    <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.kelurahan}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
+            <RegionSelectorFields
+              idPrefix="proposal"
+              kabupaten={data.kabupaten}
+              kabupatenLabel="Kabupaten atau Kota"
+              kecamatan={data.kecamatan}
+              kelurahan={data.kelurahan}
+              districts={availableDistricts}
+              kecamatanError={errors.kecamatan}
+              kelurahanError={errors.kelurahan}
+              onKecamatanChange={handleKecamatanChange}
+              onKelurahanChange={(val) => {
+                onChange({ kelurahan: val });
+                if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
+              }}
+            />
 
             {/* FIELD 6: DOKUMEN PENDUKUNG (SURAT PROPOSAL & FOTO LOKASI 1-3) */}
             <div className="border-warm-200 bg-warm-50/60 space-y-4 rounded-3xl border p-5">
@@ -923,202 +734,27 @@ export function ProposalStep({
                 <span className="text-xs font-medium text-slate-500">Opsional</span>
               </div>
 
-              {/* Hidden file inputs */}
-              <input
-                type="file"
-                ref={proposalInputRef}
-                accept=".pdf,.doc,.docx"
-                className="hidden"
-                onChange={handleProposalUpload}
-              />
-              <input
-                type="file"
-                ref={photo1InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(1, e)}
-              />
-              <input
-                type="file"
-                ref={photo2InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(2, e)}
-              />
-              <input
-                type="file"
-                ref={photo3InputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotoUpload(3, e)}
-              />
-
               {/* Surat Proposal */}
-              <div className="space-y-1">
-                <label className="text-darknavy-900 block text-xs font-bold">
-                  Surat Proposal <span className="font-normal text-slate-400">(opsional)</span>
-                </label>
-                <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                  <div className="flex min-w-0 items-center gap-2 pr-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => proposalInputRef.current?.click()}
-                      className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 shrink-0 rounded-lg text-xs"
-                    >
-                      Browse...
-                    </Button>
-                    <span className="truncate font-mono text-xs text-slate-700">
-                      {data.proposalFileName || 'Proposal.pdf (Belum ada file)'}
-                    </span>
-                  </div>
+              <SupportingDocumentField
+                id="proposal-doc-input"
+                label="Surat Proposal"
+                placeholder="Proposal.pdf (Belum ada file)"
+                fileName={data.proposalFileName}
+                error={errors.proposal}
+                onFileSelect={(file) => {
+                  onChange({ proposalFileName: file.name, proposalFile: file });
+                  if (errors.proposal) setErrors((prev) => ({ ...prev, proposal: '' }));
+                }}
+                onClear={() => onChange({ proposalFileName: '', proposalFile: null })}
+                onError={(message) => setErrors((prev) => ({ ...prev, proposal: message }))}
+              />
 
-                  {data.proposalFileName ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onChange({ proposalFileName: '' })}
-                      className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Foto Lokasi 1-3 Grid */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {/* Foto 1 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Lokasi 1 (opsional)
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo1InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo1PreviewUrl ? (
-                        <img
-                          src={data.photo1PreviewUrl}
-                          alt="Foto 1"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo1FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo1PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(1)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Foto 2 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Lokasi 2 (opsional)
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo2InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo2PreviewUrl ? (
-                        <img
-                          src={data.photo2PreviewUrl}
-                          alt="Foto 2"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo2FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo2PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(2)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Foto 3 */}
-                <div className="space-y-1">
-                  <label className="text-darknavy-900 text-2xs block font-bold">
-                    Foto Lokasi 3 (opsional)
-                  </label>
-                  <div className="border-warm-300 flex items-center justify-between rounded-xl border bg-white p-2 shadow-2xs">
-                    <div className="flex min-w-0 items-center gap-2 truncate pr-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => photo3InputRef.current?.click()}
-                        className="border-warm-300 bg-warm-100 hover:bg-warm-200 text-darknavy-900 h-7 shrink-0 rounded-lg px-2 text-xs"
-                      >
-                        Browse...
-                      </Button>
-                      {data.photo3PreviewUrl ? (
-                        <img
-                          src={data.photo3PreviewUrl}
-                          alt="Foto 3"
-                          className="border-warm-200 h-6 w-6 shrink-0 rounded border object-cover"
-                        />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                      )}
-                      <span className="text-2xs truncate font-mono text-slate-700">
-                        {data.photo3FileName || 'Gambar.png'}
-                      </span>
-                    </div>
-                    {data.photo3PreviewUrl ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePhoto(3)}
-                        className="h-6 w-6 shrink-0 p-0 text-rose-500 hover:bg-rose-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
+              {/* Foto Lokasi Dokumentasi Dropzone */}
+              <PhotoDropzone
+                photos={data.photos || []}
+                onChange={(photos) => onChange({ photos })}
+                error={errors.photos}
+              />
             </div>
 
             {/* Action Buttons */}

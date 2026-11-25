@@ -2,6 +2,7 @@ import { getScriptDb } from './db';
 import { seedAdmin } from './seed-admin';
 import { seedModerators } from './seed-moderators';
 import { seedRepresentatives } from './seed-representatives';
+import { seedTickets } from './seed-tickets';
 
 async function runMasterSeed() {
   console.log('🚀 Starting full database seeding...\n');
@@ -18,6 +19,10 @@ async function runMasterSeed() {
 
     // 3. Seed sample moderators for regional testing
     await seedModerators(scriptDb);
+    console.log('');
+
+    // 4. Seed sample tickets (Aspirasi & Aduan)
+    await seedTickets(scriptDb);
     console.log('');
 
     console.log('🎉 All seeders executed successfully!');

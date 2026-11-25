@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
 
+import { compressImageFile } from '~/lib/image-compressor';
+import { flattenZodFieldErrors, identityStepSchema } from '~/schema/form';
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -21,10 +24,10 @@ import {
   FileCheck,
   IdCard,
   Info,
+  Loader2,
   Lock,
   Mail,
   Phone,
-  ShieldCheck,
   Trash2,
   UploadCloud,
   User,
@@ -44,6 +47,7 @@ export function IdentityStep({
   aspirationType = 'dapil',
 }: IdentityStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-detect Tapin NIK code (6305...)
@@ -58,38 +62,114 @@ export function IdentityStep({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, idCard: 'Ukuran file foto KTP maksimal 5MB.' }));
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    if (!isImage && !isPdf) {
+      setErrors((prev) => ({
+        ...prev,
+        idCard: 'Format file KTP harus berupa gambar (JPG/PNG/WebP) atau PDF.',
+      }));
+      e.target.value = '';
       return;
     }
 
-    if (data.idCardPreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.idCardPreviewUrl);
+    if (isPdf && file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, idCard: 'Ukuran file PDF KTP maksimal 5MB.' }));
+      e.target.value = '';
+      return;
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    onChange({
-      idCardFileName: file.name,
-      idCardPreviewUrl: previewUrl,
-    });
+    // Check image size before compression (max 15MB)
+    if (isImage && file.size > 15 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, idCard: 'Ukuran file foto KTP maksimal 15MB.' }));
+      e.target.value = '';
+      return;
+    }
 
-    if (errors.idCard) {
-      setErrors((prev) => ({ ...prev, idCard: '' }));
+    const previousPreviewUrl = data.idCardPreviewUrl;
+    setIsUploadingIdCard(true);
+
+    try {
+      // Compress image if it is an image file
+      if (isImage) {
+        try {
+          const compressed = await compressImageFile(file, {
+            maxDimension: 1600,
+            quality: 0.85,
+            mimeType: 'image/webp',
+          });
+
+          if (compressed.file.size > 5 * 1024 * 1024) {
+            if (compressed.previewUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(compressed.previewUrl);
+            }
+            setErrors((prev) => ({
+              ...prev,
+              idCard:
+                'Ukuran foto KTP setelah kompresi masih melebihi 5MB. Gunakan foto yang lebih kecil.',
+            }));
+            return;
+          }
+
+          onChange({
+            idCardFileName: compressed.file.name,
+            idCardPreviewUrl: compressed.previewUrl,
+            idCardFile: compressed.file,
+          });
+
+          if (previousPreviewUrl && previousPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previousPreviewUrl);
+          }
+
+          if (errors.idCard) {
+            setErrors((prev) => ({ ...prev, idCard: '' }));
+          }
+          return;
+        } catch (err) {
+          console.warn('KTP compression fallback:', err);
+        }
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, idCard: 'Ukuran berkas KTP maksimal 5MB.' }));
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      onChange({
+        idCardFileName: file.name,
+        idCardPreviewUrl: previewUrl,
+        idCardFile: file,
+      });
+
+      if (previousPreviewUrl && previousPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previousPreviewUrl);
+      }
+
+      if (errors.idCard) {
+        setErrors((prev) => ({ ...prev, idCard: '' }));
+      }
+    } finally {
+      setIsUploadingIdCard(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleRemoveFile = () => {
+    if (isUploadingIdCard) return;
     if (data.idCardPreviewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(data.idCardPreviewUrl);
     }
     onChange({
       idCardFileName: '',
       idCardPreviewUrl: '',
+      idCardFile: null,
     });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -98,33 +178,11 @@ export function IdentityStep({
 
   const validateAndProceed = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
+    if (isUploadingIdCard) return;
+    const result = identityStepSchema.safeParse(data);
 
-    if (!data.fullName.trim()) {
-      newErrors.fullName = 'Nama lengkap wajib diisi sesuai kartu identitas resmi.';
-    }
-
-    if (!data.nik.trim()) {
-      newErrors.nik = 'Nomor NIK 16 digit wajib diisi.';
-    } else if (data.nik.length !== 16) {
-      newErrors.nik = 'NIK harus tepat 16 digit angka.';
-    }
-
-    if (!data.phone.trim()) {
-      newErrors.phone = 'Nomor WhatsApp / HP wajib diisi untuk konfirmasi status tindak lanjut.';
-    }
-
-    if (!data.ktpAddress.trim()) {
-      newErrors.ktpAddress = 'Alamat tempat tinggal / domisili KTP wajib diisi.';
-    }
-
-    if (!data.idCardPreviewUrl && !data.idCardFileName) {
-      newErrors.idCard =
-        'Foto Kartu Tanda Pengenal (KTP) wajib diunggah untuk verifikasi keabsahan warga.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!result.success) {
+      setErrors(flattenZodFieldErrors(result));
       window.scrollTo({ top: 180, behavior: 'smooth' });
       return;
     }
@@ -137,43 +195,8 @@ export function IdentityStep({
 
   return (
     <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
-      {/* Step Header */}
-      <CardHeader className="bg-darknavy-900 p-6 text-white sm:p-8">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-accent-500 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg">
-              <IdCard className="h-6 w-6" aria-hidden="true" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-accent-500/20 text-accent-500 border-accent-500/40 text-2xs rounded-full border px-2.5 py-0.5 font-extrabold tracking-wider uppercase">
-                  Langkah 1 dari 2
-                </span>
-                <span className="text-xs text-slate-400">
-                  {isDapil ? 'Verifikasi Pengusul Dapil' : 'Verifikasi Pelapor Masyarakat'}
-                </span>
-              </div>
-              <CardTitle className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                Data Diri & Kartu Tanda Pengenal
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-300">
-                {isDapil
-                  ? 'Verifikasi keabsahan warga pengusul oleh Sekretariat DPRD Kabupaten Tapin.'
-                  : 'Verifikasi identitas resmi pelapor aduan masyarakat DPRD Kabupaten Tapin.'}
-              </CardDescription>
-            </div>
-          </div>
-
-          {/* Privacy & Legitimacy Security Badge */}
-          <div className="border-darknavy-800 bg-darknavy-800/80 text-2xs flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-slate-300">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-            <span>Identitas Terverifikasi Resmi</span>
-          </div>
-        </div>
-      </CardHeader>
-
       <CardContent className="p-6 sm:p-8">
-        <form onSubmit={validateAndProceed} className="space-y-6">
+        <form onSubmit={validateAndProceed} noValidate className="space-y-6">
           {/* Identity Requirement Notification Banner */}
           <div className="border-warm-200 bg-warm-100 flex items-center justify-between rounded-2xl border p-4 transition-all">
             <div className="flex items-center gap-3 pr-2">
@@ -250,15 +273,19 @@ export function IdentityStep({
                   inputMode="numeric"
                   maxLength={16}
                   required
+                  aria-invalid={Boolean(errors.nik)}
+                  aria-describedby={errors.nik ? 'nik-error' : undefined}
                   value={data.nik}
                   onChange={(e) => handleNikChange(e.target.value)}
                   placeholder="Contoh: 630501xxxxxxxxxx"
                   className={`border-warm-200 bg-white font-mono tracking-wider ${
-                    errors.nik ? 'border-rose-400 focus:ring-rose-400' : ''
+                    errors.nik ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                   }`}
                 />
                 {errors.nik ? (
-                  <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.nik}</p>
+                  <p id="nik-error" className="text-2xs mt-1 font-semibold text-rose-500">
+                    {errors.nik}
+                  </p>
                 ) : (
                   <p className="text-2xs mt-1 text-slate-400">
                     Format resmi NIK Kependudukan Kabupaten Tapin (kode 6305).
@@ -282,6 +309,8 @@ export function IdentityStep({
                     id="full-name-input"
                     type="text"
                     required
+                    aria-invalid={Boolean(errors.fullName)}
+                    aria-describedby={errors.fullName ? 'full-name-error' : undefined}
                     value={data.fullName}
                     onChange={(e) => {
                       onChange({ fullName: e.target.value });
@@ -289,12 +318,14 @@ export function IdentityStep({
                     }}
                     placeholder="Contoh: Muhammad Arsyad"
                     className={`border-warm-200 bg-white pl-9 ${
-                      errors.fullName ? 'border-rose-400 focus:ring-rose-400' : ''
+                      errors.fullName ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                     }`}
                   />
                 </div>
                 {errors.fullName ? (
-                  <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.fullName}</p>
+                  <p id="full-name-error" className="text-2xs mt-1 font-semibold text-rose-500">
+                    {errors.fullName}
+                  </p>
                 ) : null}
               </div>
 
@@ -311,6 +342,8 @@ export function IdentityStep({
                     id="phone-input"
                     type="tel"
                     required
+                    aria-invalid={Boolean(errors.phone)}
+                    aria-describedby={errors.phone ? 'phone-error' : undefined}
                     value={data.phone}
                     onChange={(e) => {
                       onChange({ phone: e.target.value });
@@ -318,12 +351,14 @@ export function IdentityStep({
                     }}
                     placeholder="Contoh: 0812-3456-7890"
                     className={`border-warm-200 bg-white pl-9 ${
-                      errors.phone ? 'border-rose-400 focus:ring-rose-400' : ''
+                      errors.phone ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                     }`}
                   />
                 </div>
                 {errors.phone ? (
-                  <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.phone}</p>
+                  <p id="phone-error" className="text-2xs mt-1 font-semibold text-rose-500">
+                    {errors.phone}
+                  </p>
                 ) : (
                   <p className="text-2xs mt-1 text-slate-400">
                     Digunakan untuk pengiriman notifikasi tindak lanjut resmi.
@@ -345,12 +380,24 @@ export function IdentityStep({
                 <Input
                   id="email-input"
                   type="email"
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                   value={data.email}
-                  onChange={(e) => onChange({ email: e.target.value })}
+                  onChange={(e) => {
+                    onChange({ email: e.target.value });
+                    if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+                  }}
                   placeholder="Contoh: warga.tapin@gmail.com"
-                  className="border-warm-200 bg-white pl-9"
+                  className={`border-warm-200 bg-white pl-9 ${
+                    errors.email ? 'border-rose-500 focus-visible:ring-rose-500' : ''
+                  }`}
                 />
               </div>
+              {errors.email ? (
+                <p id="email-error" className="text-2xs mt-1 font-semibold text-rose-500">
+                  {errors.email}
+                </p>
+              ) : null}
             </div>
 
             {/* Alamat Domisili KTP */}
@@ -364,6 +411,8 @@ export function IdentityStep({
               <Textarea
                 id="ktp-address-input"
                 required
+                aria-invalid={Boolean(errors.ktpAddress)}
+                aria-describedby={errors.ktpAddress ? 'ktp-address-error' : undefined}
                 rows={2}
                 value={data.ktpAddress}
                 onChange={(e) => {
@@ -372,11 +421,13 @@ export function IdentityStep({
                 }}
                 placeholder="Contoh: Jl. Brigjend H. Hasan Basry No. 12, RT 04 / RW 02, Rantau Kiwa, Kec. Tapin Utara"
                 className={`border-warm-200 bg-white ${
-                  errors.ktpAddress ? 'border-rose-400 focus:ring-rose-400' : ''
+                  errors.ktpAddress ? 'border-rose-500 focus-visible:ring-rose-500' : ''
                 }`}
               />
               {errors.ktpAddress ? (
-                <p className="text-2xs mt-1 font-semibold text-rose-500">{errors.ktpAddress}</p>
+                <p id="ktp-address-error" className="text-2xs mt-1 font-semibold text-rose-500">
+                  {errors.ktpAddress}
+                </p>
               ) : null}
             </div>
           </div>
@@ -389,7 +440,9 @@ export function IdentityStep({
                 <span>Upload Kartu Tanda Pengenal Diri (KTP)</span>
                 <span className="text-rose-500">*</span>
               </h3>
-              <span className="text-2xs text-slate-400">Format: JPG, PNG, PDF (Maks 5MB)</span>
+              <span className="text-2xs text-slate-400">
+                Format: JPG, PNG, WebP (kompresi maks. 5MB), PDF (Maks. 5MB)
+              </span>
             </div>
 
             {/* Hidden native input */}
@@ -397,11 +450,12 @@ export function IdentityStep({
               type="file"
               ref={fileInputRef}
               accept="image/*,application/pdf"
+              disabled={isUploadingIdCard}
               className="hidden"
               onChange={handleFileUpload}
             />
 
-            {/* Upload Box / Card Preview */}
+            {/* Upload Box / Loading State / Card Preview */}
             {data.idCardPreviewUrl ? (
               <div className="border-warm-300 bg-warm-50 overflow-hidden rounded-2xl border p-5">
                 <div className="flex flex-col items-center gap-5 md:flex-row">
@@ -419,10 +473,26 @@ export function IdentityStep({
                         className="h-44 w-full object-cover"
                       />
                     )}
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-emerald-600/95 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Terunggah
-                    </div>
+                    {isUploadingIdCard ? (
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        className="bg-warm-50/90 absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-xs"
+                      >
+                        <Loader2
+                          className="text-accent-500 h-8 w-8 animate-spin"
+                          aria-hidden="true"
+                        />
+                        <span className="text-darknavy-900 text-xs font-bold">
+                          Memproses foto KTP baru...
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-emerald-600/95 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Terunggah
+                      </div>
+                    )}
                   </div>
 
                   {/* File Meta Information & Actions */}
@@ -444,17 +514,23 @@ export function IdentityStep({
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={isUploadingIdCard}
                         onClick={() => fileInputRef.current?.click()}
                         className="border-warm-300 text-darknavy-900 hover:bg-warm-200 rounded-full text-xs font-semibold"
                       >
-                        <Camera className="mr-1 h-3.5 w-3.5" />
-                        Ganti Foto KTP
+                        {isUploadingIdCard ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Camera className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        )}
+                        <span>{isUploadingIdCard ? 'Memproses...' : 'Ganti Foto KTP'}</span>
                       </Button>
 
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
+                        disabled={isUploadingIdCard}
                         onClick={handleRemoveFile}
                         className="rounded-full text-xs font-semibold"
                       >
@@ -465,19 +541,44 @@ export function IdentityStep({
                   </div>
                 </div>
               </div>
+            ) : isUploadingIdCard ? (
+              <div
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+                className="border-accent-300 bg-warm-50 rounded-2xl border-2 border-dashed p-6 text-center transition-all sm:p-8"
+              >
+                <div className="text-accent-500 mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
+                </div>
+                <h4 className="text-darknavy-900 text-sm font-bold">
+                  Memproses &amp; Mengompresi Foto KTP...
+                </h4>
+                <p className="text-2xs mx-auto mt-1 max-w-md text-slate-500 sm:text-xs">
+                  Sedang mengoptimalkan resolusi foto identitas agar terbaca jelas dan cepat
+                  dikirim.
+                </p>
+                <div className="bg-warm-200 mx-auto mt-4 h-1.5 w-48 overflow-hidden rounded-full">
+                  <div className="bg-accent-500 h-full w-2/3 animate-pulse rounded-full" />
+                </div>
+              </div>
             ) : (
               <div
+                id="ktp-upload-box"
                 role="button"
                 tabIndex={0}
+                aria-invalid={Boolean(errors.idCard)}
+                aria-describedby={errors.idCard ? 'ktp-error' : undefined}
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
                     fileInputRef.current?.click();
                   }
                 }}
                 className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all sm:p-8 ${
                   errors.idCard
-                    ? 'border-rose-400 bg-rose-50/50'
+                    ? 'border-rose-500 bg-rose-50/50'
                     : 'border-warm-300 bg-warm-50 hover:bg-warm-100 hover:border-accent-500'
                 }`}
               >
@@ -493,20 +594,17 @@ export function IdentityStep({
                 </p>
 
                 <div className="mt-4 flex items-center justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-warm-300 text-darknavy-900 pointer-events-none rounded-full bg-white px-5 py-2 text-xs font-bold shadow-2xs"
-                  >
+                  <span className="border-warm-300 text-darknavy-900 inline-flex items-center rounded-full border bg-white px-5 py-2 text-xs font-bold shadow-2xs">
                     Pilih File Foto KTP
-                  </Button>
+                  </span>
                 </div>
               </div>
             )}
 
             {errors.idCard ? (
-              <p className="text-2xs font-semibold text-rose-500">{errors.idCard}</p>
+              <p id="ktp-error" className="text-2xs font-semibold text-rose-500">
+                {errors.idCard}
+              </p>
             ) : null}
           </div>
 
@@ -528,10 +626,20 @@ export function IdentityStep({
           <div className="flex justify-end pt-4">
             <Button
               type="submit"
+              disabled={isUploadingIdCard}
               className="coral-glow bg-accent-500 hover:bg-accent-600 flex w-full items-center justify-center gap-2 rounded-full px-8 py-5 text-xs font-bold text-white shadow-lg sm:w-auto"
             >
-              <span>Lanjut ke Formulir {isDapil ? 'Usulan Aspirasi' : 'Aduan Masyarakat'}</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              {isUploadingIdCard ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <span>Memproses Foto KTP...</span>
+                </>
+              ) : (
+                <>
+                  <span>Lanjut ke Formulir {isDapil ? 'Usulan Aspirasi' : 'Aduan Masyarakat'}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </>
+              )}
             </Button>
           </div>
         </form>

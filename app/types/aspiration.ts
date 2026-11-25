@@ -21,16 +21,6 @@ export interface Aspiration {
   voted: boolean;
 }
 
-export interface NewAspirationInput {
-  author: string;
-  location: string;
-  category: Category;
-  agency: string;
-  title: string;
-  content: string;
-  isAnonymous: boolean;
-}
-
 export interface IdentityFormData {
   nik: string;
   fullName: string;
@@ -40,6 +30,16 @@ export interface IdentityFormData {
   identityType: string;
   idCardFileName: string;
   idCardPreviewUrl: string;
+  idCardFile?: File | null;
+}
+
+export interface FormPhotoItem {
+  id: string;
+  file: File;
+  fileName: string;
+  previewUrl: string;
+  originalSize: number;
+  compressedSize: number;
 }
 
 export interface UsulanFormData {
@@ -57,15 +57,8 @@ export interface UsulanFormData {
   kecamatan: string;
   kelurahan: string;
   proposalFileName: string;
-  photo1PreviewUrl: string;
-  photo1FileName: string;
-  photo2PreviewUrl: string;
-  photo2FileName: string;
-  photo3PreviewUrl: string;
-  photo3FileName: string;
-  satisfactionRating: number;
-  satisfactionAspects: string[];
-  satisfactionFeedback: string;
+  proposalFile?: File | null;
+  photos?: FormPhotoItem[];
 }
 
 export interface PublicComplaintFormData {
@@ -79,16 +72,9 @@ export interface PublicComplaintFormData {
   kabupaten: string;
   kecamatan: string;
   kelurahan: string;
-  photo1PreviewUrl: string;
-  photo1FileName: string;
-  photo2PreviewUrl: string;
-  photo2FileName: string;
-  photo3PreviewUrl: string;
-  photo3FileName: string;
+  photos?: FormPhotoItem[];
   documentFileName: string;
-  satisfactionRating: number;
-  satisfactionAspects: string[];
-  satisfactionFeedback: string;
+  documentFile?: File | null;
 }
 
 export interface AppSatisfactionRating {

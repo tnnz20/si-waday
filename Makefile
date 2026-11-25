@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install dev build start lint lint-fix typecheck format format-check compose-up compose-down db-generate db-migrate db-push db-studio db-seed db-seed-admin db-seed-representatives db-seed-moderators
+.PHONY: help install dev build start test lint lint-fix typecheck format format-check compose-up compose-down db-generate db-migrate db-push db-studio db-seed db-seed-admin db-seed-representatives db-seed-moderators db-seed-tickets
 
 ENGINE ?= $(if $(engine),$(engine),podman)
 
@@ -9,6 +9,7 @@ help:
 	@echo "  install         Install dependencies"
 	@echo "  build           Build production application"
 	@echo "  start           Start production server"
+	@echo "  test            Run unit and integration tests"
 	@echo "  lint            Run ESLint"
 	@echo "  lint-fix        Fix ESLint issues"
 	@echo "  typecheck       Run TypeScript check"
@@ -22,7 +23,11 @@ help:
 	@echo "  db-migrate      Run Drizzle migrations (pass ssh=true for SSH tunnel)"
 	@echo "  db-push         Push Drizzle schema to database"
 	@echo "  db-studio       Launch Drizzle Studio"
-	@echo "  db-seed         Run all database seeders (pass ssh=true for SSH tunnel)"
+	@echo "  db-seed                   Run all database seeders (pass ssh=true for SSH tunnel)"
+	@echo "  db-seed-admin             Seed Super Admin account (pass ssh=true for SSH tunnel)"
+	@echo "  db-seed-representatives   Seed regions & legislators from CSV (pass ssh=true for SSH tunnel)"
+	@echo "  db-seed-moderators        Seed regional moderators from CSV (pass ssh=true for SSH tunnel)"
+	@echo "  db-seed-tickets           Seed sample citizen tickets & feedbacks (pass ssh=true for SSH tunnel)"
 
 install:
 	npm install
@@ -35,6 +40,9 @@ build:
 
 start:
 	npm run start
+
+test:
+	npm test
 
 lint:
 	npm run lint
@@ -80,3 +88,6 @@ db-seed-representatives:
 
 db-seed-moderators:
 	npm run db:seed:moderators $(if $(filter true,$(ssh)),-- --ssh)
+
+db-seed-tickets:
+	npm run db:seed:tickets $(if $(filter true,$(ssh)),-- --ssh)

@@ -1,7 +1,9 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  doublePrecision,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -22,6 +24,15 @@ export const regionTypeEnum = pgEnum('region_type', [
   'dapil_dprd',
   'dapil_dpr',
 ]);
+export const ticketTypeEnum = pgEnum('ticket_type', ['dapil', 'masyarakat']);
+export const ticketStatusEnum = pgEnum('ticket_status', [
+  'menunggu_verifikasi',
+  'terverifikasi',
+  'sedang_diproses',
+  'selesai',
+  'ditolak',
+]);
+export const feedbackTypeEnum = pgEnum('feedback_type', ['submission', 'resolution', 'general']);
 
 // ---------------------------------------------------------------------------
 // 2. Regions (Wilayah) Table
@@ -142,7 +153,96 @@ export const auditLogs = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// 6. Relations
+// 6. Tickets Table (Unified Aspirations & Complaints)
+// ---------------------------------------------------------------------------
+export const tickets = pgTable(
+  'tickets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ticketNumber: text('ticket_number').notNull().unique(),
+    type: ticketTypeEnum('type').notNull(),
+
+    // Identitas Pelapor
+    reporterNik: text('reporter_nik').notNull(),
+    reporterName: text('reporter_name').notNull(),
+    reporterPhone: text('reporter_phone').notNull(),
+    reporterEmail: text('reporter_email'),
+    reporterAddress: text('reporter_address').notNull(),
+    idCardUrl: text('id_card_url'),
+
+    // Lokasi Geografis & Geotagging
+    kabupaten: text('kabupaten').notNull(),
+    kecamatan: text('kecamatan').notNull(),
+    kelurahan: text('kelurahan').notNull(),
+    alamatLokasi: text('alamat_lokasi').notNull(),
+    latitude: doublePrecision('latitude').notNull(),
+    longitude: doublePrecision('longitude').notNull(),
+
+    // Konten Laporan
+    title: text('title'),
+    description: text('description').notNull(),
+
+    // Kolom Spesifik Aspirasi Pokir (type = 'dapil')
+    representativeId: uuid('representative_id').references(() => userProfiles.id, {
+      onDelete: 'set null',
+    }),
+    dapilId: text('dapil_id'),
+    kamusUsulan: text('kamus_usulan'),
+
+    // Kolom Spesifik Aduan Masyarakat (type = 'masyarakat')
+    agency: text('agency'),
+    category: text('category'),
+
+    // Lampiran Berkas
+    photos: jsonb('photos').$type<string[]>().default([]).notNull(),
+    documentUrl: text('document_url'),
+
+    // Status & Manajemen Penanganan
+    status: ticketStatusEnum('status').default('menunggu_verifikasi').notNull(),
+    adminNotes: text('admin_notes'),
+    assignedToUserId: uuid('assigned_to_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+
+    // Timestamps
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    resolvedAt: timestamp('resolved_at'),
+  },
+  (table) => [
+    uniqueIndex('tickets_number_idx').on(table.ticketNumber),
+    index('tickets_type_status_idx').on(table.type, table.status),
+    index('tickets_representative_idx').on(table.representativeId),
+    index('tickets_reporter_nik_idx').on(table.reporterNik),
+    index('tickets_created_at_idx').on(table.createdAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// 7. Ticket Feedbacks Table (Decoupled Citizen Satisfaction / IKM Surveys)
+// ---------------------------------------------------------------------------
+export const ticketFeedbacks = pgTable(
+  'ticket_feedbacks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ticketId: uuid('ticket_id').references(() => tickets.id, { onDelete: 'cascade' }),
+    type: feedbackTypeEnum('type').default('submission').notNull(),
+    rating: integer('rating').notNull(),
+    aspects: jsonb('aspects').$type<string[]>().default([]).notNull(),
+    feedback: text('feedback'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('ticket_feedbacks_ticket_id_idx').on(table.ticketId),
+    index('ticket_feedbacks_type_idx').on(table.type),
+    index('ticket_feedbacks_rating_idx').on(table.rating),
+    index('ticket_feedbacks_created_at_idx').on(table.createdAt),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// 8. Relations
 // ---------------------------------------------------------------------------
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -150,9 +250,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [userProfiles.userId],
   }),
   auditLogs: many(auditLogs),
+  assignedTickets: many(tickets),
 }));
 
-export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+export const userProfilesRelations = relations(userProfiles, ({ one, many }) => ({
   user: one(users, {
     fields: [userProfiles.userId],
     references: [users.id],
@@ -161,6 +262,7 @@ export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
     fields: [userProfiles.regionId],
     references: [regions.id],
   }),
+  tickets: many(tickets),
 }));
 
 export const regionsRelations = relations(regions, ({ many }) => ({
@@ -174,13 +276,35 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
+export const ticketsRelations = relations(tickets, ({ one, many }) => ({
+  representative: one(userProfiles, {
+    fields: [tickets.representativeId],
+    references: [userProfiles.id],
+  }),
+  assignedTo: one(users, {
+    fields: [tickets.assignedToUserId],
+    references: [users.id],
+  }),
+  feedbacks: many(ticketFeedbacks),
+}));
+
+export const ticketFeedbacksRelations = relations(ticketFeedbacks, ({ one }) => ({
+  ticket: one(tickets, {
+    fields: [ticketFeedbacks.ticketId],
+    references: [tickets.id],
+  }),
+}));
+
 // ---------------------------------------------------------------------------
-// 7. Inferred TypeScript Types
+// 9. Inferred TypeScript Types
 // ---------------------------------------------------------------------------
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type Gender = (typeof genderEnum.enumValues)[number];
 export type RegionType = (typeof regionTypeEnum.enumValues)[number];
 export type AuditAction = (typeof auditActionEnum.enumValues)[number];
+export type TicketType = (typeof ticketTypeEnum.enumValues)[number];
+export type TicketDbStatus = (typeof ticketStatusEnum.enumValues)[number];
+export type FeedbackType = (typeof feedbackTypeEnum.enumValues)[number];
 
 export type Region = typeof regions.$inferSelect;
 export type NewRegion = typeof regions.$inferInsert;
@@ -193,3 +317,9 @@ export type NewUserProfile = typeof userProfiles.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type Ticket = typeof tickets.$inferSelect;
+export type NewTicket = typeof tickets.$inferInsert;
+
+export type TicketFeedback = typeof ticketFeedbacks.$inferSelect;
+export type NewTicketFeedback = typeof ticketFeedbacks.$inferInsert;

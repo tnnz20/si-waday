@@ -236,6 +236,11 @@ export const KAMUS_USULAN_LIST: string[] = [
   'Lainnya (Usulan Spesifik / Khusus)',
 ];
 
+export interface GeoCoords {
+  lat: number;
+  lng: number;
+}
+
 export interface MapPresetLocation {
   name: string;
   district: string;
@@ -243,16 +248,48 @@ export interface MapPresetLocation {
   lng: number;
 }
 
+export const TAPIN_CENTER: GeoCoords = {
+  lat: -2.93386,
+  lng: 115.15397,
+};
+
+export const TAPIN_BOUNDS = {
+  minLat: -3.28,
+  maxLat: -2.52,
+  minLng: 114.7,
+  maxLng: 115.58,
+} as const;
+
+export const KECAMATAN_CENTER_MAP: Record<string, GeoCoords> = {
+  'Tapin Utara': { lat: -2.93386, lng: 115.15397 },
+  Bungur: { lat: -2.95724, lng: 115.15221 },
+  Lokpaikat: { lat: -2.904029, lng: 115.20812 },
+  Piani: { lat: -2.958705, lng: 115.277854 },
+  'Tapin Selatan': { lat: -3.000875, lng: 115.127894 },
+  'Salam Babaris': { lat: -3.040576, lng: 115.190699 },
+  Binuang: { lat: -3.139901, lng: 115.090221 },
+  Hatungun: { lat: -3.144097, lng: 115.165071 },
+  'Candi Laras Utara': { lat: -2.879966, lng: 114.930966 },
+  'Candi Laras Selatan': { lat: -2.883662, lng: 114.950139 },
+  'Tapin Tengah': { lat: -2.95467, lng: 115.101585 },
+  Bakarangan: { lat: -2.922896, lng: 115.122503 },
+};
+
 export const MAP_PRESET_LOCATIONS: MapPresetLocation[] = [
-  { name: 'Kawasan Rantau Kota', district: 'Tapin Utara', lat: -2.9381, lng: 115.1524 },
-  { name: 'Kawasan Binuang Raya', district: 'Binuang', lat: -3.1205, lng: 115.1702 },
+  { name: 'Kawasan Rantau Kota', district: 'Tapin Utara', lat: -2.93386, lng: 115.15397 },
+  { name: 'Kawasan Binuang Raya', district: 'Binuang', lat: -3.139901, lng: 115.090221 },
   {
     name: 'Kawasan Perairan Margasari',
-    district: 'Candi Laras Selatan',
-    lat: -2.8592,
-    lng: 114.9812,
+    district: 'Candi Laras Utara',
+    lat: -2.879966,
+    lng: 114.930966,
   },
-  { name: 'Kawasan Bakarangan', district: 'Bakarangan', lat: -2.9125, lng: 115.1189 },
-  { name: 'Kawasan Lokpaikat', district: 'Lokpaikat', lat: -2.915, lng: 115.184 },
-  { name: 'Kawasan Piani (Pegunungan Meratus)', district: 'Piani', lat: -2.9642, lng: 115.2891 },
+  { name: 'Kawasan Bakarangan', district: 'Bakarangan', lat: -2.922896, lng: 115.122503 },
+  { name: 'Kawasan Lokpaikat', district: 'Lokpaikat', lat: -2.904029, lng: 115.20812 },
+  {
+    name: 'Kawasan Piani (Pegunungan Meratus)',
+    district: 'Piani',
+    lat: -2.958705,
+    lng: 115.277854,
+  },
 ];
