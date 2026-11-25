@@ -171,7 +171,7 @@ export default function FormComplaintPage() {
     ...(complaintData.photos?.map((p) => p.previewUrl) || []),
   ]);
 
-  const isSubmitting = submitFetcher.state === 'submitting';
+  const isSubmitting = submitFetcher.state !== 'idle';
   const ticketNumber = submitFetcher.data?.ticketNumber || '';
   const isFeedbackDialogOpen = Boolean(ticketNumber);
 

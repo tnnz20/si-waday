@@ -242,7 +242,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     ...(usulanData.photos?.map((p) => p.previewUrl) || []),
   ]);
 
-  const isSubmitting = submitFetcher.state === 'submitting';
+  const isSubmitting = submitFetcher.state !== 'idle';
   const ticketNumber = submitFetcher.data?.ticketNumber || '';
   const isFeedbackDialogOpen = Boolean(ticketNumber);
 

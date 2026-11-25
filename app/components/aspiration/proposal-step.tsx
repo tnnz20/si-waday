@@ -346,7 +346,7 @@ export function ProposalStep({
                     </div>
 
                     {/* Representatives Grid */}
-                    <div className="grid max-h-[460px] grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                    <div className="grid max-h-115 grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
                       {filteredRepresentatives.map((rep) => {
                         const isSelected = data.representativeId === rep.id;
                         return (

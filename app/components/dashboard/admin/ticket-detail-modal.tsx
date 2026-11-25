@@ -366,8 +366,8 @@ function TicketDetailDialog({
                       <p className="text-xs text-slate-500">Dokumen Lampiran PDF Resmi</p>
                     </div>
                   </div>
-                  {ticket.documentFileName.startsWith('/') ||
-                  ticket.documentFileName.startsWith('http') ? (
+                  {ticket.documentFileName.startsWith('/uploads/') ||
+                  ticket.documentFileName.startsWith('https://') ? (
                     <Button
                       asChild
                       variant="outline"

@@ -176,9 +176,10 @@ export async function getPublicTicketWithFeedback(ticketNumber: string): Promise
   if (!row) return null;
 
   const feedbacks = await getTicketFeedbacks(row.id);
+  const submissionFeedback = feedbacks.find((f) => f.type === 'submission');
   return {
     ticket: toPublicTicketDto(row),
-    feedback: feedbacks[0] ?? null,
+    feedback: submissionFeedback ?? feedbacks[0] ?? null,
   };
 }
 

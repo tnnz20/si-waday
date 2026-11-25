@@ -81,7 +81,7 @@ export default function SuccessPage({ loaderData }: Route.ComponentProps) {
 
   if (!ticket) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="mx-auto flex min-h-120 max-w-xl flex-col items-center justify-center px-4 py-16 text-center">
         <div className="border-warm-200 bg-warm-50 flex h-16 w-16 items-center justify-center rounded-2xl border text-slate-400 shadow-sm">
           <FileCheck2 className="h-8 w-8 text-slate-400" />
         </div>

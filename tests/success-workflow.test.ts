@@ -36,6 +36,7 @@ test('success receipt workflow resolves public-safe ticket and feedbacks without
   assert.equal('reporterAddress' in publicResult.ticket, false);
   assert.equal('idCardUrl' in publicResult.ticket, false);
   assert.ok(publicResult.feedback);
+  assert.equal(publicResult.feedback.type, 'submission');
 
   // Non-existent ticket number must return null cleanly without fallback
   const missingResult = await getPublicTicketWithFeedback('ASP-NON-EXISTENT-9999');
