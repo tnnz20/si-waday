@@ -24,6 +24,7 @@ import {
   FileCheck,
   IdCard,
   Info,
+  Loader2,
   Lock,
   Mail,
   Phone,
@@ -46,6 +47,7 @@ export function IdentityStep({
   aspirationType = 'dapil',
 }: IdentityStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-detect Tapin NIK code (6305...)
@@ -67,50 +69,66 @@ export function IdentityStep({
     // Check size before compression (max 15MB)
     if (file.size > 15 * 1024 * 1024) {
       setErrors((prev) => ({ ...prev, idCard: 'Ukuran file foto KTP maksimal 15MB.' }));
+      e.target.value = '';
       return;
     }
 
-    if (data.idCardPreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(data.idCardPreviewUrl);
-    }
+    const previousPreviewUrl = data.idCardPreviewUrl;
+    setIsUploadingIdCard(true);
 
-    // Compress image if it is an image file
-    if (file.type.startsWith('image/')) {
-      try {
-        const compressed = await compressImageFile(file, {
-          maxDimension: 1600,
-          quality: 0.85,
-          mimeType: 'image/webp',
-        });
+    try {
+      // Compress image if it is an image file
+      if (file.type.startsWith('image/')) {
+        try {
+          const compressed = await compressImageFile(file, {
+            maxDimension: 1600,
+            quality: 0.85,
+            mimeType: 'image/webp',
+          });
 
-        onChange({
-          idCardFileName: compressed.file.name,
-          idCardPreviewUrl: compressed.previewUrl,
-          idCardFile: compressed.file,
-        });
+          onChange({
+            idCardFileName: compressed.file.name,
+            idCardPreviewUrl: compressed.previewUrl,
+            idCardFile: compressed.file,
+          });
 
-        if (errors.idCard) {
-          setErrors((prev) => ({ ...prev, idCard: '' }));
+          if (previousPreviewUrl && previousPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previousPreviewUrl);
+          }
+
+          if (errors.idCard) {
+            setErrors((prev) => ({ ...prev, idCard: '' }));
+          }
+          return;
+        } catch (err) {
+          console.warn('KTP compression fallback:', err);
         }
-        return;
-      } catch (err) {
-        console.warn('KTP compression fallback:', err);
       }
-    }
 
-    const previewUrl = URL.createObjectURL(file);
-    onChange({
-      idCardFileName: file.name,
-      idCardPreviewUrl: previewUrl,
-      idCardFile: file,
-    });
+      const previewUrl = URL.createObjectURL(file);
+      onChange({
+        idCardFileName: file.name,
+        idCardPreviewUrl: previewUrl,
+        idCardFile: file,
+      });
 
-    if (errors.idCard) {
-      setErrors((prev) => ({ ...prev, idCard: '' }));
+      if (previousPreviewUrl && previousPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previousPreviewUrl);
+      }
+
+      if (errors.idCard) {
+        setErrors((prev) => ({ ...prev, idCard: '' }));
+      }
+    } finally {
+      setIsUploadingIdCard(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleRemoveFile = () => {
+    if (isUploadingIdCard) return;
     if (data.idCardPreviewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(data.idCardPreviewUrl);
     }
@@ -126,6 +144,7 @@ export function IdentityStep({
 
   const validateAndProceed = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploadingIdCard) return;
     const result = identityStepSchema.safeParse(data);
 
     if (!result.success) {
@@ -382,11 +401,12 @@ export function IdentityStep({
               type="file"
               ref={fileInputRef}
               accept="image/*,application/pdf"
+              disabled={isUploadingIdCard}
               className="hidden"
               onChange={handleFileUpload}
             />
 
-            {/* Upload Box / Card Preview */}
+            {/* Upload Box / Loading State / Card Preview */}
             {data.idCardPreviewUrl ? (
               <div className="border-warm-300 bg-warm-50 overflow-hidden rounded-2xl border p-5">
                 <div className="flex flex-col items-center gap-5 md:flex-row">
@@ -404,10 +424,26 @@ export function IdentityStep({
                         className="h-44 w-full object-cover"
                       />
                     )}
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-emerald-600/95 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Terunggah
-                    </div>
+                    {isUploadingIdCard ? (
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        className="bg-warm-50/90 absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 backdrop-blur-xs"
+                      >
+                        <Loader2
+                          className="text-accent-500 h-8 w-8 animate-spin"
+                          aria-hidden="true"
+                        />
+                        <span className="text-darknavy-900 text-xs font-bold">
+                          Memproses foto KTP baru...
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-emerald-600/95 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Terunggah
+                      </div>
+                    )}
                   </div>
 
                   {/* File Meta Information & Actions */}
@@ -429,17 +465,23 @@ export function IdentityStep({
                         type="button"
                         variant="outline"
                         size="sm"
+                        disabled={isUploadingIdCard}
                         onClick={() => fileInputRef.current?.click()}
                         className="border-warm-300 text-darknavy-900 hover:bg-warm-200 rounded-full text-xs font-semibold"
                       >
-                        <Camera className="mr-1 h-3.5 w-3.5" />
-                        Ganti Foto KTP
+                        {isUploadingIdCard ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Camera className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        )}
+                        <span>{isUploadingIdCard ? 'Memproses...' : 'Ganti Foto KTP'}</span>
                       </Button>
 
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
+                        disabled={isUploadingIdCard}
                         onClick={handleRemoveFile}
                         className="rounded-full text-xs font-semibold"
                       >
@@ -448,6 +490,27 @@ export function IdentityStep({
                       </Button>
                     </div>
                   </div>
+                </div>
+              </div>
+            ) : isUploadingIdCard ? (
+              <div
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+                className="border-accent-300 bg-warm-50 rounded-2xl border-2 border-dashed p-6 text-center transition-all sm:p-8"
+              >
+                <div className="text-accent-500 mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
+                </div>
+                <h4 className="text-darknavy-900 text-sm font-bold">
+                  Memproses &amp; Mengompresi Foto KTP...
+                </h4>
+                <p className="text-2xs mx-auto mt-1 max-w-md text-slate-500 sm:text-xs">
+                  Sedang mengoptimalkan resolusi foto identitas agar terbaca jelas dan cepat
+                  dikirim.
+                </p>
+                <div className="bg-warm-200 mx-auto mt-4 h-1.5 w-48 overflow-hidden rounded-full">
+                  <div className="bg-accent-500 h-full w-2/3 animate-pulse rounded-full" />
                 </div>
               </div>
             ) : (
@@ -513,10 +576,20 @@ export function IdentityStep({
           <div className="flex justify-end pt-4">
             <Button
               type="submit"
+              disabled={isUploadingIdCard}
               className="coral-glow bg-accent-500 hover:bg-accent-600 flex w-full items-center justify-center gap-2 rounded-full px-8 py-5 text-xs font-bold text-white shadow-lg sm:w-auto"
             >
-              <span>Lanjut ke Formulir {isDapil ? 'Usulan Aspirasi' : 'Aduan Masyarakat'}</span>
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              {isUploadingIdCard ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <span>Memproses Foto KTP...</span>
+                </>
+              ) : (
+                <>
+                  <span>Lanjut ke Formulir {isDapil ? 'Usulan Aspirasi' : 'Aduan Masyarakat'}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </>
+              )}
             </Button>
           </div>
         </form>
