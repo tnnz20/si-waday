@@ -64,8 +64,14 @@ export const aspirationStepSchema = z
       .trim()
       .min(5, 'Alamat lokasi minimal 5 karakter.')
       .max(255, 'Alamat lokasi maksimal 255 karakter.'),
-    latitude: z.number({ message: 'Titik koordinat peta wajib ditentukan.' }),
-    longitude: z.number({ message: 'Titik koordinat peta wajib ditentukan.' }),
+    latitude: z
+      .number({ message: 'Titik koordinat peta wajib ditentukan.' })
+      .min(-90, 'Koordinat lintang tidak valid.')
+      .max(90, 'Koordinat lintang tidak valid.'),
+    longitude: z
+      .number({ message: 'Titik koordinat peta wajib ditentukan.' })
+      .min(-180, 'Koordinat bujur tidak valid.')
+      .max(180, 'Koordinat bujur tidak valid.'),
   })
   .refine((data) => Boolean(data.dapilId && data.representativeName), {
     message: 'Silakan pilih anggota dewan / perwakilan Dapil tujuan usulan.',
@@ -98,8 +104,14 @@ export const complaintStepSchema = z.object({
     .trim()
     .min(5, 'Alamat lokasi minimal 5 karakter.')
     .max(255, 'Alamat lokasi maksimal 255 karakter.'),
-  latitude: z.number({ message: 'Titik koordinat peta wajib ditentukan.' }),
-  longitude: z.number({ message: 'Titik koordinat peta wajib ditentukan.' }),
+  latitude: z
+    .number({ message: 'Titik koordinat peta wajib ditentukan.' })
+    .min(-90, 'Koordinat lintang tidak valid.')
+    .max(90, 'Koordinat lintang tidak valid.'),
+  longitude: z
+    .number({ message: 'Titik koordinat peta wajib ditentukan.' })
+    .min(-180, 'Koordinat bujur tidak valid.')
+    .max(180, 'Koordinat bujur tidak valid.'),
 });
 
 export const surveySchema = z.object({
