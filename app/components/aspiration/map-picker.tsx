@@ -1,8 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { MAP_PRESET_LOCATIONS, type MapPresetLocation } from '@/constants/tapin';
+import type L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { toast } from 'sonner';
 
-import { Compass, Crosshair, Layers, MapPin, Minus, Navigation, Plus } from 'lucide-react';
+import { getDistrictCenter, isWithinTapinBounds, roundCoord } from '@/lib/map-utils';
+
+import { MAP_PRESET_LOCATIONS, type MapPresetLocation, TAPIN_CENTER } from '@/constants/tapin';
+
+import {
+  AlertTriangle,
+  Compass,
+  Crosshair,
+  Layers,
+  LoaderCircle,
+  MapPin,
+  Minus,
+  Navigation,
+  Plus,
+} from 'lucide-react';
 
 interface MapPickerProps {
   latitude: number;
@@ -11,85 +27,225 @@ interface MapPickerProps {
   selectedDistrict?: string;
 }
 
+const TILE_CONFIG = {
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+  },
+  street: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+  },
+} as const;
+
+const CORAL_PIN_HTML = `
+  <div class="relative flex flex-col items-center">
+    <div class="bg-accent-500 ring-accent-100 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-xl ring-4">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent-600"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3" fill="currentColor"/></svg>
+    </div>
+    <div class="bg-accent-500/40 mt-0.5 h-1.5 w-4 rounded-full"></div>
+  </div>
+`;
+
 export function MapPicker({ latitude, longitude, onChange, selectedDistrict }: MapPickerProps) {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const leafletRef = useRef<typeof L | null>(null);
+  const initialCenterRef = useRef({ lat: latitude, lng: longitude });
+  const onChangeRef = useRef(onChange);
+
   const [mapMode, setMapMode] = useState<'satellite' | 'street'>('satellite');
-  const [zoomLevel, setZoomLevel] = useState<number>(14);
+  const [zoomLevel, setZoomLevel] = useState<number>(15);
+  const [isMapReady, setIsMapReady] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [hasTileError, setHasTileError] = useState<boolean>(false);
 
-  // Map coordinates to percentage for interactive marker placement within viewBox
-  // Tapin region roughly bounds: lat -3.20 to -2.75, lng 114.85 to 115.35
-  const minLat = -3.25;
-  const maxLat = -2.75;
-  const minLng = 114.85;
-  const maxLng = 115.35;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
-  const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+  // 1. Initialize Leaflet strictly on client (SSR & React 19 StrictMode safe)
+  useEffect(() => {
+    let cancelled = false;
 
-  const latToPercent = (lat: number) => {
-    const clamped = clamp(lat, minLat, maxLat);
-    return ((maxLat - clamped) / (maxLat - minLat)) * 100;
-  };
+    async function initMap() {
+      const container = mapContainerRef.current;
+      if (!container) return;
 
-  const lngToPercent = (lng: number) => {
-    const clamped = clamp(lng, minLng, maxLng);
-    return ((clamped - minLng) / (maxLng - minLng)) * 100;
-  };
+      const leafletModule = await import('leaflet');
+      const Leaflet = leafletModule.default;
 
-  const percentToCoords = (xPercent: number, yPercent: number) => {
-    const newLng = minLng + (xPercent / 100) * (maxLng - minLng);
-    const newLat = maxLat - (yPercent / 100) * (maxLat - minLat);
-    return {
-      lat: Number(newLat.toFixed(6)),
-      lng: Number(newLng.toFixed(6)),
+      if (cancelled || !mapContainerRef.current || mapRef.current) return;
+
+      leafletRef.current = Leaflet;
+
+      const { lat: startLat, lng: startLng } = initialCenterRef.current;
+
+      const map = Leaflet.map(mapContainerRef.current, {
+        center: [startLat, startLng],
+        zoom: 15,
+        minZoom: 10,
+        maxZoom: 19,
+        zoomControl: false,
+      });
+
+      const initialTile = Leaflet.tileLayer(TILE_CONFIG.satellite.url, {
+        attribution: TILE_CONFIG.satellite.attribution,
+        maxZoom: 19,
+      });
+      initialTile.on('tileerror', () => setHasTileError(true));
+      initialTile.on('load', () => setHasTileError(false));
+      initialTile.addTo(map);
+      tileLayerRef.current = initialTile;
+
+      const customIcon = Leaflet.divIcon({
+        html: CORAL_PIN_HTML,
+        className: '',
+        iconSize: [36, 42],
+        iconAnchor: [18, 36],
+      });
+
+      const marker = Leaflet.marker([startLat, startLng], {
+        icon: customIcon,
+        draggable: true,
+      }).addTo(map);
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        onChangeRef.current({ lat: roundCoord(pos.lat), lng: roundCoord(pos.lng) });
+      });
+
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const nextCoords = { lat: roundCoord(e.latlng.lat), lng: roundCoord(e.latlng.lng) };
+        marker.setLatLng([nextCoords.lat, nextCoords.lng]);
+        onChangeRef.current(nextCoords);
+      });
+
+      map.on('zoomend', () => {
+        setZoomLevel(map.getZoom());
+      });
+
+      mapRef.current = map;
+      markerRef.current = marker;
+      setZoomLevel(map.getZoom());
+      setIsMapReady(true);
+    }
+
+    void initMap();
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      markerRef.current = null;
+      tileLayerRef.current = null;
+      setIsMapReady(false);
     };
-  };
+  }, []);
 
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const xPercent = clamp((x / rect.width) * 100, 5, 95);
-    const yPercent = clamp((y / rect.height) * 100, 5, 95);
-    const newCoords = percentToCoords(xPercent, yPercent);
-    onChange(newCoords);
+  // 2. Swap tile layer cleanly when Satelit / Peta Jalan mode changes
+  useEffect(() => {
+    const map = mapRef.current;
+    const Leaflet = leafletRef.current;
+    if (!map || !Leaflet || !isMapReady) return;
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+
+    const config = TILE_CONFIG[mapMode];
+    const nextTile = Leaflet.tileLayer(config.url, {
+      attribution: config.attribution,
+      maxZoom: 19,
+    });
+    nextTile.on('tileerror', () => setHasTileError(true));
+    nextTile.on('load', () => setHasTileError(false));
+    nextTile.addTo(map);
+    tileLayerRef.current = nextTile;
+  }, [mapMode, isMapReady]);
+
+  // 3. Keep marker position in sync when latitude/longitude props change
+  useEffect(() => {
+    if (markerRef.current && isMapReady) {
+      markerRef.current.setLatLng([latitude, longitude]);
+    }
+  }, [latitude, longitude, isMapReady]);
+
+  const focusCoords = (lat: number, lng: number, targetZoom = 15) => {
+    const roundedLat = roundCoord(lat);
+    const roundedLng = roundCoord(lng);
+    onChange({ lat: roundedLat, lng: roundedLng });
+    mapRef.current?.flyTo([roundedLat, roundedLng], targetZoom, { duration: 0.6 });
   };
 
   const handleSelectPreset = (preset: MapPresetLocation) => {
-    onChange({ lat: preset.lat, lng: preset.lng });
+    focusCoords(preset.lat, preset.lng, 15);
+  };
+
+  const handleSelectDistrict = () => {
+    if (!selectedDistrict) return;
+    const center = getDistrictCenter(selectedDistrict);
+    focusCoords(center.lat, center.lng, 14);
+    toast.info(`Peta difokuskan ke Kecamatan ${selectedDistrict}`);
   };
 
   const handleCurrentGps = () => {
-    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          onChange({
-            lat: Number(pos.coords.latitude.toFixed(6)),
-            lng: Number(pos.coords.longitude.toFixed(6)),
-          });
-        },
-        () => {
-          // Fallback to Rantau city center if permission denied or error
-          onChange({ lat: -2.9381, lng: 115.1524 });
-        }
-      );
-    } else {
-      onChange({ lat: -2.9381, lng: 115.1524 });
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      toast.error('Perangkat Anda tidak mendukung fitur GPS browser.');
+      focusCoords(TAPIN_CENTER.lat, TAPIN_CENTER.lng, 15);
+      return;
     }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        const gpsLat = roundCoord(pos.coords.latitude);
+        const gpsLng = roundCoord(pos.coords.longitude);
+        focusCoords(gpsLat, gpsLng, 16);
+
+        if (!isWithinTapinBounds(gpsLat, gpsLng)) {
+          toast.warning('Lokasi GPS berada di luar Kabupaten Tapin', {
+            description: 'Silakan geser pin ke lokasi usulan di wilayah Kabupaten Tapin.',
+          });
+        } else {
+          toast.success('Titik GPS ditemukan', {
+            description: 'Geser pin pada peta jika perlu penyesuaian presisi.',
+          });
+        }
+      },
+      () => {
+        setIsLocating(false);
+        toast.error('Izin lokasi GPS ditolak atau gagal diakses', {
+          description: 'Silakan klik langsung di peta atau pilih Titik Fokus terdekat.',
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
-  const markerX = lngToPercent(longitude);
-  const markerY = latToPercent(latitude);
+  const isWithinTapin = isWithinTapinBounds(latitude, longitude);
 
   return (
     <div className="border-warm-300 overflow-hidden rounded-2xl border bg-white shadow-sm">
       {/* Top Map Control Toolbar */}
       <div className="border-warm-200 bg-warm-50 flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2 text-xs">
         <div className="text-darknavy-900 flex items-center gap-1.5 font-bold">
-          <MapPin className="text-accent-500 h-3.5 w-3.5" aria-hidden="true" />
+          <MapPin className="text-accent-500 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>Wilayah Kabupaten Tapin (Kalsel)</span>
           {selectedDistrict ? (
-            <span className="border-warm-300 bg-warm-200 text-darknavy-900 text-2xs rounded-full border px-2 py-0.5 font-semibold">
-              Kec. {selectedDistrict}
-            </span>
+            <button
+              type="button"
+              onClick={handleSelectDistrict}
+              title={`Pusatkan peta ke Kecamatan ${selectedDistrict}`}
+              className="border-warm-300 bg-warm-200 hover:border-accent-400 hover:bg-accent-50 text-darknavy-900 text-2xs inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-semibold transition-colors"
+            >
+              <span>Kec. {selectedDistrict}</span>
+            </button>
           ) : null}
         </div>
 
@@ -126,11 +282,16 @@ export function MapPicker({ latitude, longitude, onChange, selectedDistrict }: M
           <button
             type="button"
             onClick={handleCurrentGps}
+            disabled={isLocating}
             title="Gunakan Titik GPS Terdekat"
-            className="border-warm-300 text-darknavy-900 hover:bg-warm-100 text-2xs flex items-center gap-1 rounded-lg border bg-white px-2 py-1 font-semibold shadow-xs"
+            className="border-warm-300 text-darknavy-900 hover:bg-warm-100 text-2xs flex items-center gap-1 rounded-lg border bg-white px-2 py-1 font-semibold shadow-xs disabled:opacity-60"
           >
-            <Crosshair className="text-accent-500 h-3 w-3" aria-hidden="true" />
-            <span className="hidden sm:inline">Titik GPS</span>
+            {isLocating ? (
+              <LoaderCircle className="text-accent-500 h-3 w-3 animate-spin" aria-hidden="true" />
+            ) : (
+              <Crosshair className="text-accent-500 h-3 w-3" aria-hidden="true" />
+            )}
+            <span className="hidden sm:inline">{isLocating ? 'Mencari...' : 'Titik GPS'}</span>
           </button>
         </div>
       </div>
@@ -140,7 +301,7 @@ export function MapPicker({ latitude, longitude, onChange, selectedDistrict }: M
         <span className="shrink-0 font-medium text-slate-400">Titik Fokus:</span>
         {MAP_PRESET_LOCATIONS.map((preset) => {
           const isSelected =
-            Math.abs(preset.lat - latitude) < 0.03 && Math.abs(preset.lng - longitude) < 0.03;
+            Math.abs(preset.lat - latitude) < 0.015 && Math.abs(preset.lng - longitude) < 0.015;
           return (
             <button
               key={preset.name}
@@ -158,192 +319,72 @@ export function MapPicker({ latitude, longitude, onChange, selectedDistrict }: M
         })}
       </div>
 
-      {/* Interactive Map Visual Area */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Peta interaktif penentuan titik koordinat usulan. Klik untuk memindahkan pin lokasi."
-        onClick={handleMapClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleCurrentGps();
-          }
-        }}
-        className={`relative h-64 w-full cursor-crosshair overflow-hidden select-none sm:h-72 ${
-          mapMode === 'satellite' ? 'bg-darknavy-950' : 'bg-warm-100'
-        }`}
-      >
-        {/* Background Visual Map Texture / SVG Canvas */}
-        {mapMode === 'satellite' ? (
-          <div className="via-darknavy-900 to-darknavy-950 absolute inset-0 bg-radial from-slate-800">
-            {/* Satellite Grid & River waterways simulation */}
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full opacity-45"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <defs>
-                <pattern id="sat-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 30 0 L 0 0 0 30"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.06)"
-                    strokeWidth="1"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#sat-grid)" />
-              {/* Sungai Tapin / Margasari River Curves */}
-              <path
-                d="M 20,40 Q 120,80 200,60 T 360,110 T 520,70 T 700,140"
-                fill="none"
-                stroke="#38bdf8"
-                strokeWidth="4"
-                strokeOpacity="0.4"
-              />
-              <path
-                d="M 80,180 Q 220,140 380,200 T 640,170"
-                fill="none"
-                stroke="#0284c7"
-                strokeWidth="6"
-                strokeOpacity="0.35"
-              />
-              {/* Arterial Roads (Trans Kalimantan / Jl. Jend Sudirman) */}
-              <path
-                d="M 0,220 L 700,50"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="2.5"
-                strokeOpacity="0.5"
-                strokeDasharray="6 3"
-              />
-              <path
-                d="M 150,0 L 450,300"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="1.8"
-                strokeOpacity="0.3"
-              />
-              {/* City Clusters */}
-              <circle cx="280" cy="120" r="36" fill="#f97316" fillOpacity="0.12" />
-              <circle cx="480" cy="200" r="28" fill="#10b981" fillOpacity="0.12" />
-              <circle cx="140" cy="190" r="32" fill="#3b82f6" fillOpacity="0.12" />
-            </svg>
-          </div>
-        ) : (
-          <div className="bg-warm-100 absolute inset-0">
-            {/* Street Map Layout simulation */}
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full opacity-65"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <defs>
-                <pattern id="street-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 40 0 L 0 0 0 40"
-                    fill="none"
-                    stroke="rgba(40,30,20,0.08)"
-                    strokeWidth="1"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#street-grid)" />
-              {/* River vector */}
-              <path
-                d="M 20,40 Q 120,80 200,60 T 360,110 T 520,70 T 700,140"
-                fill="none"
-                stroke="#60a5fa"
-                strokeWidth="7"
-                strokeOpacity="0.6"
-              />
-              {/* Primary roads */}
-              <path d="M 0,220 L 700,50" fill="none" stroke="#f59e0b" strokeWidth="4" />
-              <path
-                d="M 150,0 L 450,300"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="3"
-                strokeDasharray="4 2"
-              />
-              <path d="M 320,60 L 320,240" fill="none" stroke="#cbd5e1" strokeWidth="2.5" />
-            </svg>
-          </div>
-        )}
+      {/* Interactive Real Map Container (Stacking Context Isolated) */}
+      <div className="bg-warm-100 relative isolate z-0 h-72 w-full overflow-hidden sm:h-80">
+        <div
+          ref={mapContainerRef}
+          className="relative z-0 h-full w-full"
+          aria-label="Peta interaktif penentuan titik koordinat usulan. Klik peta atau geser marker untuk mengubah lokasi."
+        />
 
-        {/* Ambient Map Landmark Labels */}
-        <div className="pointer-events-none absolute top-3 left-4">
-          <div className="bg-darknavy-900/80 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-white backdrop-blur-xs">
-            <Compass className="text-accent-500 h-3 w-3 animate-spin" aria-hidden="true" />
+        {/* SSR / Hydration Loading Placeholder */}
+        {!isMapReady ? (
+          <div className="bg-warm-100/95 absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 text-slate-500">
+            <LoaderCircle className="text-accent-500 h-6 w-6 animate-spin" aria-hidden="true" />
+            <span className="text-xs font-semibold">Memuat peta interaktif Kabupaten Tapin...</span>
+          </div>
+        ) : null}
+
+        {/* Ambient Map Landmark Label */}
+        <div className="pointer-events-none absolute top-3 left-3 z-10">
+          <div className="bg-darknavy-900/80 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-white shadow-sm backdrop-blur-xs">
+            <Compass className="text-accent-500 h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="text-2xs font-bold tracking-wider uppercase">
               Rantau • Tapin Tengah • Binuang
             </span>
           </div>
         </div>
 
-        {/* Dynamic Interactive Pin Marker */}
-        <div
-          className="pointer-events-none absolute -translate-x-1/2 -translate-y-full transition-all duration-200"
-          style={{
-            left: `${markerX}%`,
-            top: `${markerY}%`,
-          }}
-        >
-          {/* Pulsing ring anchor */}
-          <div className="relative flex flex-col items-center">
-            {/* Tooltip speech bubble */}
-            <div className="border-accent-500 bg-darknavy-900 mb-1.5 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 whitespace-nowrap text-white shadow-xl">
-              <span className="bg-accent-500 h-2 w-2 animate-ping rounded-full" />
-              <span className="text-2xs font-bold">Titik Lokasi Usulan Terpilih</span>
+        {/* Network Tile Warning */}
+        {hasTileError ? (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="text-2xs flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50/95 px-2.5 py-1 font-semibold text-amber-800 shadow-sm backdrop-blur-xs">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+              <span>Lapisan peta lambat dimuat; klik peta tetap aktif</span>
             </div>
-
-            {/* Coral Pin Icon */}
-            <div className="relative flex items-center justify-center">
-              <div className="bg-accent-500 ring-accent-100 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-2xl ring-4">
-                <MapPin className="stroke-accent-600 h-5 w-5 fill-white" aria-hidden="true" />
-              </div>
-            </div>
-
-            {/* Target ground indicator shadow */}
-            <div className="bg-accent-500/40 mt-0.5 h-2 w-5 rounded-full blur-xs" />
           </div>
-        </div>
+        ) : null}
 
-        {/* Floating Controls: Zoom and Hint */}
-        <div className="absolute right-3 bottom-3 flex flex-col items-end gap-2">
-          {/* Zoom Buttons */}
+        {/* Floating Zoom Controls (Positioned above bottom-right attribution) */}
+        <div className="absolute right-3 bottom-7 z-10 flex flex-col items-end gap-2">
           <div className="border-warm-300 flex flex-col rounded-lg border bg-white/95 shadow-md backdrop-blur-xs">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setZoomLevel((prev) => Math.min(prev + 1, 18));
-              }}
+              onClick={() => mapRef.current?.zoomIn()}
+              disabled={zoomLevel >= 19}
               title="Perbesar Peta"
-              className="text-darknavy-900 hover:bg-warm-100 flex h-7 w-7 items-center justify-center rounded-t-lg transition-colors"
+              className="text-darknavy-900 hover:bg-warm-100 flex h-7 w-7 items-center justify-center rounded-t-lg transition-colors disabled:opacity-40"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
             <div className="border-warm-200 border-t" />
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setZoomLevel((prev) => Math.max(prev - 1, 10));
-              }}
+              onClick={() => mapRef.current?.zoomOut()}
+              disabled={zoomLevel <= 10}
               title="Perkecil Peta"
-              className="text-darknavy-900 hover:bg-warm-100 flex h-7 w-7 items-center justify-center rounded-b-lg transition-colors"
+              className="text-darknavy-900 hover:bg-warm-100 flex h-7 w-7 items-center justify-center rounded-b-lg transition-colors disabled:opacity-40"
             >
               <Minus className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        {/* Floating Click Instruction */}
-        <div className="pointer-events-none absolute bottom-3 left-3">
-          <div className="bg-darknavy-900/85 text-warm-100 text-2xs flex items-center gap-1.5 rounded-md px-2 py-1 backdrop-blur-xs">
-            <Crosshair className="text-accent-500 h-3 w-3" aria-hidden="true" />
-            <span>Klik di area peta untuk menggeser tanda lokasi usulan</span>
+        {/* Floating Click / Drag Instruction */}
+        <div className="pointer-events-none absolute bottom-3 left-3 z-10 hidden sm:block">
+          <div className="bg-darknavy-900/85 text-warm-100 text-2xs flex items-center gap-1.5 rounded-md px-2.5 py-1 shadow-sm backdrop-blur-xs">
+            <Crosshair className="text-accent-500 h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>Klik peta atau geser pin coral untuk menyesuaikan titik lokasi</span>
           </div>
         </div>
       </div>
@@ -362,10 +403,24 @@ export function MapPicker({ latitude, longitude, onChange, selectedDistrict }: M
           </span>
         </div>
 
-        <div className="text-2xs flex items-center gap-1.5 text-slate-500">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span>Status: Terkunci pada peta usulan Tapin</span>
-        </div>
+        {isWithinTapin ? (
+          <div className="text-2xs flex items-center gap-1.5 text-slate-600">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span>Status: Berada di wilayah Kabupaten Tapin</span>
+          </div>
+        ) : (
+          <div className="text-2xs flex items-center gap-2 text-amber-700">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+            <span className="font-semibold">Di luar batas Kab. Tapin</span>
+            <button
+              type="button"
+              onClick={() => focusCoords(TAPIN_CENTER.lat, TAPIN_CENTER.lng, 14)}
+              className="rounded-full border border-amber-300 bg-white px-2 py-0.5 font-bold text-amber-800 transition-colors hover:bg-amber-50"
+            >
+              Kembali ke Tapin
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
