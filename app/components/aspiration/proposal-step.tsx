@@ -103,13 +103,10 @@ export function ProposalStep({
   const selectedRepresentative = representatives.find((rep) => rep.id === data.representativeId);
 
   const handleSelectRepresentative = (rep: AnggotaDprdTapin) => {
-    // If current kecamatan is not in the new dapil, pick the first one
-    const newKecamatan = rep.districts.includes(data.kecamatan)
-      ? data.kecamatan
-      : rep.districts[0] || 'Tapin Utara';
-
-    const newVillages = DESA_KELURAHAN_TAPIN_MAP[newKecamatan] || [];
-    const newKelurahan = newVillages[0] || '';
+    // Keep selected kecamatan only if it belongs to the chosen representative's Dapil
+    const keepsKecamatan = Boolean(data.kecamatan && rep.districts.includes(data.kecamatan));
+    const newKecamatan = keepsKecamatan ? data.kecamatan : '';
+    const newKelurahan = keepsKecamatan ? data.kelurahan : '';
 
     onChange({
       representativeId: rep.id,
@@ -126,12 +123,12 @@ export function ProposalStep({
   };
 
   const handleKecamatanChange = (kecamatan: string) => {
-    const villages = DESA_KELURAHAN_TAPIN_MAP[kecamatan] || [];
     onChange({
       kecamatan,
-      kelurahan: villages[0] || '',
+      kelurahan: '',
     });
     if (errors.kecamatan) setErrors((prev) => ({ ...prev, kecamatan: '' }));
+    if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
   };
 
   // Proposal File upload handler
@@ -767,6 +764,7 @@ export function ProposalStep({
                     Kelurahan / Desa <span className="text-rose-500">*</span>
                   </label>
                   <Select
+                    disabled={!data.kecamatan}
                     value={data.kelurahan}
                     onValueChange={(val) => {
                       onChange({ kelurahan: val });
@@ -779,7 +777,13 @@ export function ProposalStep({
                         errors.kelurahan ? 'border-rose-400 focus:ring-rose-400' : ''
                       }`}
                     >
-                      <SelectValue placeholder="Pilih Desa" />
+                      <SelectValue
+                        placeholder={
+                          data.kecamatan
+                            ? 'Pilih Kelurahan / Desa'
+                            : 'Pilih Kecamatan terlebih dahulu'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {availableVillages.map((desa) => (

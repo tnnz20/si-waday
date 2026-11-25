@@ -17,7 +17,7 @@ import { ProposalStep } from '@/components/aspiration/proposal-step';
 import type { IdentityFormData, UsulanFormData } from '@/types/aspiration';
 
 import { APP_NAME } from '@/constants/index';
-import { DAPIL_DISTRICTS_MAP, DESA_KELURAHAN_TAPIN_MAP, TAPIN_CENTER } from '@/constants/tapin';
+import { DAPIL_DISTRICTS_MAP, TAPIN_CENTER } from '@/constants/tapin';
 
 import { ArrowLeft, Megaphone } from 'lucide-react';
 
@@ -207,9 +207,6 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
   const initialRep = loaderData.representatives[0];
   const initialDapil =
     loaderData.dapils.find((d) => d.id === initialRep?.dapilId) || loaderData.dapils[0];
-  const initialKecamatan = initialDapil?.districts[0] || 'Tapin Utara';
-  const initialKelurahan =
-    DESA_KELURAHAN_TAPIN_MAP[initialKecamatan]?.[0] || 'Rantau Kiwa (Kelurahan)';
 
   const [usulanData, setUsulanData] = useState<UsulanFormData>(() => ({
     dapilId: initialDapil?.id || 'DAPIL-TAPIN-1',
@@ -217,14 +214,14 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     representativeId: initialRep?.id || '',
     representativeName: initialRep?.name || '',
     representativeParty: initialRep?.party || '',
-    kamusUsulan: 'Perbaikan Rumah Tidak Layak Huni (RTLH)',
+    kamusUsulan: '',
     permasalahan: '',
     latitude: TAPIN_CENTER.lat,
     longitude: TAPIN_CENTER.lng,
     alamatLokasi: '',
     kabupaten: 'Kabupaten Tapin',
-    kecamatan: initialKecamatan,
-    kelurahan: initialKelurahan,
+    kecamatan: '',
+    kelurahan: '',
     proposalFileName: '',
     photos: [],
     photo1PreviewUrl: '',

@@ -46,12 +46,12 @@ export function PublicComplaintStep({
   const availableVillages = data.kecamatan ? DESA_KELURAHAN_TAPIN_MAP[data.kecamatan] || [] : [];
 
   const handleKecamatanChange = (kecamatan: string) => {
-    const villages = DESA_KELURAHAN_TAPIN_MAP[kecamatan] || [];
     onChange({
       kecamatan,
-      kelurahan: villages[0] || '',
+      kelurahan: '',
     });
     if (errors.kecamatan) setErrors((prev) => ({ ...prev, kecamatan: '' }));
+    if (errors.kelurahan) setErrors((prev) => ({ ...prev, kelurahan: '' }));
   };
 
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,7 +208,7 @@ export function PublicComplaintStep({
                       errors.category ? 'border-rose-400 focus:ring-rose-400' : ''
                     }`}
                   >
-                    <SelectValue placeholder="Pilih Kategori" />
+                    <SelectValue placeholder="Pilih Kategori Aduan" />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.filter((c) => c !== 'semua').map((cat) => (
@@ -487,6 +487,7 @@ export function PublicComplaintStep({
                     Kelurahan / Desa <span className="text-rose-500">*</span>
                   </label>
                   <Select
+                    disabled={!data.kecamatan}
                     value={data.kelurahan}
                     onValueChange={(val) => {
                       onChange({ kelurahan: val });
@@ -499,7 +500,13 @@ export function PublicComplaintStep({
                         errors.kelurahan ? 'border-rose-400 focus:ring-rose-400' : ''
                       }`}
                     >
-                      <SelectValue placeholder="Pilih Desa" />
+                      <SelectValue
+                        placeholder={
+                          data.kecamatan
+                            ? 'Pilih Kelurahan / Desa'
+                            : 'Pilih Kecamatan terlebih dahulu'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {availableVillages.map((desa) => (

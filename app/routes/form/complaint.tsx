@@ -13,9 +13,8 @@ import { PublicComplaintStep } from '@/components/aspiration/public-complaint-st
 
 import type { IdentityFormData, PublicComplaintFormData } from '@/types/aspiration';
 
-import { AGENCIES, CATEGORIES } from '@/constants/aspirations';
 import { APP_NAME } from '@/constants/index';
-import { DESA_KELURAHAN_TAPIN_MAP, TAPIN_CENTER } from '@/constants/tapin';
+import { TAPIN_CENTER } from '@/constants/tapin';
 
 import { ArrowLeft, Landmark } from 'lucide-react';
 
@@ -146,16 +145,16 @@ export default function FormComplaintPage() {
 
   // Step 2: Form Aduan Masyarakat ke DPRD Kabupaten Tapin
   const [complaintData, setComplaintData] = useState<PublicComplaintFormData>({
-    category: CATEGORIES[1] || 'Infrastruktur',
-    agency: AGENCIES[0] || 'Komisi I DPRD (Pemerintahan & Hukum)',
+    category: '',
+    agency: '',
     title: '',
     content: '',
     latitude: TAPIN_CENTER.lat,
     longitude: TAPIN_CENTER.lng,
     alamatLokasi: '',
     kabupaten: 'Kabupaten Tapin',
-    kecamatan: 'Tapin Utara',
-    kelurahan: DESA_KELURAHAN_TAPIN_MAP['Tapin Utara']?.[0] || 'Rantau Kiwa (Kelurahan)',
+    kecamatan: '',
+    kelurahan: '',
     photos: [],
     photo1PreviewUrl: '',
     photo1FileName: '',
