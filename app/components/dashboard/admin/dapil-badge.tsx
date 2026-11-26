@@ -16,6 +16,18 @@ function getDapilStyle(dapilName: string): DapilStyle {
   const normalized = dapilName.trim().toLowerCase();
 
   if (
+    normalized.includes('kalimantan selatan') ||
+    normalized.includes('kalsel') ||
+    normalized.includes('dpr')
+  ) {
+    return {
+      className:
+        'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+      dotColor: 'bg-amber-500',
+    };
+  }
+
+  if (
     normalized.includes('1') ||
     normalized.includes('dapil 1') ||
     normalized.includes('tapin 1')
@@ -48,14 +60,6 @@ function getDapilStyle(dapilName: string): DapilStyle {
       className:
         'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200',
       dotColor: 'bg-rose-500',
-    };
-  }
-
-  if (normalized.includes('kalsel') || normalized.includes('dpr')) {
-    return {
-      className:
-        'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
-      dotColor: 'bg-amber-500',
     };
   }
 

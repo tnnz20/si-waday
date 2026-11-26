@@ -30,12 +30,18 @@ export async function seedModerators(context?: ScriptDb) {
     const moderators = parseCsv<ModeratorData>(csvPath);
 
     for (const mod of moderators) {
-      // Find region ID
+      // Require valid region row so regional moderators always have a regionId
       const [region] = await db
         .select()
         .from(regions)
         .where(eq(regions.code, mod.dapilCode))
         .limit(1);
+
+      if (!region) {
+        throw new Error(
+          `Region with code "${mod.dapilCode}" not found for moderator "${mod.email}". Ensure regions/representatives are seeded first.`
+        );
+      }
 
       const [existingUser] = await db
         .select()
@@ -78,7 +84,7 @@ export async function seedModerators(context?: ScriptDb) {
             slug: mod.slug,
             gender: mod.gender,
             avatarUrl: null,
-            regionId: region?.id || null,
+            regionId: region.id,
             updatedAt: new Date(),
           })
           .where(eq(userProfiles.id, existingProfile.id));
@@ -89,7 +95,7 @@ export async function seedModerators(context?: ScriptDb) {
           slug: mod.slug,
           gender: mod.gender,
           avatarUrl: null,
-          regionId: region?.id || null,
+          regionId: region.id,
         });
       }
     }

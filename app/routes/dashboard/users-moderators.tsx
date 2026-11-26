@@ -6,8 +6,10 @@ import { redirect } from 'react-router';
 
 import { createAuditLog } from '@/lib/audit.server';
 import { hashPassword } from '@/lib/auth.server';
+import { resolveRegionIdByName } from '@/lib/region.server';
 import { requireAuth } from '@/lib/session.server';
 
+import { TableViewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
 import { type ModeratorItem, ModeratorsTab } from '@/components/dashboard/admin/moderators-tab';
 
 import type { Route } from './+types/users-moderators';
@@ -165,15 +167,18 @@ export async function action({ request }: Route.ActionArgs) {
       finalSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
     }
 
-    // Resolve region ID from dapilName
-    let regionId: string | null = null;
-    if (dapilName) {
-      const [matchedRegion] = await db
-        .select({ id: regions.id })
-        .from(regions)
-        .where(eq(regions.name, dapilName))
-        .limit(1);
-      if (matchedRegion) regionId = matchedRegion.id;
+    // Require valid region ID for moderator assignment (strict Dapil scoping)
+    const regionId = await resolveRegionIdByName(dapilName);
+    if (!regionId) {
+      return Response.json(
+        {
+          error: 'Daerah Pemilihan (Dapil) wajib dipilih dan harus terdaftar di database.',
+          fieldErrors: {
+            dapilName: 'Daerah Pemilihan (Dapil) tidak valid atau belum terdaftar di database.',
+          },
+        },
+        { status: 400 }
+      );
     }
 
     // Hash password & Insert user + profile
@@ -363,15 +368,18 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    // Lookup region id if dapilName provided
-    let regionId: string | null = null;
-    if (dapilName) {
-      const [matchedRegion] = await db
-        .select({ id: regions.id })
-        .from(regions)
-        .where(eq(regions.name, dapilName))
-        .limit(1);
-      if (matchedRegion) regionId = matchedRegion.id;
+    // Require valid region ID when updating a moderator
+    const regionId = await resolveRegionIdByName(dapilName || '');
+    if (!regionId) {
+      return Response.json(
+        {
+          error: 'Daerah Pemilihan (Dapil) wajib dipilih dan harus terdaftar di database.',
+          fieldErrors: {
+            dapilName: 'Daerah Pemilihan (Dapil) wajib dipilih dan valid di database.',
+          },
+        },
+        { status: 400 }
+      );
     }
 
     await db.update(users).set({ email, updatedAt: new Date() }).where(eq(users.id, userId));
@@ -381,7 +389,7 @@ export async function action({ request }: Route.ActionArgs) {
         fullName,
         gender,
         phone,
-        ...(regionId ? { regionId } : {}),
+        regionId,
         updatedAt: new Date(),
       })
       .where(eq(userProfiles.userId, userId));
@@ -401,6 +409,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   return Response.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });
+}
+
+export function HydrateFallback() {
+  return <TableViewSkeleton />;
 }
 
 export default function ModeratorsPage({ loaderData }: Route.ComponentProps) {

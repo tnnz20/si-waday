@@ -1,11 +1,17 @@
 import * as React from 'react';
 
-import { Outlet } from 'react-router';
+import { Outlet, useNavigation } from 'react-router';
 
 import { requireAuth } from '@/lib/session.server';
 import { cn } from '@/lib/utils';
 
 import { AdminHeader } from '@/components/dashboard/admin/admin-header';
+import {
+  DetailPageSkeleton,
+  OverviewSkeleton,
+  SatisfactionSkeleton,
+  TableViewSkeleton,
+} from '@/components/dashboard/admin/dashboard-skeletons';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -32,9 +38,31 @@ export async function loader({ request }: Route.LoaderArgs) {
   return payload;
 }
 
+function resolveDashboardSkeleton(pathname: string) {
+  if (pathname === '/dashboard' || pathname === '/dashboard/') {
+    return <OverviewSkeleton />;
+  }
+  if (pathname.startsWith('/dashboard/satisfaction')) {
+    return <SatisfactionSkeleton />;
+  }
+  if (
+    pathname.startsWith('/dashboard/aspirations/') ||
+    pathname.startsWith('/dashboard/complaints/') ||
+    pathname.startsWith('/dashboard/users/legislators/') ||
+    pathname.startsWith('/dashboard/users/moderators/')
+  ) {
+    return <DetailPageSkeleton />;
+  }
+  return <TableViewSkeleton />;
+}
+
 export default function AdminLayout({ loaderData }: Route.ComponentProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const navigation = useNavigation();
+  const isDashboardLoading =
+    navigation.state === 'loading' &&
+    Boolean(navigation.location?.pathname.startsWith('/dashboard'));
 
   return (
     <div className="bg-warm-100 text-darknavy-900 selection:bg-accent-500 flex min-h-dvh font-sans antialiased selection:text-white">
@@ -64,7 +92,11 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
         {/* Dynamic Nested Content */}
         <div className="w-full flex-1 px-4 pt-2 pb-6 sm:px-6 sm:pb-8 lg:px-8">
           <main className="mx-auto max-w-7xl">
-            <Outlet context={{ currentUser: loaderData.currentUser }} />
+            {isDashboardLoading && navigation.location ? (
+              resolveDashboardSkeleton(navigation.location.pathname)
+            ) : (
+              <Outlet context={{ currentUser: loaderData.currentUser }} />
+            )}
           </main>
         </div>
       </div>

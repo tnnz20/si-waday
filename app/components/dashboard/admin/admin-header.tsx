@@ -83,6 +83,22 @@ function resolveHeaderMeta(pathname: string): RouteHeaderMeta {
   if (ROUTE_HEADER_MAP[pathname]) {
     return ROUTE_HEADER_MAP[pathname];
   }
+  if (pathname.startsWith('/dashboard/complaints/')) {
+    return {
+      ...ROUTE_HEADER_MAP['/dashboard/complaints'],
+      title: 'Detail Aduan Masyarakat',
+      subtitle: 'Pemeriksaan bukti lapangan, tindak lanjut komisi, dan umpan balik warga',
+      label: 'Detail Aduan',
+    };
+  }
+  if (pathname.startsWith('/dashboard/aspirations/')) {
+    return {
+      ...ROUTE_HEADER_MAP['/dashboard/aspirations'],
+      title: 'Detail Aspirasi Dapil DPRD',
+      subtitle: 'Telaah pokok pikiran konstituen, tindak lanjut, dan umpan balik warga',
+      label: 'Detail Aspirasi',
+    };
+  }
   if (pathname.startsWith('/dashboard/users/legislators/')) {
     return {
       ...ROUTE_HEADER_MAP['/dashboard/users/legislators'],
@@ -108,6 +124,8 @@ export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
   const currentTabInfo = resolveHeaderMeta(location.pathname);
   const TabIcon = currentTabInfo.icon;
 
+  const isComplaintDetail = location.pathname.startsWith('/dashboard/complaints/');
+  const isAspirationDetail = location.pathname.startsWith('/dashboard/aspirations/');
   const isLegislatorDetail = location.pathname.startsWith('/dashboard/users/legislators/');
   const isModeratorDetail = location.pathname.startsWith('/dashboard/users/moderators/');
 
@@ -139,6 +157,18 @@ export function AdminHeader({ onOpenMobileMenu }: AdminHeaderProps) {
             {/* Breadcrumb Navigation */}
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
               <span className="hover:text-darknavy-900 transition-colors">Dashboard</span>
+              {isComplaintDetail ? (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="hover:text-darknavy-900 transition-colors">Aduan Warga</span>
+                </>
+              ) : null}
+              {isAspirationDetail ? (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="hover:text-darknavy-900 transition-colors">Aspirasi Dapil</span>
+                </>
+              ) : null}
               {isLegislatorDetail ? (
                 <>
                   <ChevronRight className="h-3.5 w-3.5 text-slate-400" />

@@ -16,7 +16,23 @@ export interface AnggotaDprdTapin {
   districts: string[];
   commission: string;
   photoUrl: string;
+  role?: 'dprd' | 'dpr';
 }
+
+export const KECAMATAN_TAPIN_LIST: string[] = [
+  'Tapin Utara',
+  'Bungur',
+  'Lokpaikat',
+  'Piani',
+  'Tapin Selatan',
+  'Salam Babaris',
+  'Binuang',
+  'Hatungun',
+  'Candi Laras Utara',
+  'Candi Laras Selatan',
+  'Tapin Tengah',
+  'Bakarangan',
+];
 
 export const DAPIL_TAPIN_LIST: DapilTapin[] = [
   {
@@ -45,6 +61,20 @@ export const DAPIL_TAPIN_LIST: DapilTapin[] = [
   },
 ];
 
+export const DAPIL_DPR_LIST: DapilTapin[] = [
+  {
+    id: 'DAPIL-KALSEL-1',
+    name: 'Dapil Kalimantan Selatan I',
+    label: 'Dapil Kalimantan Selatan I (Seluruh Kec. Kab. Tapin)',
+    seats: '6 Kursi DPR RI',
+    districts: KECAMATAN_TAPIN_LIST,
+    description:
+      'Dapil DPR RI Kalimantan Selatan I meliputi Kabupaten Tapin, Banjar, Barito Kuala, HSS, HST, HSU, Tabalong, dan Balangan.',
+  },
+];
+
+export const ALL_DAPIL_LIST: DapilTapin[] = [...DAPIL_TAPIN_LIST, ...DAPIL_DPR_LIST];
+
 export const DAPIL_DISTRICTS_MAP: Record<string, string[]> = {
   'dapil-1': ['Tapin Utara', 'Bungur', 'Lokpaikat', 'Piani'],
   'DAPIL-TAPIN-1': ['Tapin Utara', 'Bungur', 'Lokpaikat', 'Piani'],
@@ -52,22 +82,9 @@ export const DAPIL_DISTRICTS_MAP: Record<string, string[]> = {
   'DAPIL-TAPIN-2': ['Tapin Selatan', 'Salam Babaris', 'Binuang', 'Hatungun'],
   'dapil-3': ['Candi Laras Utara', 'Candi Laras Selatan', 'Tapin Tengah', 'Bakarangan'],
   'DAPIL-TAPIN-3': ['Candi Laras Utara', 'Candi Laras Selatan', 'Tapin Tengah', 'Bakarangan'],
+  'dapil-kalsel-1': KECAMATAN_TAPIN_LIST,
+  'DAPIL-KALSEL-1': KECAMATAN_TAPIN_LIST,
 };
-
-export const KECAMATAN_TAPIN_LIST: string[] = [
-  'Tapin Utara',
-  'Bungur',
-  'Lokpaikat',
-  'Piani',
-  'Tapin Selatan',
-  'Salam Babaris',
-  'Binuang',
-  'Hatungun',
-  'Candi Laras Utara',
-  'Candi Laras Selatan',
-  'Tapin Tengah',
-  'Bakarangan',
-];
 
 export const DESA_KELURAHAN_TAPIN_MAP: Record<string, string[]> = {
   'Tapin Utara': [

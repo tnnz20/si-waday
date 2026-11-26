@@ -31,8 +31,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { UsulanFormData } from '@/types/aspiration';
 
 import {
+  ALL_DAPIL_LIST,
   type AnggotaDprdTapin,
-  DAPIL_TAPIN_LIST,
+  type DapilTapin,
   KAMUS_USULAN_LIST,
   KECAMATAN_TAPIN_LIST,
 } from '@/constants/tapin';
@@ -50,6 +51,24 @@ import {
   ZoomIn,
 } from 'lucide-react';
 
+function isDprRepresentative(rep: { role?: 'dprd' | 'dpr'; dapilId: string }): boolean {
+  return rep.role === 'dpr' || rep.dapilId === 'DAPIL-KALSEL-1';
+}
+
+function formatCompactDapilLabel(dapilName: string): string {
+  if (dapilName.toLowerCase().includes('kalimantan selatan')) {
+    return 'DPR RI Kalsel I';
+  }
+  return dapilName.replace('Dapil Tapin ', 'Dapil ');
+}
+
+function formatRepDistrictsSummary(rep: { dapilId: string; districts: string[] }): string {
+  if (rep.dapilId === 'DAPIL-KALSEL-1' || rep.districts.length >= KECAMATAN_TAPIN_LIST.length) {
+    return 'Seluruh Kabupaten Tapin (12 Kecamatan)';
+  }
+  return rep.districts.join(', ');
+}
+
 interface ProposalStepProps {
   data: UsulanFormData;
   onChange: (updates: Partial<UsulanFormData>) => void;
@@ -57,7 +76,7 @@ interface ProposalStepProps {
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   representatives?: AnggotaDprdTapin[];
-  dapils?: typeof DAPIL_TAPIN_LIST;
+  dapils?: DapilTapin[];
 }
 
 export function ProposalStep({
@@ -67,7 +86,7 @@ export function ProposalStep({
   onSubmit,
   isSubmitting,
   representatives = [],
-  dapils = DAPIL_TAPIN_LIST,
+  dapils = ALL_DAPIL_LIST,
 }: ProposalStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -152,11 +171,12 @@ export function ProposalStep({
       <Card className="soft-card border-warm-200 overflow-hidden rounded-3xl shadow-xl">
         <CardContent className="p-6 sm:p-8">
           <form onSubmit={handleValidateSubmit} noValidate className="space-y-7">
-            {/* FIELD 1: TUJUAN DAPIL (LIST NAMA & FOTO DUMMY ANGGOTA DPRD) */}
+            {/* FIELD 1: TUJUAN DAPIL (LIST NAMA & FOTO ANGGOTA DEWAN) */}
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
                 <label className="text-darknavy-900 text-xs font-bold sm:text-sm">
-                  Tujuan Aspirasi (Dapil & Anggota DPRD) <span className="text-rose-500">*</span>
+                  Tujuan Aspirasi (Dapil &amp; Anggota Dewan){' '}
+                  <span className="text-rose-500">*</span>
                 </label>
                 {/* Shadcn UI Tooltip */}
                 <Tooltip>
@@ -173,11 +193,13 @@ export function ProposalStep({
                   <TooltipContent side="top" align="start">
                     <div className="flex items-center gap-2">
                       <span className="bg-accent-500 h-2 w-2 shrink-0 rounded-full" />
-                      <p className="text-sm font-bold text-white">Pilih Dapil & Anggota DPRD</p>
+                      <p className="text-sm font-bold text-white">
+                        Pilih Dapil &amp; Anggota Dewan
+                      </p>
                     </div>
                     <p className="mt-1.5 text-xs leading-relaxed text-slate-300 sm:text-sm">
-                      Pilih Daerah Pemilihan (Dapil) dan nama anggota dewan yang mewakili wilayah
-                      usulan Anda di Kabupaten Tapin.
+                      Pilih Daerah Pemilihan (Dapil) dan nama perwakilan DPRD Kab. Tapin atau DPR RI
+                      Dapil Kalimantan Selatan I untuk wilayah usulan Anda.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -209,7 +231,7 @@ export function ProposalStep({
                         )}
                         <div className="from-darknavy-900/90 via-darknavy-900/50 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-1 text-center">
                           <span className="text-2xs font-extrabold tracking-wider text-emerald-300 uppercase">
-                            DPRD Tapin
+                            {isDprRepresentative(selectedRepresentative) ? 'DPR RI' : 'DPRD Tapin'}
                           </span>
                         </div>
                         <div className="bg-darknavy-900/40 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
@@ -231,7 +253,7 @@ export function ProposalStep({
                         </div>
                         <p className="text-xs font-bold text-emerald-700 sm:text-sm">
                           {selectedRepresentative.dapilName} (
-                          {selectedRepresentative.districts.join(', ')})
+                          {formatRepDistrictsSummary(selectedRepresentative)})
                         </p>
                         <p className="text-2xs text-slate-500 sm:text-xs">
                           {selectedRepresentative.commission}
@@ -271,7 +293,7 @@ export function ProposalStep({
                           Belum ada anggota dewan / Dapil yang dipilih
                         </p>
                         <p className="text-2xs text-slate-500 sm:text-xs">
-                          Pilih nama perwakilan anggota dewan dari 25 wakil rakyat DPRD Kab. Tapin
+                          Pilih perwakilan DPRD Kab. Tapin atau DPR RI Dapil Kalimantan Selatan I
                         </p>
                       </div>
                     </div>
@@ -281,7 +303,7 @@ export function ProposalStep({
                       onClick={() => setIsRepSelectorOpen(true)}
                       className="shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
                     >
-                      <span>Buka Daftar Nama & Foto Dapil</span>
+                      <span>Buka Daftar Nama &amp; Foto Dapil</span>
                     </Button>
                   </div>
                 )}
@@ -293,7 +315,7 @@ export function ProposalStep({
                       <div className="flex items-center gap-2">
                         <Landmark className="h-4 w-4 text-emerald-600" />
                         <span className="text-darknavy-900 text-xs font-extrabold sm:text-sm">
-                          Daftar Nama & Foto Anggota DPRD Kab. Tapin (Periode 2024–2029)
+                          Daftar Nama &amp; Foto Anggota Dewan (Periode 2024–2029)
                         </span>
                       </div>
 
@@ -326,7 +348,7 @@ export function ProposalStep({
                                   : 'hover:text-darknavy-900 text-slate-600'
                               }`}
                             >
-                              {dapil.name.replace('Dapil Tapin ', 'Dapil ')} ({count})
+                              {formatCompactDapilLabel(dapil.name)} ({count})
                             </button>
                           );
                         })}
@@ -390,7 +412,7 @@ export function ProposalStep({
                                   )}
                                   <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t to-transparent py-0.5 text-center">
                                     <span className="text-2xs leading-tight font-extrabold tracking-tight text-emerald-300 uppercase">
-                                      {rep.dapilName.replace('Dapil Tapin ', 'Dapil ')}
+                                      {formatCompactDapilLabel(rep.dapilName)}
                                     </span>
                                   </div>
                                   <div className="bg-darknavy-900/30 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
@@ -409,7 +431,7 @@ export function ProposalStep({
                                     {rep.party}
                                   </span>
                                   <p className="text-2xs mt-1 truncate font-semibold text-emerald-800">
-                                    {rep.districts.join(', ')}
+                                    {formatRepDistrictsSummary(rep)}
                                   </p>
                                   <p className="text-2xs truncate text-slate-500">
                                     {rep.commission}
@@ -611,7 +633,8 @@ export function ProposalStep({
                       Pilih dan letakkan tanda pin ke titik lokasi fisik rencana usulan.
                     </p>
                     <div className="border-darknavy-800 bg-darknavy-950/70 mt-2.5 rounded-xl border p-2.5 text-xs text-slate-300">
-                      Pin lokasi membantu tim komisi DPRD saat survei lapangan ke Kabupaten Tapin.
+                      Pin lokasi membantu tim perwakilan dewan saat survei lapangan ke Kabupaten
+                      Tapin.
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -790,7 +813,9 @@ export function ProposalStep({
           <DialogContent className="border-warm-200 rounded-3xl bg-white p-6 shadow-2xl sm:max-w-md">
             <DialogHeader className="pb-1 text-center sm:text-center">
               <DialogTitle className="text-darknavy-900 text-lg font-black">
-                Profil Anggota DPRD Kab. Tapin
+                {isDprRepresentative(previewRep)
+                  ? 'Profil Anggota DPR RI'
+                  : 'Profil Anggota DPRD Kab. Tapin'}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Foto resmi dan identitas perwakilan daerah pemilihan Anda
@@ -813,7 +838,9 @@ export function ProposalStep({
                 )}
                 <div className="from-darknavy-900/90 via-darknavy-900/40 absolute inset-x-0 bottom-0 bg-linear-to-t py-2 text-center">
                   <span className="text-xs font-black tracking-wider text-emerald-300 uppercase">
-                    DPRD KABUPATEN TAPIN
+                    {isDprRepresentative(previewRep)
+                      ? 'DPR RI • DAPIL KALSEL I'
+                      : 'DPRD KABUPATEN TAPIN'}
                   </span>
                 </div>
               </div>
@@ -829,7 +856,7 @@ export function ProposalStep({
                   </span>
                 </div>
                 <p className="text-xs font-semibold text-emerald-700">
-                  Cakupan Wilayah: {previewRep.districts.join(', ')}
+                  Cakupan Wilayah: {formatRepDistrictsSummary(previewRep)}
                 </p>
                 <p className="text-xs text-slate-500">{previewRep.commission}</p>
               </div>

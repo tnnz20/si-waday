@@ -15,6 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -33,6 +41,7 @@ import {
   MoreHorizontal,
   Pencil,
   Power,
+  RotateCcw,
   Search,
   Shield,
   ShieldCheck,
@@ -363,8 +372,41 @@ export function ModeratorsTab({ moderators, searchQuery }: ModeratorsTabProps) {
 
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-500">
-                      Tidak ditemukan moderator dengan kriteria filter tersebut.
+                    <td colSpan={5} className="p-6">
+                      <Empty className="border-warm-200 border bg-slate-50/40">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Shield className="text-slate-500" />
+                          </EmptyMedia>
+                          <EmptyTitle className="text-darknavy-900 text-base font-bold">
+                            {effectiveSearch.trim() || filterDapil !== 'all'
+                              ? 'Moderator Tidak Ditemukan'
+                              : 'Belum Ada Moderator Regional'}
+                          </EmptyTitle>
+                          <EmptyDescription className="text-xs text-slate-500">
+                            {effectiveSearch.trim() || filterDapil !== 'all'
+                              ? 'Tidak ada verifikator wilayah yang sesuai dengan pencarian atau filter Dapil yang dipilih.'
+                              : 'Tambahkan petugas moderator regional untuk memvalidasi aspirasi tiap Dapil.'}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        {effectiveSearch.trim() || filterDapil !== 'all' ? (
+                          <EmptyContent>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setInternalSearch('');
+                                setFilterDapil('all');
+                              }}
+                              className="rounded-xl text-xs font-bold"
+                            >
+                              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                              Reset Filter
+                            </Button>
+                          </EmptyContent>
+                        ) : null}
+                      </Empty>
                     </td>
                   </tr>
                 ) : null}
