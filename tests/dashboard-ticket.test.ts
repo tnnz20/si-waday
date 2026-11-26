@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { normalizeKecamatanName } from '../app/constants/admin-data';
+import { ALL_DAPIL_LIST, DAPIL_DISTRICTS_MAP, KECAMATAN_TAPIN_LIST } from '../app/constants/tapin';
 import { db } from '../app/db/index.server';
 import { auditLogs, regions, tickets, userProfiles, users } from '../app/db/schema/schema';
 import { signAccessToken } from '../app/lib/auth.server';
@@ -17,6 +18,7 @@ import {
   getDashboardTickets,
   getPaginatedCsatReviews,
   handleTicketStatusUpdateAction,
+  resolveDapilName,
   submitTicketSatisfaction,
   updateTicketStatus,
 } from '../app/lib/ticket.server';
@@ -38,6 +40,28 @@ test('normalizeKecamatanName maps case variants to canonical Tapin district spel
   assert.equal(normalizeKecamatanName('TAPIN UTARA'), 'Tapin Utara');
   assert.equal(normalizeKecamatanName('  binuang '), 'Binuang');
   assert.equal(normalizeKecamatanName('Wilayah Khusus'), 'Wilayah Khusus');
+});
+
+test('resolveDapilName resolves Tapin DPRD and DPR RI Kalsel 1 codes safely', () => {
+  assert.equal(resolveDapilName('DAPIL-KALSEL-1'), 'Dapil Kalimantan Selatan I');
+  assert.equal(resolveDapilName(' dapil-kalsel-1 '), 'Dapil Kalimantan Selatan I');
+  assert.equal(resolveDapilName('kalsel-1'), 'Dapil Kalimantan Selatan I');
+  assert.equal(resolveDapilName('DAPIL-1'), 'Dapil Tapin 1');
+  assert.equal(resolveDapilName('DAPIL-TAPIN-2'), 'Dapil Tapin 2');
+  assert.equal(resolveDapilName('DAPIL-KALSEL-1', 'Dapil Custom DB'), 'Dapil Custom DB');
+  assert.equal(resolveDapilName(null), null);
+  assert.equal(resolveDapilName('   '), null);
+});
+
+test('master Tapin districts and Dapil constants include all 12 districts and Dapil Kalimantan Selatan I', () => {
+  assert.equal(KECAMATAN_TAPIN_LIST.length, 12);
+  assert.deepEqual(DAPIL_DISTRICTS_MAP['DAPIL-KALSEL-1'], KECAMATAN_TAPIN_LIST);
+  assert.equal(
+    ALL_DAPIL_LIST.some(
+      (d) => d.id === 'DAPIL-KALSEL-1' && d.name === 'Dapil Kalimantan Selatan I'
+    ),
+    true
+  );
 });
 
 test('dashboard queries, RBAC fail-closed moderator scope, resolvedAt preservation, no-op guard, and scoped CSAT', async () => {

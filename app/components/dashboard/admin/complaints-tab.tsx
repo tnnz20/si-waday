@@ -41,6 +41,7 @@ import {
   normalizeKecamatanName,
 } from '@/constants/admin-data';
 import { CATEGORIES, EXTENDED_AGENCIES } from '@/constants/aspirations';
+import { KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
 
 import {
   CheckCircle2,
@@ -86,9 +87,11 @@ export function ComplaintsTab({ tickets }: ComplaintsTabProps) {
   }, [tickets]);
 
   const kecamatanList = React.useMemo(() => {
-    return Array.from(
-      new Set(tickets.map((t) => normalizeKecamatanName(t.kecamatan)).filter(Boolean))
-    ).sort();
+    const merged = new Set<string>([
+      ...KECAMATAN_TAPIN_LIST,
+      ...tickets.map((t) => normalizeKecamatanName(t.kecamatan)).filter(Boolean),
+    ]);
+    return Array.from(merged).sort();
   }, [tickets]);
 
   const statusCounts = React.useMemo(() => computeTicketStatusCounts(tickets), [tickets]);

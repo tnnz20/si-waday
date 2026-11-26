@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { Link, useFetcher } from 'react-router';
 import { toast } from 'sonner';
 import { db } from '~/db/index.server';
@@ -19,18 +19,18 @@ import { ProposalStep } from '@/components/aspiration/proposal-step';
 import type { IdentityFormData, UsulanFormData } from '@/types/aspiration';
 
 import { APP_NAME } from '@/constants/index';
-import { DAPIL_DISTRICTS_MAP, TAPIN_CENTER } from '@/constants/tapin';
+import { ALL_DAPIL_LIST, DAPIL_DISTRICTS_MAP, TAPIN_CENTER } from '@/constants/tapin';
 
 import { ArrowLeft, Megaphone } from 'lucide-react';
 
 import type { Route } from './+types/aspiration';
 
 export const meta: Route.MetaFunction = () => [
-  { title: `Formulir Usulan Pokir Dapil DPRD - ${APP_NAME}` },
+  { title: `Formulir Usulan Aspirasi Dapil DPRD & DPR RI - ${APP_NAME}` },
   {
     name: 'description',
     content:
-      'Layanan resmi penyampaian Aspirasi Pokir DPRD Kabupaten Tapin dengan verifikasi identitas e-KTP.',
+      'Layanan resmi penyampaian Aspirasi Pokir DPRD Kabupaten Tapin dan DPR RI Dapil Kalimantan Selatan I dengan verifikasi identitas e-KTP.',
   },
 ];
 
@@ -42,13 +42,14 @@ export async function loader() {
       description: regions.description,
     })
     .from(regions)
-    .where(eq(regions.type, 'dapil_dprd'))
+    .where(inArray(regions.type, ['dapil_dprd', 'dapil_dpr']))
     .orderBy(asc(regions.code));
 
   const reps = await db
     .select({
       id: userProfiles.id,
       name: userProfiles.fullName,
+      role: users.role,
       party: userProfiles.party,
       commission: userProfiles.commission,
       photoUrl: userProfiles.avatarUrl,
@@ -60,7 +61,7 @@ export async function loader() {
     .leftJoin(regions, eq(regions.id, userProfiles.regionId))
     .where(
       and(
-        eq(users.role, 'dprd'),
+        inArray(users.role, ['dprd', 'dpr']),
         eq(users.isActive, true),
         isNull(users.deletedAt),
         isNull(userProfiles.deletedAt)
@@ -68,23 +69,39 @@ export async function loader() {
     )
     .orderBy(asc(userProfiles.fullName));
 
-  const dapils = dapilRows.map((d) => ({
-    id: d.id,
-    name: d.name,
-    label: `${d.name} (${(DAPIL_DISTRICTS_MAP[d.id] || []).join(', ')})`,
-    seats: '',
-    districts: DAPIL_DISTRICTS_MAP[d.id] || [],
-    description: d.description || '',
-  }));
+  const canonicalOrder = new Map<string, number>(ALL_DAPIL_LIST.map((d, idx) => [d.id, idx]));
+
+  const dapils = dapilRows
+    .map((d) => {
+      const canonical = ALL_DAPIL_LIST.find((item) => item.id === d.id);
+      const districts = DAPIL_DISTRICTS_MAP[d.id] || canonical?.districts || [];
+      return {
+        id: d.id,
+        name: d.name,
+        label:
+          canonical?.label ||
+          `${d.name}${districts.length > 0 ? ` (${districts.join(', ')})` : ''}`,
+        seats: canonical?.seats || '',
+        districts,
+        description: d.description || canonical?.description || '',
+      };
+    })
+    .sort(
+      (a, b) =>
+        (canonicalOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (canonicalOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
 
   const representatives = reps.map((r) => {
-    const dapilId = r.dapilId || 'DAPIL-TAPIN-1';
+    const role: 'dprd' | 'dpr' = r.role === 'dpr' ? 'dpr' : 'dprd';
+    const dapilId = r.dapilId || (role === 'dpr' ? 'DAPIL-KALSEL-1' : 'DAPIL-TAPIN-1');
     return {
       id: r.id,
       name: r.name,
+      role,
       party: r.party || '',
       dapilId,
-      dapilName: r.dapilName || 'Dapil Tapin 1',
+      dapilName: r.dapilName || (role === 'dpr' ? 'Dapil Kalimantan Selatan I' : 'Dapil Tapin 1'),
       districts: DAPIL_DISTRICTS_MAP[dapilId] || [],
       commission: r.commission || '',
       photoUrl: r.photoUrl || '',
@@ -266,7 +283,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
     setCurrentStep(2);
     window.scrollTo({ top: 100, behavior: 'smooth' });
     toast.info('Data diri & identitas terverifikasi.', {
-      description: 'Silakan isi rincian usulan untuk Dapil DPRD Kabupaten Tapin.',
+      description: 'Silakan isi rincian usulan untuk perwakilan DPRD Tapin atau DPR RI.',
     });
   };
 
@@ -311,7 +328,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
               <span>Kembali ke Beranda</span>
             </Link>
             <span className="text-slate-300">/</span>
-            <span className="font-medium text-slate-500">Aspirasi Pokir Dapil DPRD</span>
+            <span className="font-medium text-slate-500">Aspirasi Pokir Dapil</span>
           </div>
 
           <Link
@@ -333,7 +350,7 @@ export default function FormAspirationPage({ loaderData }: Route.ComponentProps)
           reporterName={identityData.fullName}
           canGoToStepTwo={Boolean(identityData.fullName && identityData.nik)}
           stepTwoTitle="Form Usulan Aspirasi Dapil"
-          stepTwoSubtitle="Tujuan Dapil DPRD Kabupaten Tapin"
+          stepTwoSubtitle="Tujuan Dapil DPRD Tapin & DPR RI"
         />
 
         {/* Dynamic Step View */}

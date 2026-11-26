@@ -40,7 +40,7 @@ import {
   formatIndonesianDateTime,
   normalizeKecamatanName,
 } from '@/constants/admin-data';
-import { DAPIL_TAPIN_LIST } from '@/constants/tapin';
+import { ALL_DAPIL_LIST, KECAMATAN_TAPIN_LIST } from '@/constants/tapin';
 
 import {
   CheckCircle2,
@@ -65,23 +65,20 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'all' | AdminTicketStatus>('all');
   const [dapilFilter, setDapilFilter] = React.useState<string>('all');
-  const [representativeFilter, setRepresentativeFilter] = React.useState<string>('all');
   const [kecamatanFilter, setKecamatanFilter] = React.useState<string>('all');
 
   const dapilList = React.useMemo(() => {
-    const base = DAPIL_TAPIN_LIST.map((d) => d.name);
+    const base = ALL_DAPIL_LIST.map((d) => d.name);
     const dynamic = tickets.map((t) => t.dapilName).filter((name): name is string => Boolean(name));
     return Array.from(new Set([...base, ...dynamic]));
   }, [tickets]);
 
-  const representativeList = React.useMemo(() => {
-    return Array.from(new Set(tickets.map((t) => t.targetDestination).filter(Boolean))).sort();
-  }, [tickets]);
-
   const kecamatanList = React.useMemo(() => {
-    return Array.from(
-      new Set(tickets.map((t) => normalizeKecamatanName(t.kecamatan)).filter(Boolean))
-    ).sort();
+    const merged = new Set<string>([
+      ...KECAMATAN_TAPIN_LIST,
+      ...tickets.map((t) => normalizeKecamatanName(t.kecamatan)).filter(Boolean),
+    ]);
+    return Array.from(merged).sort();
   }, [tickets]);
 
   const statusCounts = React.useMemo(() => computeTicketStatusCounts(tickets), [tickets]);
@@ -90,9 +87,6 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
     return tickets.filter((item) => {
       if (statusFilter !== 'all' && item.status !== statusFilter) return false;
       if (dapilFilter !== 'all' && item.dapilName !== dapilFilter) return false;
-      if (representativeFilter !== 'all' && item.targetDestination !== representativeFilter) {
-        return false;
-      }
       if (kecamatanFilter !== 'all' && normalizeKecamatanName(item.kecamatan) !== kecamatanFilter) {
         return false;
       }
@@ -119,9 +113,9 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
 
       return true;
     });
-  }, [tickets, searchQuery, statusFilter, dapilFilter, representativeFilter, kecamatanFilter]);
+  }, [tickets, searchQuery, statusFilter, dapilFilter, kecamatanFilter]);
 
-  const filterKey = `${searchQuery}-${statusFilter}-${dapilFilter}-${representativeFilter}-${kecamatanFilter}`;
+  const filterKey = `${searchQuery}-${statusFilter}-${dapilFilter}-${kecamatanFilter}`;
   const { currentPage, setCurrentPage, totalPages, paginatedItems } = useTicketTablePagination(
     filtered,
     filterKey,
@@ -135,14 +129,12 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
     Boolean(searchQuery.trim()) ||
     statusFilter !== 'all' ||
     dapilFilter !== 'all' ||
-    representativeFilter !== 'all' ||
     kecamatanFilter !== 'all';
 
   const resetFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
     setDapilFilter('all');
-    setRepresentativeFilter('all');
     setKecamatanFilter('all');
   };
 
@@ -213,7 +205,7 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <CardTitle className="text-darknavy-900 text-lg font-black sm:text-xl">
-                Pokok Pikiran (Pokir) &amp; Aspirasi Dapil DPRD Tapin
+                Pokok Pikiran (Pokir) &amp; Aspirasi Dapil
               </CardTitle>
               <CardDescription className="text-xs text-slate-500 sm:text-sm">
                 Menampilkan {filtered.length} dari {tickets.length} usulan konstituen per daerah
@@ -257,7 +249,7 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
             />
 
             {/* Filter Dapil */}
-            <div className="w-44">
+            <div className="w-full sm:w-56">
               <Select value={dapilFilter} onValueChange={setDapilFilter}>
                 <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
                   <SelectValue placeholder="Semua Dapil" />
@@ -267,23 +259,6 @@ export function AspirationsTab({ tickets }: AspirationsTabProps) {
                   {dapilList.map((dapilName) => (
                     <SelectItem key={dapilName} value={dapilName}>
                       {dapilName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filter Anggota Dewan */}
-            <div className="w-52">
-              <Select value={representativeFilter} onValueChange={setRepresentativeFilter}>
-                <SelectTrigger className="border-warm-300 text-darknavy-900 focus:ring-accent-500 h-9 rounded-xl bg-white text-xs font-semibold shadow-2xs">
-                  <SelectValue placeholder="Semua Anggota Dewan" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60 rounded-xl">
-                  <SelectItem value="all">Semua Anggota Dewan</SelectItem>
-                  {representativeList.map((rep) => (
-                    <SelectItem key={rep} value={rep}>
-                      {rep}
                     </SelectItem>
                   ))}
                 </SelectContent>

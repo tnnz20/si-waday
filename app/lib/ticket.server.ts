@@ -9,7 +9,7 @@ import {
   type TicketDetailItem,
   normalizeKecamatanName,
 } from '~/constants/admin-data';
-import { DAPIL_TAPIN_LIST } from '~/constants/tapin';
+import { ALL_DAPIL_LIST } from '~/constants/tapin';
 import { db } from '~/db/index.server';
 import {
   type FeedbackType,
@@ -392,16 +392,22 @@ export async function getCsatAnalytics(scopeWhere?: SQL): Promise<CsatAnalyticsR
 /**
  * Resolve friendly Dapil display label from dapilId or joined region name.
  */
-function resolveDapilName(dapilId: string | null, regionName?: string | null): string | null {
+export function resolveDapilName(
+  dapilId: string | null,
+  regionName?: string | null
+): string | null {
   if (regionName) return regionName;
   if (!dapilId) return null;
-  const normalized = dapilId.toUpperCase();
-  const matched = DAPIL_TAPIN_LIST.find(
+  const normalized = dapilId.trim().toUpperCase();
+  if (!normalized) return null;
+
+  const matched = ALL_DAPIL_LIST.find(
     (d) =>
       d.id === normalized ||
       (normalized === 'DAPIL-1' && d.id === 'DAPIL-TAPIN-1') ||
       (normalized === 'DAPIL-2' && d.id === 'DAPIL-TAPIN-2') ||
-      (normalized === 'DAPIL-3' && d.id === 'DAPIL-TAPIN-3')
+      (normalized === 'DAPIL-3' && d.id === 'DAPIL-TAPIN-3') ||
+      ((normalized === 'KALSEL-1' || normalized === 'DAPIL KALSEL 1') && d.id === 'DAPIL-KALSEL-1')
   );
   return matched ? matched.name : dapilId;
 }

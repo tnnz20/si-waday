@@ -6,6 +6,7 @@ import { redirect } from 'react-router';
 
 import { createAuditLog } from '@/lib/audit.server';
 import { hashPassword } from '@/lib/auth.server';
+import { resolveRegionIdByName } from '@/lib/region.server';
 import { requireAuth } from '@/lib/session.server';
 
 import { TableViewSkeleton } from '@/components/dashboard/admin/dashboard-skeletons';
@@ -183,15 +184,7 @@ export async function action({ request }: Route.ActionArgs) {
     }
 
     // Resolve region ID from dapilName
-    let regionId: string | null = null;
-    if (dapilName) {
-      const [matchedRegion] = await db
-        .select({ id: regions.id })
-        .from(regions)
-        .where(eq(regions.name, dapilName))
-        .limit(1);
-      if (matchedRegion) regionId = matchedRegion.id;
-    }
+    const regionId = dapilName ? await resolveRegionIdByName(dapilName) : null;
 
     // Hash password & Insert user + profile
     const passwordHash = hashPassword(defaultPassword);
@@ -396,15 +389,7 @@ export async function action({ request }: Route.ActionArgs) {
     }
 
     // Lookup region id if dapilName provided
-    let regionId: string | null = null;
-    if (dapilName) {
-      const [matchedRegion] = await db
-        .select({ id: regions.id })
-        .from(regions)
-        .where(eq(regions.name, dapilName))
-        .limit(1);
-      if (matchedRegion) regionId = matchedRegion.id;
-    }
+    const regionId = dapilName ? await resolveRegionIdByName(dapilName) : null;
 
     await db.update(users).set({ email, updatedAt: new Date() }).where(eq(users.id, userId));
     await db
